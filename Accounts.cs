@@ -1,6 +1,8 @@
-﻿using BlazorWASM.Pages;
-using System;
-public class PortfolioData
+﻿using System;
+
+namespace FinPlanner;
+
+public class Portfolio
 {
 	public List<Account> Accounts { get; set; } = new();
 	public decimal Year { get; set; } = 0;

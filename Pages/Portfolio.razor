@@ -1,5 +1,9 @@
 ﻿@page "/portfolio"
 
+@using System.Text.Json;
+
+@inject FinPlanner.Portfolio portfolio;
+
 <PageTitle>Portfolio</PageTitle>
 
 <h1>Portfolio</h1>
@@ -9,8 +13,6 @@
 <button class="btn btn-primary" @onclick="Save">Save file</button>
 
 <!-- Make accounts accessible to this page -->
-@inject PortfolioData portfolioData
-@using System.Text.Json;
 
 @code {
 
@@ -24,14 +26,14 @@
 
         string json = await reader.ReadToEndAsync();
 
-        var data = JsonSerializer.Deserialize<PortfolioData>(json);
+        var data = JsonSerializer.Deserialize<FinPlanner.Portfolio>(json);
 
         foreach (Account account in data.Accounts)
         {
-            portfolioData.AddAccount(account.Name, account.Balance);
+            portfolio.AddAccount(account.Name, account.Balance);
         }
 
-        portfolioData.Year = data.Year;
+        portfolio.Year = data.Year;
 
     }
 
