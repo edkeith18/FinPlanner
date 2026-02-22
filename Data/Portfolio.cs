@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace FinPlanner;
+﻿namespace FinPlanner.Data;
 
 public class Portfolio
 {
