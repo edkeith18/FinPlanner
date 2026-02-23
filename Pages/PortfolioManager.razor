@@ -92,7 +92,7 @@
     {
         var json = JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = true });
 
-        await SaveFileAsync("portfolio.json", json);
+        await SaveFileAsync("FinPlanner.json", json);
     }
 
     private async Task SaveFileAsync(string filename, string json)
@@ -113,7 +113,7 @@
 
     private void CreateNewAccount()
     {
-        Nav.NavigateTo("./account/new");
+        Nav.NavigateTo("account/new");
     }
 
     private void DeleteAccount(Account account)
