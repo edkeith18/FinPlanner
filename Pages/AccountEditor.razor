@@ -2,6 +2,7 @@
 @page "/account/{name}"
 
 @using FinPlanner.Data
+@using Microsoft.AspNetCore.Components
 
 @inject Portfolio portfolio
 @inject NavigationManager Nav
@@ -65,11 +66,11 @@ else
             portfolio.AddAccount(account.Name, account.Balance);
         }
 
-        Nav.NavigateTo("/");
+        Nav.NavigateTo("portfoliomanager");
     }
 
     private void Back()
     {
-        Nav.NavigateTo("/");
+        Nav.NavigateTo("portfoliomanager");
     }
 }
