@@ -1,0 +1,75 @@
+﻿@page "/account/new"
+@page "/account/{name}"
+
+@using FinPlanner.Data
+
+@inject Portfolio portfolio
+@inject NavigationManager Nav
+
+<h3>@(IsNew ? "Create Account" : "Account Details")</h3>
+
+@if (account is null)
+{
+    <p>Account not found.</p>
+}
+else
+{
+    <div class="card p-3" style="max-width: 400px;">
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <InputText @bind-Value="account.Name" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Balance</label>
+            <InputNumber @bind-Value="account.Balance" class="form-control" />
+        </div>
+
+        <button class="btn btn-primary" @onclick="Save">
+            @(IsNew ? "Create" : "Save")
+        </button>
+
+        <button class="btn btn-secondary ms-2" @onclick="Back">
+            Back
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter] public string? Name { get; set; }
+
+    private Account? account;
+    private bool IsNew => Name is null;
+
+    protected override void OnParametersSet()
+    {
+        if (IsNew)
+        {
+            // Create mode
+            account = new Account { Name = "", Balance = 0 };
+        }
+        else
+        {
+            // Edit mode
+            account = portfolio.Accounts.FirstOrDefault(a => a.Name == Name);
+        }
+    }
+
+    private void Save()
+    {
+        if (account is null)
+            return;
+
+        if (IsNew)
+        {
+            portfolio.AddAccount(account.Name, account.Balance);
+        }
+
+        Nav.NavigateTo("/");
+    }
+
+    private void Back()
+    {
+        Nav.NavigateTo("/");
+    }
+}

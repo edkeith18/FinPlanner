@@ -1,0 +1,140 @@
+﻿@page "/portfoliomanager"
+
+@using FinPlanner.Data;
+@using Microsoft.AspNetCore.Components.Forms
+@using System.Text.Json;
+
+@inject FinPlanner.Data.Portfolio portfolio;
+@inject IJSRuntime JS
+@inject NavigationManager Nav
+
+<PageTitle>Portfolio Manager</PageTitle>
+
+<h1>Portfolio</h1>
+
+<InputFile OnChange="LoadFile" MaxFileSize="5000000"/>
+
+<button class="btn btn-primary" @onclick="Save">Save file</button>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Name</th>
+            <th>Balance</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var account in portfolio.Accounts)
+        {
+            <tr>
+                <!-- Read-only name -->
+                <td>
+                    <a href="@($"/account/{account.Name}")">@account.Name</a>
+                </td>
+
+                <!-- Editable balance -->
+                <td @onclick="() => StartEditing(account)">
+                    @if (IsEditing(account))
+                    {
+                        <InputNumber @bind-Value="account.Balance"
+                                     class="form-control"
+                                     @onblur="() => StopEditing(account)" />
+                    }
+                    else
+                    {
+                        <span>@account.Balance.ToString("C")</span>
+                    }
+                </td>
+
+                <!-- Delete button -->
+                <td>
+                    <button class="btn btn-link text-danger"
+                            @onclick="() => DeleteAccount(account)">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+
+            </tr>
+        }
+    </tbody>
+</table>
+
+<button class="btn btn-success mb-3" @onclick="CreateNewAccount">
+    + New Account
+</button>
+@code {
+
+    // Read data
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5_000_000);  // 5 MB
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+
+        string json = await reader.ReadToEndAsync();
+
+        var data = JsonSerializer.Deserialize<Portfolio>(json);
+
+        if (data is null)
+            return;
+
+        foreach (var account in data.Accounts)
+        {
+            portfolio.AddAccount(account.Name, account.Balance);
+        }
+
+        portfolio.Year = data.Year;
+    }
+
+    // Save data
+    private async Task Save()
+    {
+        var json = JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = true });
+
+        await SaveFileAsync("portfolio.json", json);
+    }
+
+    private async Task SaveFileAsync(string filename, string json)
+    {
+        // Convert JSON text → Base64
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+
+        // Correct MIME type for JSON
+        var url = $"data:application/json;base64,{base64}";
+
+        await JS.InvokeVoidAsync("eval", $@"
+            var a = document.createElement('a');
+            a.href = '{url}';
+            a.download = '{filename}';
+            a.click();
+        ");
+    }
+
+    private void CreateNewAccount()
+    {
+        Nav.NavigateTo("/account/new");
+    }
+
+    private void DeleteAccount(Account account)
+    {
+        portfolio.Accounts.Remove(account);
+    }
+
+    private Dictionary<Account, bool> editing = new();
+    
+    private bool IsEditing(Account account)
+    {
+        return editing.TryGetValue(account, out var value) && value;
+    }
+
+    private void StartEditing(Account account)
+    {
+        editing[account] = true;
+    }
+
+    private void StopEditing(Account account)
+    {
+        editing[account] = false;
+    }
+}
