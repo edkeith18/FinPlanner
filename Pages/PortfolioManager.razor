@@ -15,6 +15,45 @@
 
 <button class="btn btn-primary" @onclick="Save">Save file</button>
 
+<div class="mt-4">
+    <h3>Parameters</h3>
+    <dl class="row">
+        <dt class="col-sm-4">Securities annual interest rate</dt>
+        <dd class="col-sm-8">@($"{portfolio.SecuritiesAnnualInterestRate}%")</dd>
+    </dl>
+</div>
+
+<hr />
+
+<div class="mt-4">
+    <h3>Accounts</h3>
+
+    @if (portfolio.Accounts.Count == 0)
+    {
+        <p>No accounts available.</p>
+    }
+    else
+    {
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Balance</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var account in portfolio.Accounts)
+                {
+                    <tr>
+                        <td>@account.Name</td>
+                        <td>@account.Balance.ToString("C")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>
+
 @code {
     // Read data
     private async Task LoadFile(InputFileChangeEventArgs e)
@@ -31,12 +70,15 @@
         if (data is null)
             return;
 
+        portfolio.Accounts.Clear();
+
         foreach (var account in data.Accounts)
         {
             portfolio.AddAccount(account.Name, account.Balance);
         }
 
         portfolio.Year = data.Year;
+        portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
     }
 
     // Save data

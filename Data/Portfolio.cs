@@ -4,6 +4,7 @@ public class Portfolio
 {
 	public List<Account> Accounts { get; set; } = new();
 	public decimal Year { get; set; } = 0;
+	public decimal SecuritiesAnnualInterestRate { get; set; } = 0.0m;
 
 	public void AddAccount(string name, decimal balance)
 	{

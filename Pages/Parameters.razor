@@ -1,0 +1,18 @@
+@page "/parameters"
+
+@using FinPlanner.Data
+@inject Portfolio portfolio
+
+<PageTitle>Parameters</PageTitle>
+
+<h1>Parameters</h1>
+
+<p class="text-muted">Set values here that drive the app's planning calculations.</p>
+
+<div class="card p-3" style="max-width: 450px;">
+    <div class="mb-3">
+        <label class="form-label">Securities annual interest rate</label>
+        <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate" class="form-control" />
+        <div class="form-text">Enter the percentage directly (example: 7.1 means 7.1%).</div>
+    </div>
+</div>
