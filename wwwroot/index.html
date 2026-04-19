@@ -27,8 +27,32 @@
     <div id="blazor-error-ui">
         An unhandled error has occurred.
         <a href="." class="reload">Reload</a>
-        <span class="dismiss">🗙</span>
+        <span class="dismiss">x</span>
     </div>
+    <script>
+        (function () {
+            var url = new URL(window.location.href);
+            var path = url.searchParams.get("p");
+
+            if (!path) {
+                return;
+            }
+
+            var query = url.searchParams.get("q");
+            var hash = url.hash || "";
+            var newUrl = path;
+
+            if (query) {
+                newUrl += "?" + query;
+            }
+
+            if (hash) {
+                newUrl += hash;
+            }
+
+            window.history.replaceState(null, "", newUrl);
+        })();
+    </script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 

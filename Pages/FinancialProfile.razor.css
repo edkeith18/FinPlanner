@@ -1,0 +1,42 @@
+.financial-profile-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.financial-profile-row {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1.5fr) auto auto;
+    gap: 1rem;
+    align-items: center;
+    padding: 0.35rem 0;
+}
+
+.financial-profile-item,
+.financial-profile-value {
+    min-width: 0;
+}
+
+.financial-profile-value .form-control {
+    max-width: 14rem;
+}
+
+.financial-profile-action {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.5rem;
+}
+
+.financial-profile-add-form {
+    max-width: 28rem;
+}
+
+@media (max-width: 767.98px) {
+    .financial-profile-row {
+        grid-template-columns: minmax(0, 1fr) auto auto;
+    }
+
+    .financial-profile-item {
+        grid-column: 1 / -1;
+    }
+}

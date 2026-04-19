@@ -1,0 +1,358 @@
+@page "/financial-profile"
+
+@using System.Globalization
+@using System.Text.Json
+@using FinPlanner.Data
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject Portfolio portfolio
+@inject IJSRuntime JS
+
+<PageTitle>Financial Profile</PageTitle>
+
+<h1>Financial Profile</h1>
+
+<div class="mb-4 d-flex flex-wrap gap-2">
+    <InputFile OnChange="LoadFile" MaxFileSize="5000000" />
+    <button class="btn btn-primary" @onclick="Save">Save File</button>
+</div>
+
+<div class="financial-profile-grid" role="table" aria-label="Financial Profile">
+    <div class="financial-profile-row" role="row">
+        <div class="financial-profile-item" role="cell">Securities annual interest rate</div>
+        <div class="financial-profile-value" role="cell">
+            @if (editingKey == InterestRateKey)
+            {
+                <InputNumber @bind-Value="editValue"
+                             @bind-Value:event="oninput"
+                             class="form-control"
+                             @onblur="SaveInterestRateEdit" />
+            }
+            else
+            {
+                <span>@FormatInterestRate(portfolio.SecuritiesAnnualInterestRate)</span>
+            }
+        </div>
+        <div class="financial-profile-action" role="cell">
+            <button type="button"
+                    class="btn btn-link p-0"
+                    aria-label="Edit securities annual interest rate"
+                    @onclick="@(() => StartEditing(InterestRateKey, portfolio.SecuritiesAnnualInterestRate))">
+                <i class="bi bi-pencil"></i>
+            </button>
+        </div>
+        <div class="financial-profile-action" role="cell"></div>
+    </div>
+
+    @foreach (var account in portfolio.Accounts)
+    {
+        <div class="financial-profile-row" role="row">
+            <div class="financial-profile-item" role="cell">@account.Name</div>
+            <div class="financial-profile-value" role="cell">
+                @if (editingKey == GetAccountKey(account))
+                {
+                    <InputNumber @bind-Value="editValue"
+                                 @bind-Value:event="oninput"
+                                 class="form-control"
+                                 @onblur="@(() => SaveAccountEdit(account))" />
+                }
+                else
+                {
+                    <span>@FormatCurrency(account.Balance)</span>
+                }
+            </div>
+            <div class="financial-profile-action" role="cell">
+                <button type="button"
+                        class="btn btn-link p-0"
+                        aria-label="@($"Edit {account.Name}")"
+                        @onclick="@(() => StartEditing(GetAccountKey(account), account.Balance))">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+            <div class="financial-profile-action" role="cell">
+                <button type="button"
+                        class="btn btn-link text-danger p-0"
+                        aria-label="@($"Delete {account.Name}")"
+                        @onclick="@(() => ConfirmDeleteAccount(account))">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    }
+
+    @foreach (var income in portfolio.Income)
+    {
+        <div class="financial-profile-row" role="row">
+            <div class="financial-profile-item" role="cell">@income.Name</div>
+            <div class="financial-profile-value" role="cell">
+                @if (editingKey == GetIncomeKey(income))
+                {
+                    <InputNumber @bind-Value="editValue"
+                                 @bind-Value:event="oninput"
+                                 class="form-control"
+                                 @onblur="@(() => SaveIncomeEdit(income))" />
+                }
+                else
+                {
+                    <span>@FormatCurrency(income.Amount)</span>
+                }
+            </div>
+            <div class="financial-profile-action" role="cell">
+                <button type="button"
+                        class="btn btn-link p-0"
+                        aria-label="@($"Edit {income.Name}")"
+                        @onclick="@(() => StartEditing(GetIncomeKey(income), income.Amount))">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+            <div class="financial-profile-action" role="cell">
+                <button type="button"
+                        class="btn btn-link text-danger p-0"
+                        aria-label="@($"Delete {income.Name}")"
+                        @onclick="@(() => ConfirmDeleteIncome(income))">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    }
+
+    @foreach (var expense in portfolio.Expenses)
+    {
+        <div class="financial-profile-row" role="row">
+            <div class="financial-profile-item" role="cell">@expense.Name</div>
+            <div class="financial-profile-value" role="cell">
+                @if (editingKey == GetExpenseKey(expense))
+                {
+                    <InputNumber @bind-Value="editValue"
+                                 @bind-Value:event="oninput"
+                                 class="form-control"
+                                 @onblur="@(() => SaveExpenseEdit(expense))" />
+                }
+                else
+                {
+                    <span>@FormatCurrency(expense.Amount)</span>
+                }
+            </div>
+            <div class="financial-profile-action" role="cell">
+                <button type="button"
+                        class="btn btn-link p-0"
+                        aria-label="@($"Edit {expense.Name}")"
+                        @onclick="@(() => StartEditing(GetExpenseKey(expense), expense.Amount))">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </div>
+            <div class="financial-profile-action" role="cell">
+                <button type="button"
+                        class="btn btn-link text-danger p-0"
+                        aria-label="@($"Delete {expense.Name}")"
+                        @onclick="@(() => ConfirmDeleteExpense(expense))">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-4 d-flex flex-wrap gap-2">
+    <button class="btn btn-success" @onclick="@(() => ShowAddForm(ProfileItemType.Account))">Add Account</button>
+    <button class="btn btn-success" @onclick="@(() => ShowAddForm(ProfileItemType.Income))">Add Income</button>
+    <button class="btn btn-success" @onclick="@(() => ShowAddForm(ProfileItemType.Expense))">Add Expense</button>
+</div>
+
+@if (addItemType is not null)
+{
+    <div class="card p-3 mt-3 financial-profile-add-form">
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <InputText @bind-Value="newItemName" class="form-control" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">@GetValueLabel(addItemType.Value)</label>
+            <InputNumber @bind-Value="newItemValue" class="form-control" />
+        </div>
+
+        <div class="d-flex gap-2">
+            <button class="btn btn-primary" @onclick="AddItem">Save</button>
+            <button class="btn btn-secondary" @onclick="CancelAdd">Cancel</button>
+        </div>
+    </div>
+}
+
+@code {
+    private const string InterestRateKey = "interest-rate";
+
+    private string? editingKey;
+    private decimal editValue;
+    private ProfileItemType? addItemType;
+    private string newItemName = string.Empty;
+    private decimal newItemValue;
+
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5_000_000);
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+
+        var json = await reader.ReadToEndAsync();
+        var data = JsonSerializer.Deserialize<Portfolio>(json, new JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        });
+
+        portfolio.LoadFrom(data);
+        CancelEdit();
+    }
+
+    private async Task Save()
+    {
+        var json = JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = true });
+        await SaveFileAsync("FinPlanner.json", json);
+    }
+
+    private async Task SaveFileAsync(string filename, string json)
+    {
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+        var url = $"data:application/json;base64,{base64}";
+
+        await JS.InvokeVoidAsync("eval", $@"
+            var a = document.createElement('a');
+            a.href = '{url}';
+            a.download = '{filename}';
+            a.click();
+        ");
+    }
+
+    private void StartEditing(string key, decimal currentValue)
+    {
+        editingKey = key;
+        editValue = currentValue;
+    }
+
+    private void CancelEdit()
+    {
+        editingKey = null;
+        editValue = 0;
+    }
+
+    private Task SaveInterestRateEdit(FocusEventArgs _)
+    {
+        portfolio.SecuritiesAnnualInterestRate = editValue;
+        CancelEdit();
+        return Task.CompletedTask;
+    }
+
+    private Task SaveAccountEdit(Account account)
+    {
+        account.Balance = editValue;
+        account.LastUpdated = DateTime.Now;
+        CancelEdit();
+        return Task.CompletedTask;
+    }
+
+    private Task SaveIncomeEdit(IncomeItem income)
+    {
+        income.Amount = editValue;
+        income.LastUpdated = DateTime.Now;
+        CancelEdit();
+        return Task.CompletedTask;
+    }
+
+    private Task SaveExpenseEdit(ExpenseItem expense)
+    {
+        expense.Amount = editValue;
+        expense.LastUpdated = DateTime.Now;
+        CancelEdit();
+        return Task.CompletedTask;
+    }
+
+    private async Task ConfirmDeleteAccount(Account account)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
+        {
+            portfolio.Accounts.Remove(account);
+            CancelEdit();
+        }
+    }
+
+    private async Task ConfirmDeleteIncome(IncomeItem income)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete income '{income.Name}'?"))
+        {
+            portfolio.Income.Remove(income);
+            CancelEdit();
+        }
+    }
+
+    private async Task ConfirmDeleteExpense(ExpenseItem expense)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete expense '{expense.Name}'?"))
+        {
+            portfolio.Expenses.Remove(expense);
+            CancelEdit();
+        }
+    }
+
+    private void ShowAddForm(ProfileItemType itemType)
+    {
+        addItemType = itemType;
+        newItemName = string.Empty;
+        newItemValue = 0;
+    }
+
+    private void CancelAdd()
+    {
+        addItemType = null;
+        newItemName = string.Empty;
+        newItemValue = 0;
+    }
+
+    private void AddItem()
+    {
+        var name = newItemName.Trim();
+
+        if (string.IsNullOrWhiteSpace(name) || addItemType is null)
+        {
+            return;
+        }
+
+        switch (addItemType.Value)
+        {
+            case ProfileItemType.Account:
+                portfolio.AddAccount(name, newItemValue);
+                break;
+            case ProfileItemType.Income:
+                portfolio.AddIncome(name, newItemValue);
+                break;
+            case ProfileItemType.Expense:
+                portfolio.AddExpense(name, newItemValue);
+                break;
+        }
+
+        CancelAdd();
+    }
+
+    private static string FormatCurrency(decimal value) => value.ToString("C", CultureInfo.CurrentCulture);
+
+    private static string FormatInterestRate(decimal value) => $"{value:0.##}%";
+
+    private static string GetAccountKey(Account account) => $"account:{account.Name}";
+
+    private static string GetIncomeKey(IncomeItem income) => $"income:{income.Name}";
+
+    private static string GetExpenseKey(ExpenseItem expense) => $"expense:{expense.Name}";
+
+    private static string GetValueLabel(ProfileItemType itemType) => itemType switch
+    {
+        ProfileItemType.Account => "Balance",
+        _ => "Amount"
+    };
+
+    private enum ProfileItemType
+    {
+        Account,
+        Income,
+        Expense
+    }
+}

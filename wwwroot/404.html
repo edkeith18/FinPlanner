@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <title>FinPlanner</title>
+    <script>
+        (function () {
+            var path = window.location.pathname;
+            var query = window.location.search ? window.location.search.slice(1) : "";
+            var hash = window.location.hash || "";
+            var redirectUrl = "/?p=" + encodeURIComponent(path);
+
+            if (query) {
+                redirectUrl += "&q=" + encodeURIComponent(query);
+            }
+
+            redirectUrl += hash;
+            window.location.replace(redirectUrl);
+        })();
+    </script>
+</head>
+
+<body></body>
+
+</html>
