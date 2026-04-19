@@ -25,10 +25,31 @@
     text-align: right;
 }
 
-.clickable-value {
+.clickable-value,
+.clickable-name {
     display: inline-block;
     min-width: 8rem;
     cursor: pointer;
+}
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+.heading-add-button {
+    line-height: 1;
+    color: var(--bs-body-color);
+}
+
+.heading-add-button:hover {
+    color: var(--bs-primary);
+}
+
+.add-mode-row {
+    background-color: rgba(var(--bs-info-rgb), 0.08);
 }
 
 @media (max-width: 768px) {
