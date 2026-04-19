@@ -1,6 +1,6 @@
 .financial-profile-layout {
     display: flex;
-    justify-content: flex-end;
+    justify-content: flex-start;
 }
 
 .financial-profile-panel {
