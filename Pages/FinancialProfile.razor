@@ -44,13 +44,32 @@
 
         <hr />
 
-        <h5>Accounts</h5>
+        <div class="section-heading">
+            <h5 class="mb-0">Accounts</h5>
+            <button class="btn btn-link p-0 heading-add-button"
+                    @onclick="() => StartAdd(AddItemType.Account)"
+                    aria-label="Add Account">
+                <i class="bi bi-plus-square"></i>
+            </button>
+        </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
                 @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr>
-                        <td class="item-name">@account.Name</td>
+                        <td class="item-name">
+                            @if (IsEditingName(account))
+                            {
+                                <InputText @bind-Value="account.Name"
+                                           class="form-control form-control-sm"
+                                           @onblur="() => StopEditingName(account, commitChanges: true)"
+                                           @onkeydown="(e) => OnItemNameKeyDown(account, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
+                            }
+                        </td>
                         <td class="item-value">
                             @if (IsEditing(account))
                             {
@@ -71,20 +90,68 @@
                         </td>
                     </tr>
                 }
+
+                @if (activeAddType == AddItemType.Account)
+                {
+                    <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Account)">
+                        <td class="item-name">
+                            <InputText id="@GetAddNameInputId(AddItemType.Account)"
+                                       @bind-Value="newItemName"
+                                       class="form-control form-control-sm"
+                                       @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-value">
+                            <InputNumber @bind-Value="newItemValue"
+                                         class="form-control form-control-sm"
+                                         @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onmousedown="PrepareAddRowAction"
+                                    @onclick="SaveNewItem"
+                                    aria-label="Commit new account">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onmousedown="PrepareAddRowAction"
+                                    @onclick="CancelAdd"
+                                    aria-label="Cancel new account">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
 
-        <button class="btn btn-success btn-sm mt-2" @onclick="() => StartAdd(AddItemType.Account)">Add Account</button>
-
         <hr />
 
-        <h5>Income</h5>
+        <div class="section-heading">
+            <h5 class="mb-0">Income</h5>
+            <button class="btn btn-link p-0 heading-add-button"
+                    @onclick="() => StartAdd(AddItemType.Income)"
+                    aria-label="Add Income">
+                <i class="bi bi-plus-square"></i>
+            </button>
+        </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
                 @foreach (var income in portfolio.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr>
-                        <td class="item-name">@income.Name</td>
+                        <td class="item-name">
+                            @if (IsEditingName(income))
+                            {
+                                <InputText @bind-Value="income.Name"
+                                           class="form-control form-control-sm"
+                                           @onblur="() => StopEditingName(income, commitChanges: true)"
+                                           @onkeydown="(e) => OnItemNameKeyDown(income, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(income)">@income.Name</span>
+                            }
+                        </td>
                         <td class="item-value">
                             @if (IsEditing(income))
                             {
@@ -105,20 +172,68 @@
                         </td>
                     </tr>
                 }
+
+                @if (activeAddType == AddItemType.Income)
+                {
+                    <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Income)">
+                        <td class="item-name">
+                            <InputText id="@GetAddNameInputId(AddItemType.Income)"
+                                       @bind-Value="newItemName"
+                                       class="form-control form-control-sm"
+                                       @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-value">
+                            <InputNumber @bind-Value="newItemValue"
+                                         class="form-control form-control-sm"
+                                         @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onmousedown="PrepareAddRowAction"
+                                    @onclick="SaveNewItem"
+                                    aria-label="Commit new income">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onmousedown="PrepareAddRowAction"
+                                    @onclick="CancelAdd"
+                                    aria-label="Cancel new income">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
 
-        <button class="btn btn-success btn-sm mt-2" @onclick="() => StartAdd(AddItemType.Income)">Add Income</button>
-
         <hr />
 
-        <h5>Expenses</h5>
+        <div class="section-heading">
+            <h5 class="mb-0">Expenses</h5>
+            <button class="btn btn-link p-0 heading-add-button"
+                    @onclick="() => StartAdd(AddItemType.Expense)"
+                    aria-label="Add Expense">
+                <i class="bi bi-plus-square"></i>
+            </button>
+        </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
                 @foreach (var expense in portfolio.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr>
-                        <td class="item-name">@expense.Name</td>
+                        <td class="item-name">
+                            @if (IsEditingName(expense))
+                            {
+                                <InputText @bind-Value="expense.Name"
+                                           class="form-control form-control-sm"
+                                           @onblur="() => StopEditingName(expense, commitChanges: true)"
+                                           @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(expense)">@expense.Name</span>
+                            }
+                        </td>
                         <td class="item-value">
                             @if (IsEditing(expense))
                             {
@@ -139,35 +254,47 @@
                         </td>
                     </tr>
                 }
+
+                @if (activeAddType == AddItemType.Expense)
+                {
+                    <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Expense)">
+                        <td class="item-name">
+                            <InputText id="@GetAddNameInputId(AddItemType.Expense)"
+                                       @bind-Value="newItemName"
+                                       class="form-control form-control-sm"
+                                       @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-value">
+                            <InputNumber @bind-Value="newItemValue"
+                                         class="form-control form-control-sm"
+                                         @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onmousedown="PrepareAddRowAction"
+                                    @onclick="SaveNewItem"
+                                    aria-label="Commit new expense">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onmousedown="PrepareAddRowAction"
+                                    @onclick="CancelAdd"
+                                    aria-label="Cancel new expense">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
             </tbody>
         </table>
-
-        <button class="btn btn-success btn-sm mt-2" @onclick="() => StartAdd(AddItemType.Expense)">Add Expense</button>
-
-        @if (activeAddType is not null)
-        {
-            <div class="card mt-3 p-3">
-                <h6 class="mb-3">Add @activeAddType</h6>
-                <div class="mb-2">
-                    <label class="form-label mb-1">Name</label>
-                    <InputText @bind-Value="newItemName" class="form-control form-control-sm" />
-                </div>
-                <div class="mb-2">
-                    <label class="form-label mb-1">@GetValueLabel(activeAddType.Value)</label>
-                    <InputNumber @bind-Value="newItemValue" class="form-control form-control-sm" />
-                </div>
-                <div class="d-flex gap-2 mt-2">
-                    <button class="btn btn-primary btn-sm" @onclick="SaveNewItem">Save</button>
-                    <button class="btn btn-outline-secondary btn-sm" @onclick="CancelAdd">Cancel</button>
-                </div>
-            </div>
-        }
     </div>
 </div>
 
 @code {
     private readonly Dictionary<object, decimal> originalValues = new();
+    private readonly Dictionary<object, string> originalNames = new();
     private readonly HashSet<object> editingRows = new();
+    private readonly HashSet<object> editingNameRows = new();
     private bool editingInterestRate;
     private decimal originalInterestRate;
     private bool isDirty;
@@ -176,6 +303,8 @@
     private AddItemType? activeAddType;
     private string newItemName = string.Empty;
     private decimal newItemValue;
+    private bool suppressAddBlurCancel;
+    private bool pendingFocusNewRow;
 
     protected override void OnInitialized()
     {
@@ -203,7 +332,9 @@
         portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
 
         editingRows.Clear();
+        editingNameRows.Clear();
         originalValues.Clear();
+        originalNames.Clear();
         editingInterestRate = false;
         activeAddType = null;
 
@@ -237,6 +368,11 @@
         return editingRows.Contains(item);
     }
 
+    private bool IsEditingName(object item)
+    {
+        return editingNameRows.Contains(item);
+    }
+
     private void StartEditing(object item)
     {
         if (editingRows.Contains(item))
@@ -263,6 +399,47 @@
         }
 
         originalValues.Remove(item);
+        UpdateDirtyState();
+    }
+
+    private void StartEditingName(object item)
+    {
+        if (editingNameRows.Contains(item))
+        {
+            return;
+        }
+
+        originalNames[item] = GetItemName(item);
+        editingNameRows.Add(item);
+    }
+
+    private void StopEditingName(object item, bool commitChanges)
+    {
+        if (!editingNameRows.Contains(item))
+        {
+            return;
+        }
+
+        editingNameRows.Remove(item);
+
+        if (!commitChanges && originalNames.TryGetValue(item, out var originalName))
+        {
+            SetItemName(item, originalName);
+        }
+        else
+        {
+            var updatedName = GetItemName(item).Trim();
+            if (string.IsNullOrWhiteSpace(updatedName) && originalNames.TryGetValue(item, out var fallbackName))
+            {
+                SetItemName(item, fallbackName);
+            }
+            else
+            {
+                SetItemName(item, updatedName);
+            }
+        }
+
+        originalNames.Remove(item);
         UpdateDirtyState();
     }
 
@@ -322,13 +499,27 @@
         }
     }
 
+    private async Task OnItemNameKeyDown(object item, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BlurActiveElementAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            StopEditingName(item, commitChanges: false);
+        }
+    }
+
     private async Task DeleteAccount(Account account)
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
         {
             portfolio.Accounts.Remove(account);
             editingRows.Remove(account);
+            editingNameRows.Remove(account);
             originalValues.Remove(account);
+            originalNames.Remove(account);
             UpdateDirtyState();
         }
     }
@@ -339,7 +530,9 @@
         {
             portfolio.Income.Remove(income);
             editingRows.Remove(income);
+            editingNameRows.Remove(income);
             originalValues.Remove(income);
+            originalNames.Remove(income);
             UpdateDirtyState();
         }
     }
@@ -350,16 +543,25 @@
         {
             portfolio.Expenses.Remove(expense);
             editingRows.Remove(expense);
+            editingNameRows.Remove(expense);
             originalValues.Remove(expense);
+            originalNames.Remove(expense);
             UpdateDirtyState();
         }
     }
 
     private void StartAdd(AddItemType itemType)
     {
+        if (activeAddType == itemType)
+        {
+            return;
+        }
+
         activeAddType = itemType;
         newItemName = string.Empty;
         newItemValue = 0;
+        suppressAddBlurCancel = false;
+        pendingFocusNewRow = true;
     }
 
     private void CancelAdd()
@@ -367,6 +569,8 @@
         activeAddType = null;
         newItemName = string.Empty;
         newItemValue = 0;
+        suppressAddBlurCancel = false;
+        pendingFocusNewRow = false;
     }
 
     private void SaveNewItem()
@@ -399,9 +603,31 @@
         UpdateDirtyState();
     }
 
-    private string GetValueLabel(AddItemType itemType)
+    private async Task OnAddInputBlur(FocusEventArgs _)
     {
-        return itemType == AddItemType.Account ? "Balance" : "Amount";
+        if (suppressAddBlurCancel)
+        {
+            suppressAddBlurCancel = false;
+            return;
+        }
+
+        CancelAdd();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void PrepareAddRowAction(MouseEventArgs _)
+    {
+        suppressAddBlurCancel = true;
+    }
+
+    private string GetAddRowId(AddItemType itemType)
+    {
+        return $"add-row-{itemType.ToString().ToLowerInvariant()}";
+    }
+
+    private string GetAddNameInputId(AddItemType itemType)
+    {
+        return $"add-name-{itemType.ToString().ToLowerInvariant()}";
     }
 
     private decimal GetItemValue(object item)
@@ -431,6 +657,33 @@
         }
     }
 
+    private string GetItemName(object item)
+    {
+        return item switch
+        {
+            Account account => account.Name,
+            IncomeItem income => income.Name,
+            ExpenseItem expense => expense.Name,
+            _ => string.Empty
+        };
+    }
+
+    private void SetItemName(object item, string value)
+    {
+        switch (item)
+        {
+            case Account account:
+                account.Name = value;
+                break;
+            case IncomeItem income:
+                income.Name = value;
+                break;
+            case ExpenseItem expense:
+                expense.Name = value;
+                break;
+        }
+    }
+
     private void UpdateDirtyState()
     {
         isDirty = SerializePortfolio() != baselineSnapshot;
@@ -444,6 +697,21 @@
     private ValueTask BlurActiveElementAsync()
     {
         return JS.InvokeVoidAsync("eval", "document.activeElement && document.activeElement.blur();");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!pendingFocusNewRow || activeAddType is null)
+        {
+            return;
+        }
+
+        pendingFocusNewRow = false;
+        var inputId = GetAddNameInputId(activeAddType.Value);
+        var rowId = GetAddRowId(activeAddType.Value);
+        await JS.InvokeVoidAsync(
+            "eval",
+            $"(function(){{var row=document.getElementById('{rowId}');if(row){{row.scrollIntoView({{block:'nearest'}});}}var input=document.getElementById('{inputId}');if(input){{input.focus();}}}})();");
     }
 
     private enum AddItemType
