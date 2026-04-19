@@ -3,6 +3,7 @@
 @using System.Text.Json
 @using FinPlanner.Data
 @using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.AspNetCore.Components.Web
 
 @inject Portfolio portfolio
 @inject IJSRuntime JS
@@ -12,132 +13,176 @@
 <h1>Financial Profile</h1>
 
 <div class="d-flex gap-2 align-items-center mb-3">
-    <InputFile OnChange="LoadFile" MaxFileSize="5000000" />
-    <button class="btn btn-primary" @onclick="Save">Save file</button>
+    <label for="profileFileInput" class="btn btn-secondary mb-0">Load profile</label>
+    <InputFile id="profileFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" />
+    <button class="btn btn-primary" @onclick="Save" disabled="@(!isDirty)">Download profile</button>
 </div>
 
-<table class="table table-borderless align-middle">
-    <tbody>
-        <tr>
-            <td>Securities annual interest rate</td>
-            <td>
-                @if (editingInterestRate)
+<div class="financial-profile-layout">
+    <div class="financial-profile-panel">
+        <h5>Parameters</h5>
+        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            <tbody>
+                <tr>
+                    <td class="item-name">Securities annual interest rate</td>
+                    <td class="item-value">
+                        @if (editingInterestRate)
+                        {
+                            <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
+                                         class="form-control form-control-sm"
+                                         @onblur="OnInterestRateBlur"
+                                         @onkeydown="OnInterestRateKeyDown"
+                                         @ref="interestRateInputRef" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="StartEditingInterestRate">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <hr />
+
+        <h5>Accounts</h5>
+        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            <tbody>
+                @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
-                                 class="form-control"
-                                 @onblur="StopEditingInterestRate" />
+                    <tr>
+                        <td class="item-name">@account.Name</td>
+                        <td class="item-value">
+                            @if (IsEditing(account))
+                            {
+                                <InputNumber @bind-Value="account.Balance"
+                                             class="form-control form-control-sm"
+                                             @onblur="() => StopEditing(account, commitChanges: true)"
+                                             @onkeydown="(e) => OnItemValueKeyDown(account, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(account)">@account.Balance.ToString("C")</span>
+                            }
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-danger p-0" @onclick="() => DeleteAccount(account)" aria-label="Delete @account.Name">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
                 }
-                else
+            </tbody>
+        </table>
+
+        <button class="btn btn-success btn-sm mt-2" @onclick="() => StartAdd(AddItemType.Account)">Add Account</button>
+
+        <hr />
+
+        <h5>Income</h5>
+        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            <tbody>
+                @foreach (var income in portfolio.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    <span>@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                    <tr>
+                        <td class="item-name">@income.Name</td>
+                        <td class="item-value">
+                            @if (IsEditing(income))
+                            {
+                                <InputNumber @bind-Value="income.Amount"
+                                             class="form-control form-control-sm"
+                                             @onblur="() => StopEditing(income, commitChanges: true)"
+                                             @onkeydown="(e) => OnItemValueKeyDown(income, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(income)">@income.Amount.ToString("C")</span>
+                            }
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-danger p-0" @onclick="() => DeleteIncome(income)" aria-label="Delete @income.Name">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
                 }
-            </td>
-            <td>
-                <button class="btn btn-link p-0" @onclick="StartEditingInterestRate" aria-label="Edit securities annual interest rate">
-                    <i class="bi bi-pencil"></i>
-                </button>
-            </td>
-            <td></td>
-        </tr>
+            </tbody>
+        </table>
 
-        @foreach (var account in portfolio.Accounts)
+        <button class="btn btn-success btn-sm mt-2" @onclick="() => StartAdd(AddItemType.Income)">Add Income</button>
+
+        <hr />
+
+        <h5>Expenses</h5>
+        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            <tbody>
+                @foreach (var expense in portfolio.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <tr>
+                        <td class="item-name">@expense.Name</td>
+                        <td class="item-value">
+                            @if (IsEditing(expense))
+                            {
+                                <InputNumber @bind-Value="expense.Amount"
+                                             class="form-control form-control-sm"
+                                             @onblur="() => StopEditing(expense, commitChanges: true)"
+                                             @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
+                            }
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <button class="btn btn-success btn-sm mt-2" @onclick="() => StartAdd(AddItemType.Expense)">Add Expense</button>
+
+        @if (activeAddType is not null)
         {
-            <tr>
-                <td>@account.Name</td>
-                <td>
-                    @if (IsEditing(account))
-                    {
-                        <InputNumber @bind-Value="account.Balance"
-                                     class="form-control"
-                                     @onblur="() => StopEditing(account)" />
-                    }
-                    else
-                    {
-                        <span>@account.Balance.ToString("C")</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-link p-0" @onclick="() => StartEditing(account)" aria-label="Edit @account.Name">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                </td>
-                <td>
-                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteAccount(account)" aria-label="Delete @account.Name">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
+            <div class="card mt-3 p-3">
+                <h6 class="mb-3">Add @activeAddType</h6>
+                <div class="mb-2">
+                    <label class="form-label mb-1">Name</label>
+                    <InputText @bind-Value="newItemName" class="form-control form-control-sm" />
+                </div>
+                <div class="mb-2">
+                    <label class="form-label mb-1">@GetValueLabel(activeAddType.Value)</label>
+                    <InputNumber @bind-Value="newItemValue" class="form-control form-control-sm" />
+                </div>
+                <div class="d-flex gap-2 mt-2">
+                    <button class="btn btn-primary btn-sm" @onclick="SaveNewItem">Save</button>
+                    <button class="btn btn-outline-secondary btn-sm" @onclick="CancelAdd">Cancel</button>
+                </div>
+            </div>
         }
-
-        @foreach (var income in portfolio.Income)
-        {
-            <tr>
-                <td>@income.Name</td>
-                <td>
-                    @if (IsEditing(income))
-                    {
-                        <InputNumber @bind-Value="income.Amount"
-                                     class="form-control"
-                                     @onblur="() => StopEditing(income)" />
-                    }
-                    else
-                    {
-                        <span>@income.Amount.ToString("C")</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-link p-0" @onclick="() => StartEditing(income)" aria-label="Edit @income.Name">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                </td>
-                <td>
-                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteIncome(income)" aria-label="Delete @income.Name">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        }
-
-        @foreach (var expense in portfolio.Expenses)
-        {
-            <tr>
-                <td>@expense.Name</td>
-                <td>
-                    @if (IsEditing(expense))
-                    {
-                        <InputNumber @bind-Value="expense.Amount"
-                                     class="form-control"
-                                     @onblur="() => StopEditing(expense)" />
-                    }
-                    else
-                    {
-                        <span>@expense.Amount.ToString("C")</span>
-                    }
-                </td>
-                <td>
-                    <button class="btn btn-link p-0" @onclick="() => StartEditing(expense)" aria-label="Edit @expense.Name">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                </td>
-                <td>
-                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
-
-<div class="d-flex gap-2 mt-3">
-    <button class="btn btn-success" @onclick="AddAccount">Add Account</button>
-    <button class="btn btn-success" @onclick="AddIncome">Add Income</button>
-    <button class="btn btn-success" @onclick="AddExpense">Add Expense</button>
+    </div>
 </div>
 
 @code {
-    private readonly Dictionary<object, bool> editing = new();
+    private readonly Dictionary<object, decimal> originalValues = new();
+    private readonly HashSet<object> editingRows = new();
     private bool editingInterestRate;
+    private decimal originalInterestRate;
+    private bool isDirty;
+    private string baselineSnapshot = string.Empty;
+    private ElementReference interestRateInputRef;
+
+    private AddItemType? activeAddType;
+    private string newItemName = string.Empty;
+    private decimal newItemValue;
+
+    protected override void OnInitialized()
+    {
+        baselineSnapshot = SerializePortfolio();
+    }
 
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
@@ -159,14 +204,21 @@
         portfolio.Year = data.Year;
         portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
 
-        editing.Clear();
+        editingRows.Clear();
+        originalValues.Clear();
         editingInterestRate = false;
+        activeAddType = null;
+
+        baselineSnapshot = SerializePortfolio();
+        UpdateDirtyState();
     }
 
     private async Task Save()
     {
-        var json = JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = true });
+        var json = SerializePortfolio(pretty: true);
         await SaveFileAsync("FinPlanner.json", json);
+        baselineSnapshot = SerializePortfolio();
+        UpdateDirtyState();
     }
 
     private async Task SaveFileAsync(string filename, string json)
@@ -184,27 +236,94 @@
 
     private bool IsEditing(object item)
     {
-        return editing.TryGetValue(item, out var value) && value;
+        return editingRows.Contains(item);
     }
 
     private void StartEditing(object item)
     {
-        editing[item] = true;
+        if (editingRows.Contains(item))
+        {
+            return;
+        }
+
+        originalValues[item] = GetItemValue(item);
+        editingRows.Add(item);
     }
 
-    private void StopEditing(object item)
+    private void StopEditing(object item, bool commitChanges)
     {
-        editing[item] = false;
+        if (!editingRows.Contains(item))
+        {
+            return;
+        }
+
+        editingRows.Remove(item);
+
+        if (!commitChanges && originalValues.TryGetValue(item, out var originalValue))
+        {
+            SetItemValue(item, originalValue);
+        }
+
+        originalValues.Remove(item);
+        UpdateDirtyState();
     }
 
-    private void StartEditingInterestRate()
+    private async Task StartEditingInterestRate()
     {
+        if (editingInterestRate)
+        {
+            return;
+        }
+
+        originalInterestRate = portfolio.SecuritiesAnnualInterestRate;
         editingInterestRate = true;
+        await Task.Yield();
+        await interestRateInputRef.FocusAsync();
     }
 
-    private void StopEditingInterestRate(FocusEventArgs _)
+    private void StopEditingInterestRate(bool commitChanges)
     {
+        if (!editingInterestRate)
+        {
+            return;
+        }
+
+        if (!commitChanges)
+        {
+            portfolio.SecuritiesAnnualInterestRate = originalInterestRate;
+        }
+
         editingInterestRate = false;
+        UpdateDirtyState();
+    }
+
+    private void OnInterestRateBlur(FocusEventArgs _)
+    {
+        StopEditingInterestRate(commitChanges: true);
+    }
+
+    private void OnInterestRateKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            StopEditingInterestRate(commitChanges: true);
+        }
+        else if (e.Key == "Escape")
+        {
+            StopEditingInterestRate(commitChanges: false);
+        }
+    }
+
+    private void OnItemValueKeyDown(object item, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            StopEditing(item, commitChanges: true);
+        }
+        else if (e.Key == "Escape")
+        {
+            StopEditing(item, commitChanges: false);
+        }
     }
 
     private async Task DeleteAccount(Account account)
@@ -212,7 +331,9 @@
         if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
         {
             portfolio.Accounts.Remove(account);
-            editing.Remove(account);
+            editingRows.Remove(account);
+            originalValues.Remove(account);
+            UpdateDirtyState();
         }
     }
 
@@ -221,7 +342,9 @@
         if (await JS.InvokeAsync<bool>("confirm", $"Delete income '{income.Name}'?"))
         {
             portfolio.Income.Remove(income);
-            editing.Remove(income);
+            editingRows.Remove(income);
+            originalValues.Remove(income);
+            UpdateDirtyState();
         }
     }
 
@@ -230,82 +353,102 @@
         if (await JS.InvokeAsync<bool>("confirm", $"Delete expense '{expense.Name}'?"))
         {
             portfolio.Expenses.Remove(expense);
-            editing.Remove(expense);
+            editingRows.Remove(expense);
+            originalValues.Remove(expense);
+            UpdateDirtyState();
         }
     }
 
-    private async Task AddAccount()
+    private void StartAdd(AddItemType itemType)
     {
-        var name = await PromptForName("account");
-        if (name is null)
-        {
-            return;
-        }
-
-        var value = await PromptForValue("account balance");
-        if (value is null)
-        {
-            return;
-        }
-
-        portfolio.AddAccount(name, value.Value);
+        activeAddType = itemType;
+        newItemName = string.Empty;
+        newItemValue = 0;
     }
 
-    private async Task AddIncome()
+    private void CancelAdd()
     {
-        var name = await PromptForName("income");
-        if (name is null)
-        {
-            return;
-        }
-
-        var value = await PromptForValue("income amount");
-        if (value is null)
-        {
-            return;
-        }
-
-        portfolio.AddIncome(name, value.Value);
+        activeAddType = null;
+        newItemName = string.Empty;
+        newItemValue = 0;
     }
 
-    private async Task AddExpense()
+    private void SaveNewItem()
     {
-        var name = await PromptForName("expense");
-        if (name is null)
+        if (activeAddType is null)
         {
             return;
         }
 
-        var value = await PromptForValue("expense amount");
-        if (value is null)
-        {
-            return;
-        }
-
-        portfolio.AddExpense(name, value.Value);
-    }
-
-    private async Task<string?> PromptForName(string itemType)
-    {
-        var name = await JS.InvokeAsync<string?>("prompt", $"Enter {itemType} name:");
-
+        var name = newItemName.Trim();
         if (string.IsNullOrWhiteSpace(name))
         {
-            return null;
+            return;
         }
 
-        return name.Trim();
+        switch (activeAddType)
+        {
+            case AddItemType.Account:
+                portfolio.AddAccount(name, newItemValue);
+                break;
+            case AddItemType.Income:
+                portfolio.AddIncome(name, newItemValue);
+                break;
+            case AddItemType.Expense:
+                portfolio.AddExpense(name, newItemValue);
+                break;
+        }
+
+        CancelAdd();
+        UpdateDirtyState();
     }
 
-    private async Task<decimal?> PromptForValue(string itemType)
+    private string GetValueLabel(AddItemType itemType)
     {
-        var valueText = await JS.InvokeAsync<string?>("prompt", $"Enter {itemType}:", "0");
+        return itemType == AddItemType.Account ? "Balance" : "Amount";
+    }
 
-        if (string.IsNullOrWhiteSpace(valueText))
+    private decimal GetItemValue(object item)
+    {
+        return item switch
         {
-            return null;
-        }
+            Account account => account.Balance,
+            IncomeItem income => income.Amount,
+            ExpenseItem expense => expense.Amount,
+            _ => 0m
+        };
+    }
 
-        return decimal.TryParse(valueText, out var value) ? value : 0m;
+    private void SetItemValue(object item, decimal value)
+    {
+        switch (item)
+        {
+            case Account account:
+                account.Balance = value;
+                break;
+            case IncomeItem income:
+                income.Amount = value;
+                break;
+            case ExpenseItem expense:
+                expense.Amount = value;
+                break;
+        }
+    }
+
+    private void UpdateDirtyState()
+    {
+        isDirty = SerializePortfolio() != baselineSnapshot;
+    }
+
+    private string SerializePortfolio(bool pretty = false)
+    {
+        return JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = pretty });
+    }
+
+    private enum AddItemType
+    {
+        Account,
+        Income,
+        Expense
     }
 }
