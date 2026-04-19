@@ -31,7 +31,7 @@
                             <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate" @bind-Value:event="oninput"
                                          class="form-control form-control-sm"
                                          @onblur="OnInterestRateBlur"
-                                         @onkeydown="OnInterestRateKeyDown" />
+                                         @onkeyup="OnInterestRateKeyUp" />
                         }
                         else
                         {
@@ -57,7 +57,7 @@
                                 <InputNumber @bind-Value="account.Balance" @bind-Value:event="oninput"
                                              class="form-control form-control-sm"
                                              @onblur="() => StopEditing(account, commitChanges: true)"
-                                             @onkeydown="(e) => OnItemValueKeyDown(account, e)" />
+                                             @onkeyup="(e) => OnItemValueKeyUp(account, e)" />
                             }
                             else
                             {
@@ -91,7 +91,7 @@
                                 <InputNumber @bind-Value="income.Amount" @bind-Value:event="oninput"
                                              class="form-control form-control-sm"
                                              @onblur="() => StopEditing(income, commitChanges: true)"
-                                             @onkeydown="(e) => OnItemValueKeyDown(income, e)" />
+                                             @onkeyup="(e) => OnItemValueKeyUp(income, e)" />
                             }
                             else
                             {
@@ -125,7 +125,7 @@
                                 <InputNumber @bind-Value="expense.Amount" @bind-Value:event="oninput"
                                              class="form-control form-control-sm"
                                              @onblur="() => StopEditing(expense, commitChanges: true)"
-                                             @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
+                                             @onkeyup="(e) => OnItemValueKeyUp(expense, e)" />
                             }
                             else
                             {
@@ -298,10 +298,11 @@
         StopEditingInterestRate(commitChanges: true);
     }
 
-    private void OnInterestRateKeyDown(KeyboardEventArgs e)
+    private async Task OnInterestRateKeyUp(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
+            await Task.Yield();
             StopEditingInterestRate(commitChanges: true);
         }
         else if (e.Key == "Escape")
@@ -310,10 +311,11 @@
         }
     }
 
-    private void OnItemValueKeyDown(object item, KeyboardEventArgs e)
+    private async Task OnItemValueKeyUp(object item, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
+            await Task.Yield();
             StopEditing(item, commitChanges: true);
         }
         else if (e.Key == "Escape")
