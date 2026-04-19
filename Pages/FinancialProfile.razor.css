@@ -1,0 +1,42 @@
+.financial-profile-layout {
+    display: flex;
+    justify-content: flex-start;
+}
+
+.financial-profile-panel {
+    width: min(100%, 48rem);
+}
+
+.compact-table td {
+    padding: 0.2rem 0.4rem;
+    vertical-align: middle;
+}
+
+.item-name {
+    width: 60%;
+}
+
+.item-value {
+    width: 30%;
+}
+
+.item-actions {
+    width: 10%;
+    text-align: right;
+}
+
+.clickable-value {
+    display: inline-block;
+    min-width: 8rem;
+    cursor: pointer;
+}
+
+@media (max-width: 768px) {
+    .financial-profile-layout {
+        justify-content: stretch;
+    }
+
+    .financial-profile-panel {
+        width: 100%;
+    }
+}
