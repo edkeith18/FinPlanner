@@ -21,7 +21,7 @@
     <div class="financial-profile-row" role="row">
         <div class="financial-profile-item" role="cell">Securities annual interest rate</div>
         <div class="financial-profile-value" role="cell">
-            @if (editingKey == InterestRateKey)
+            @if (IsEditingInterestRate)
             {
                 <InputNumber @bind-Value="editValue"
                              @bind-Value:event="oninput"
@@ -37,7 +37,7 @@
             <button type="button"
                     class="btn btn-link p-0"
                     aria-label="Edit securities annual interest rate"
-                    @onclick="@(() => StartEditing(InterestRateKey, portfolio.SecuritiesAnnualInterestRate))">
+                    @onclick="@(() => StartEditing(InterestRateEditTarget, portfolio.SecuritiesAnnualInterestRate))">
                 <i class="bi bi-pencil"></i>
             </button>
         </div>
@@ -49,7 +49,7 @@
         <div class="financial-profile-row" role="row">
             <div class="financial-profile-item" role="cell">@account.Name</div>
             <div class="financial-profile-value" role="cell">
-                @if (editingKey == GetAccountKey(account))
+                @if (ReferenceEquals(editingTarget, account))
                 {
                     <InputNumber @bind-Value="editValue"
                                  @bind-Value:event="oninput"
@@ -65,7 +65,7 @@
                 <button type="button"
                         class="btn btn-link p-0"
                         aria-label="@($"Edit {account.Name}")"
-                        @onclick="@(() => StartEditing(GetAccountKey(account), account.Balance))">
+                        @onclick="@(() => StartEditing(account, account.Balance))">
                     <i class="bi bi-pencil"></i>
                 </button>
             </div>
@@ -85,7 +85,7 @@
         <div class="financial-profile-row" role="row">
             <div class="financial-profile-item" role="cell">@income.Name</div>
             <div class="financial-profile-value" role="cell">
-                @if (editingKey == GetIncomeKey(income))
+                @if (ReferenceEquals(editingTarget, income))
                 {
                     <InputNumber @bind-Value="editValue"
                                  @bind-Value:event="oninput"
@@ -101,7 +101,7 @@
                 <button type="button"
                         class="btn btn-link p-0"
                         aria-label="@($"Edit {income.Name}")"
-                        @onclick="@(() => StartEditing(GetIncomeKey(income), income.Amount))">
+                        @onclick="@(() => StartEditing(income, income.Amount))">
                     <i class="bi bi-pencil"></i>
                 </button>
             </div>
@@ -121,7 +121,7 @@
         <div class="financial-profile-row" role="row">
             <div class="financial-profile-item" role="cell">@expense.Name</div>
             <div class="financial-profile-value" role="cell">
-                @if (editingKey == GetExpenseKey(expense))
+                @if (ReferenceEquals(editingTarget, expense))
                 {
                     <InputNumber @bind-Value="editValue"
                                  @bind-Value:event="oninput"
@@ -137,7 +137,7 @@
                 <button type="button"
                         class="btn btn-link p-0"
                         aria-label="@($"Edit {expense.Name}")"
-                        @onclick="@(() => StartEditing(GetExpenseKey(expense), expense.Amount))">
+                        @onclick="@(() => StartEditing(expense, expense.Amount))">
                     <i class="bi bi-pencil"></i>
                 </button>
             </div>
@@ -180,13 +180,15 @@
 }
 
 @code {
-    private const string InterestRateKey = "interest-rate";
+    private static readonly object InterestRateEditTarget = new();
 
-    private string? editingKey;
+    private object? editingTarget;
     private decimal editValue;
     private ProfileItemType? addItemType;
     private string newItemName = string.Empty;
     private decimal newItemValue;
+
+    private bool IsEditingInterestRate => ReferenceEquals(editingTarget, InterestRateEditTarget);
 
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
@@ -224,15 +226,15 @@
         ");
     }
 
-    private void StartEditing(string key, decimal currentValue)
+    private void StartEditing(object target, decimal currentValue)
     {
-        editingKey = key;
+        editingTarget = target;
         editValue = currentValue;
     }
 
     private void CancelEdit()
     {
-        editingKey = null;
+        editingTarget = null;
         editValue = 0;
     }
 
@@ -336,13 +338,6 @@
     private static string FormatCurrency(decimal value) => value.ToString("C", CultureInfo.CurrentCulture);
 
     private static string FormatInterestRate(decimal value) => $"{value:0.##}%";
-
-    private static string GetAccountKey(Account account) => $"account:{account.Name}";
-
-    private static string GetIncomeKey(IncomeItem income) => $"income:{income.Name}";
-
-    private static string GetExpenseKey(ExpenseItem expense) => $"expense:{expense.Name}";
-
     private static string GetValueLabel(ProfileItemType itemType) => itemType switch
     {
         ProfileItemType.Account => "Balance",
