@@ -1,4 +1,4 @@
-﻿@page "/account/new"
+@page "/account/new"
 @page "/account/{name}"
 
 @using FinPlanner.Data
@@ -46,12 +46,10 @@ else
     {
         if (IsNew)
         {
-            // Create mode
             account = new Account { Name = "", Balance = 0 };
         }
         else
         {
-            // Edit mode
             account = portfolio.Accounts.FirstOrDefault(a => a.Name == Name);
         }
     }
@@ -66,11 +64,11 @@ else
             portfolio.AddAccount(account.Name, account.Balance);
         }
 
-        Nav.NavigateTo("accounts");
+        Nav.NavigateTo("financial-profile");
     }
 
     private void Back()
     {
-        Nav.NavigateTo("accounts");
+        Nav.NavigateTo("financial-profile");
     }
 }

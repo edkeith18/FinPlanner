@@ -1,0 +1,311 @@
+@page "/financial-profile"
+
+@using System.Text.Json
+@using FinPlanner.Data
+@using Microsoft.AspNetCore.Components.Forms
+
+@inject Portfolio portfolio
+@inject IJSRuntime JS
+
+<PageTitle>Financial Profile</PageTitle>
+
+<h1>Financial Profile</h1>
+
+<div class="d-flex gap-2 align-items-center mb-3">
+    <InputFile OnChange="LoadFile" MaxFileSize="5000000" />
+    <button class="btn btn-primary" @onclick="Save">Save file</button>
+</div>
+
+<table class="table table-borderless align-middle">
+    <tbody>
+        <tr>
+            <td>Securities annual interest rate</td>
+            <td>
+                @if (editingInterestRate)
+                {
+                    <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
+                                 class="form-control"
+                                 @onblur="StopEditingInterestRate" />
+                }
+                else
+                {
+                    <span>@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                }
+            </td>
+            <td>
+                <button class="btn btn-link p-0" @onclick="StartEditingInterestRate" aria-label="Edit securities annual interest rate">
+                    <i class="bi bi-pencil"></i>
+                </button>
+            </td>
+            <td></td>
+        </tr>
+
+        @foreach (var account in portfolio.Accounts)
+        {
+            <tr>
+                <td>@account.Name</td>
+                <td>
+                    @if (IsEditing(account))
+                    {
+                        <InputNumber @bind-Value="account.Balance"
+                                     class="form-control"
+                                     @onblur="() => StopEditing(account)" />
+                    }
+                    else
+                    {
+                        <span>@account.Balance.ToString("C")</span>
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-link p-0" @onclick="() => StartEditing(account)" aria-label="Edit @account.Name">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteAccount(account)" aria-label="Delete @account.Name">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+
+        @foreach (var income in portfolio.Income)
+        {
+            <tr>
+                <td>@income.Name</td>
+                <td>
+                    @if (IsEditing(income))
+                    {
+                        <InputNumber @bind-Value="income.Amount"
+                                     class="form-control"
+                                     @onblur="() => StopEditing(income)" />
+                    }
+                    else
+                    {
+                        <span>@income.Amount.ToString("C")</span>
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-link p-0" @onclick="() => StartEditing(income)" aria-label="Edit @income.Name">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteIncome(income)" aria-label="Delete @income.Name">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+
+        @foreach (var expense in portfolio.Expenses)
+        {
+            <tr>
+                <td>@expense.Name</td>
+                <td>
+                    @if (IsEditing(expense))
+                    {
+                        <InputNumber @bind-Value="expense.Amount"
+                                     class="form-control"
+                                     @onblur="() => StopEditing(expense)" />
+                    }
+                    else
+                    {
+                        <span>@expense.Amount.ToString("C")</span>
+                    }
+                </td>
+                <td>
+                    <button class="btn btn-link p-0" @onclick="() => StartEditing(expense)" aria-label="Edit @expense.Name">
+                        <i class="bi bi-pencil"></i>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<div class="d-flex gap-2 mt-3">
+    <button class="btn btn-success" @onclick="AddAccount">Add Account</button>
+    <button class="btn btn-success" @onclick="AddIncome">Add Income</button>
+    <button class="btn btn-success" @onclick="AddExpense">Add Expense</button>
+</div>
+
+@code {
+    private readonly Dictionary<object, bool> editing = new();
+    private bool editingInterestRate;
+
+    private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5_000_000);
+        using var reader = new StreamReader(stream, System.Text.Encoding.UTF8, detectEncodingFromByteOrderMarks: true);
+
+        string json = await reader.ReadToEndAsync();
+
+        var data = JsonSerializer.Deserialize<Portfolio>(json);
+
+        if (data is null)
+            return;
+
+        portfolio.Accounts = data.Accounts ?? new List<Account>();
+        portfolio.Income = data.Income ?? new List<IncomeItem>();
+        portfolio.Expenses = data.Expenses ?? new List<ExpenseItem>();
+        portfolio.Year = data.Year;
+        portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
+
+        editing.Clear();
+        editingInterestRate = false;
+    }
+
+    private async Task Save()
+    {
+        var json = JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = true });
+        await SaveFileAsync("FinPlanner.json", json);
+    }
+
+    private async Task SaveFileAsync(string filename, string json)
+    {
+        var base64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(json));
+        var url = $"data:application/json;base64,{base64}";
+
+        await JS.InvokeVoidAsync("eval", $@"
+            var a = document.createElement('a');
+            a.href = '{url}';
+            a.download = '{filename}';
+            a.click();
+        ");
+    }
+
+    private bool IsEditing(object item)
+    {
+        return editing.TryGetValue(item, out var value) && value;
+    }
+
+    private void StartEditing(object item)
+    {
+        editing[item] = true;
+    }
+
+    private void StopEditing(object item)
+    {
+        editing[item] = false;
+    }
+
+    private void StartEditingInterestRate()
+    {
+        editingInterestRate = true;
+    }
+
+    private void StopEditingInterestRate(FocusEventArgs _)
+    {
+        editingInterestRate = false;
+    }
+
+    private async Task DeleteAccount(Account account)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
+        {
+            portfolio.Accounts.Remove(account);
+            editing.Remove(account);
+        }
+    }
+
+    private async Task DeleteIncome(IncomeItem income)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete income '{income.Name}'?"))
+        {
+            portfolio.Income.Remove(income);
+            editing.Remove(income);
+        }
+    }
+
+    private async Task DeleteExpense(ExpenseItem expense)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete expense '{expense.Name}'?"))
+        {
+            portfolio.Expenses.Remove(expense);
+            editing.Remove(expense);
+        }
+    }
+
+    private async Task AddAccount()
+    {
+        var name = await PromptForName("account");
+        if (name is null)
+        {
+            return;
+        }
+
+        var value = await PromptForValue("account balance");
+        if (value is null)
+        {
+            return;
+        }
+
+        portfolio.AddAccount(name, value.Value);
+    }
+
+    private async Task AddIncome()
+    {
+        var name = await PromptForName("income");
+        if (name is null)
+        {
+            return;
+        }
+
+        var value = await PromptForValue("income amount");
+        if (value is null)
+        {
+            return;
+        }
+
+        portfolio.AddIncome(name, value.Value);
+    }
+
+    private async Task AddExpense()
+    {
+        var name = await PromptForName("expense");
+        if (name is null)
+        {
+            return;
+        }
+
+        var value = await PromptForValue("expense amount");
+        if (value is null)
+        {
+            return;
+        }
+
+        portfolio.AddExpense(name, value.Value);
+    }
+
+    private async Task<string?> PromptForName(string itemType)
+    {
+        var name = await JS.InvokeAsync<string?>("prompt", $"Enter {itemType} name:");
+
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            return null;
+        }
+
+        return name.Trim();
+    }
+
+    private async Task<decimal?> PromptForValue(string itemType)
+    {
+        var valueText = await JS.InvokeAsync<string?>("prompt", $"Enter {itemType}:", "0");
+
+        if (string.IsNullOrWhiteSpace(valueText))
+        {
+            return null;
+        }
+
+        return decimal.TryParse(valueText, out var value) ? value : 0m;
+    }
+}
