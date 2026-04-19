@@ -5,7 +5,11 @@
     <title>FinPlanner</title>
     <script>
         sessionStorage.setItem('redirect', window.location.pathname + window.location.search + window.location.hash);
-        window.location.replace('/');
+
+        const segments = window.location.pathname.split('/').filter(Boolean);
+        const appBasePath = segments.length > 0 ? `/${segments[0]}/` : '/';
+
+        window.location.replace(appBasePath);
     </script>
 </head>
 <body></body>
