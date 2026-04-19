@@ -31,8 +31,7 @@
                             <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
                                          class="form-control form-control-sm"
                                          @onblur="OnInterestRateBlur"
-                                         @onkeydown="OnInterestRateKeyDown"
-                                         @ref="interestRateInputRef" />
+                                         @onkeydown="OnInterestRateKeyDown" />
                         }
                         else
                         {
@@ -173,7 +172,6 @@
     private decimal originalInterestRate;
     private bool isDirty;
     private string baselineSnapshot = string.Empty;
-    private ElementReference interestRateInputRef;
 
     private AddItemType? activeAddType;
     private string newItemName = string.Empty;
@@ -268,7 +266,7 @@
         UpdateDirtyState();
     }
 
-    private async Task StartEditingInterestRate()
+    private void StartEditingInterestRate()
     {
         if (editingInterestRate)
         {
@@ -277,8 +275,6 @@
 
         originalInterestRate = portfolio.SecuritiesAnnualInterestRate;
         editingInterestRate = true;
-        await Task.Yield();
-        await interestRateInputRef.FocusAsync();
     }
 
     private void StopEditingInterestRate(bool commitChanges)
