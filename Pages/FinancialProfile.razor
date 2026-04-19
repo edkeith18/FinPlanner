@@ -28,7 +28,7 @@
                     <td class="item-value">
                         @if (editingInterestRate)
                         {
-                            <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
+                            <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate" @bind-Value:event="oninput"
                                          class="form-control form-control-sm"
                                          @onblur="OnInterestRateBlur"
                                          @onkeydown="OnInterestRateKeyDown" />
@@ -54,7 +54,7 @@
                         <td class="item-value">
                             @if (IsEditing(account))
                             {
-                                <InputNumber @bind-Value="account.Balance"
+                                <InputNumber @bind-Value="account.Balance" @bind-Value:event="oninput"
                                              class="form-control form-control-sm"
                                              @onblur="() => StopEditing(account, commitChanges: true)"
                                              @onkeydown="(e) => OnItemValueKeyDown(account, e)" />
@@ -88,7 +88,7 @@
                         <td class="item-value">
                             @if (IsEditing(income))
                             {
-                                <InputNumber @bind-Value="income.Amount"
+                                <InputNumber @bind-Value="income.Amount" @bind-Value:event="oninput"
                                              class="form-control form-control-sm"
                                              @onblur="() => StopEditing(income, commitChanges: true)"
                                              @onkeydown="(e) => OnItemValueKeyDown(income, e)" />
@@ -122,7 +122,7 @@
                         <td class="item-value">
                             @if (IsEditing(expense))
                             {
-                                <InputNumber @bind-Value="expense.Amount"
+                                <InputNumber @bind-Value="expense.Amount" @bind-Value:event="oninput"
                                              class="form-control form-control-sm"
                                              @onblur="() => StopEditing(expense, commitChanges: true)"
                                              @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
@@ -154,7 +154,7 @@
                 </div>
                 <div class="mb-2">
                     <label class="form-label mb-1">@GetValueLabel(activeAddType.Value)</label>
-                    <InputNumber @bind-Value="newItemValue" class="form-control form-control-sm" />
+                    <InputNumber @bind-Value="newItemValue" @bind-Value:event="oninput" class="form-control form-control-sm" />
                 </div>
                 <div class="d-flex gap-2 mt-2">
                     <button class="btn btn-primary btn-sm" @onclick="SaveNewItem">Save</button>
