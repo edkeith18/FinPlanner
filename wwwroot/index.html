@@ -29,6 +29,15 @@
         <a href="." class="reload">Reload</a>
         <span class="dismiss">🗙</span>
     </div>
+    <script>
+        (function () {
+            const redirectUrl = sessionStorage.getItem('redirect');
+            if (redirectUrl) {
+                sessionStorage.removeItem('redirect');
+                history.replaceState(null, '', redirectUrl);
+            }
+        })();
+    </script>
     <script src="_framework/blazor.webassembly#[.{fingerprint}].js"></script>
 </body>
 
