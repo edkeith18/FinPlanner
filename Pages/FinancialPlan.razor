@@ -1,0 +1,60 @@
+@page "/financial-plan"
+
+@using FinPlanner.Data
+
+@inject Portfolio portfolio
+
+<PageTitle>Financial Plan</PageTitle>
+
+<h1>Financial Plan</h1>
+
+@if (portfolio.CurrentAge > portfolio.LifeExpectancy)
+{
+    <p class="text-muted mb-3">No plan rows to display because Current age is greater than Life expectancy.</p>
+}
+else
+{
+    <table class="table table-bordered table-sm align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Year</th>
+                <th scope="col">Expenses</th>
+                <th scope="col">Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in BuildPlanRows())
+            {
+                <tr>
+                    <td>@row.Year</td>
+                    <td>@row.Expenses.ToString("C")</td>
+                    <td>@row.Balance.ToString("C")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private IEnumerable<FinancialPlanRow> BuildPlanRows()
+    {
+        var rows = new List<FinancialPlanRow>();
+
+        var inflationRateDecimal = portfolio.AnnualInflationRate / 100m;
+        var securitiesRateDecimal = portfolio.SecuritiesAnnualInterestRate / 100m;
+        var currentExpenses = portfolio.AnnualExpenses;
+        var currentBalance = portfolio.Accounts.Sum(account => account.Balance) - currentExpenses;
+
+        for (var year = portfolio.CurrentAge; year <= portfolio.LifeExpectancy; year++)
+        {
+            rows.Add(new FinancialPlanRow(year, currentExpenses, currentBalance));
+
+            currentExpenses *= 1m + inflationRateDecimal;
+            currentBalance = (currentBalance * (1m + securitiesRateDecimal)) - currentExpenses;
+        }
+
+        return rows;
+    }
+
+    private sealed record FinancialPlanRow(int Year, decimal Expenses, decimal Balance);
+}
