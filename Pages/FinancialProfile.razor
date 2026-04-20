@@ -803,10 +803,10 @@
         switch (parameter)
         {
             case ParameterField.CurrentAge:
-                portfolio.CurrentAge = value;
+                portfolio.CurrentAge = decimal.ToInt32(decimal.Truncate(value));
                 break;
             case ParameterField.LifeExpectancy:
-                portfolio.LifeExpectancy = value;
+                portfolio.LifeExpectancy = decimal.ToInt32(decimal.Truncate(value));
                 break;
             case ParameterField.AnnualExpenses:
                 portfolio.AnnualExpenses = value;

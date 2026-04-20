@@ -8,8 +8,8 @@ public class Portfolio
     public decimal Year { get; set; } = 0;
     public decimal SecuritiesAnnualInterestRate { get; set; } = 0.0m;
     public decimal AnnualInflationRate { get; set; } = 0.0m;
-    public decimal CurrentAge { get; set; } = 0.0m;
-    public decimal LifeExpectancy { get; set; } = 0.0m;
+    public int CurrentAge { get; set; } = 0;
+    public int LifeExpectancy { get; set; } = 0;
     public decimal AnnualExpenses { get; set; } = 0.0m;
     public decimal BondsAnnualRateOfReturn { get; set; } = 0.0m;
 
