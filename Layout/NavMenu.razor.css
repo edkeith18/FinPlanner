@@ -102,3 +102,43 @@
         overflow-y: auto;
     }
 }
+
+.nav-shell {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+}
+
+.quick-plan-panel {
+    margin: 10px;
+    margin-top: auto;
+    border-radius: 12px;
+    width: calc(100% - 20px);
+    aspect-ratio: 1 / 1;
+    background-color: rgba(255, 255, 255, 0.14);
+    color: #f4f6ff;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 0.75rem;
+    text-align: center;
+}
+
+.quick-plan-title {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.quick-plan-label {
+    margin: 0.75rem 0 0;
+    font-size: 0.8rem;
+    opacity: 0.9;
+}
+
+.quick-plan-value {
+    margin: 0.4rem 0 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
