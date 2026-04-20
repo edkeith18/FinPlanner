@@ -31,6 +31,7 @@
                         {
                             <InputNumber @bind-Value="portfolio.CurrentAge"
                                          class="form-control form-control-sm"
+                                         @attributes="wholeNumberInputAttributes"
                                          @onblur="() => OnParameterBlur(ParameterField.CurrentAge)"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)" />
                         }
@@ -47,6 +48,7 @@
                         {
                             <InputNumber @bind-Value="portfolio.LifeExpectancy"
                                          class="form-control form-control-sm"
+                                         @attributes="wholeNumberInputAttributes"
                                          @onblur="() => OnParameterBlur(ParameterField.LifeExpectancy)"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.LifeExpectancy, e)" />
                         }
@@ -380,6 +382,14 @@
 @code {
     private readonly Dictionary<object, decimal> originalValues = new();
     private readonly Dictionary<object, string> originalNames = new();
+    private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
+    {
+        ["step"] = "1",
+        ["min"] = "0",
+        ["inputmode"] = "numeric",
+        ["pattern"] = "[0-9]*",
+        ["onkeydown"] = "return ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End','Enter','Escape'].includes(event.key) || /^[0-9]$/.test(event.key);"
+    };
     private readonly HashSet<object> editingRows = new();
     private readonly HashSet<object> editingNameRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
