@@ -48,6 +48,10 @@
     color: var(--bs-primary);
 }
 
+.parameter-subgroup-heading {
+    margin-bottom: 0.25rem;
+}
+
 .add-mode-row {
     background-color: rgba(var(--bs-info-rgb), 0.08);
 }
