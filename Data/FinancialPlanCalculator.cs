@@ -19,44 +19,57 @@ public static class FinancialPlanCalculator
         return ComputeFinalBalance(portfolio, annualExpenses, rows: null);
     }
 
-    public static bool TryCalculateMaximumAnnualExpenses(Portfolio portfolio, out decimal maximumAnnualExpenses)
+public static bool TryCalculateMaximumAnnualExpenses(Portfolio portfolio, out decimal maximumAnnualExpenses)
+{
+    maximumAnnualExpenses = 0m;
+
+    if (portfolio.Accounts.Count == 0 || portfolio.CurrentAge > portfolio.LifeExpectancy)
     {
-        maximumAnnualExpenses = 0m;
-
-        if (portfolio.Accounts.Count == 0 || portfolio.CurrentAge > portfolio.LifeExpectancy)
-        {
-            return false;
-        }
-
-        var lowerBound = 0m;
-        var upperBound = Math.Max(1m, portfolio.Accounts.Sum(account => account.Balance));
-
-        for (var i = 0; i < 32 && ComputeFinalBalance(portfolio, upperBound) >= 0m; i++)
-        {
-            upperBound *= 2m;
-        }
-
-        const decimal tolerance = 0.01m;
-        const int maxIterations = 100;
-
-        for (var iteration = 0; iteration < maxIterations && (upperBound - lowerBound) > tolerance; iteration++)
-        {
-            var midpoint = (lowerBound + upperBound) / 2m;
-            var finalBalance = ComputeFinalBalance(portfolio, midpoint);
-
-            if (finalBalance >= 0m)
-            {
-                lowerBound = midpoint;
-            }
-            else
-            {
-                upperBound = midpoint;
-            }
-        }
-
-        maximumAnnualExpenses = decimal.Round(lowerBound, 2, MidpointRounding.ToZero);
-        return true;
+        return false;
     }
+
+    decimal lowerBound = 0m;
+    decimal upperBound = Math.Max(1m, portfolio.Accounts.Sum(a => a.Balance));
+
+    if (ComputeFinalBalance(portfolio, lowerBound) < 0m)
+    {
+        return false;
+    }
+
+    bool foundUpperBound = ComputeFinalBalance(portfolio, upperBound) < 0m;
+
+    for (int i = 0; i < 32 && !foundUpperBound; i++)
+    {
+        upperBound *= 2m;
+        foundUpperBound = ComputeFinalBalance(portfolio, upperBound) < 0m;
+    }
+
+    if (!foundUpperBound)
+    {
+        return false;
+    }
+
+    const decimal tolerance = 0.01m;
+    const int maxIterations = 100;
+
+    for (int iteration = 0; iteration < maxIterations && (upperBound - lowerBound) > tolerance; iteration++)
+    {
+        decimal midpoint = (lowerBound + upperBound) / 2m;
+        decimal finalBalance = ComputeFinalBalance(portfolio, midpoint);
+
+        if (finalBalance >= 0m)
+        {
+            lowerBound = midpoint;
+        }
+        else
+        {
+            upperBound = midpoint;
+        }
+    }
+
+    maximumAnnualExpenses = decimal.Round(lowerBound, 2, MidpointRounding.ToZero);
+    return true;
+}
 
     private static decimal ComputeFinalBalance(Portfolio portfolio, decimal annualExpenses, List<FinancialPlanRow>? rows)
     {
