@@ -62,20 +62,9 @@ public enum AccountHoldings
 
 public static class AccountOptionDisplay
 {
-    public static IReadOnlyList<AccountType> Types { get; } = new[]
-    {
-        AccountType.Brokerage,
-        AccountType.Hsa,
-        AccountType.RetirementRoth,
-        AccountType.Retirement,
-        AccountType.Inherited
-    };
+    public static IReadOnlyList<AccountType> Types { get; } = Enum.GetValues<AccountType>();
 
-    public static IReadOnlyList<AccountHoldings> Holdings { get; } = new[]
-    {
-        AccountHoldings.Equities,
-        AccountHoldings.Bonds
-    };
+    public static IReadOnlyList<AccountHoldings> Holdings { get; } = Enum.GetValues<AccountHoldings>();
 
     public static string ToDisplayLabel(this AccountType type)
     {
