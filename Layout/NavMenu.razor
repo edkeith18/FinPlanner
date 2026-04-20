@@ -44,7 +44,7 @@
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private string MaximumAnnualExpensesDisplay => FinancialPlanCalculator.TryCalculateMaximumAnnualExpenses(portfolio, out var maximumAnnualExpenses)
+    private string MaximumAnnualExpensesDisplay => FinancialPlanCalculator.CalculateMaximumAnnualExpenses(portfolio, out var maximumAnnualExpenses)
         ? maximumAnnualExpenses.ToString("C")
         : "—";
 
