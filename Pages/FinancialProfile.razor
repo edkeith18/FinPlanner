@@ -143,15 +143,18 @@
             </button>
         </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
-            <thead>
-                <tr>
-                    <th class="item-name">Name</th>
-                    <th class="item-type">Type</th>
-                    <th class="item-holdings">Holdings</th>
-                    <th class="item-value">Balance</th>
-                    <th class="item-actions"></th>
-                </tr>
-            </thead>
+            @if (portfolio.Accounts.Count > 0)
+            {
+                <thead>
+                    <tr>
+                        <th class="item-name">Name</th>
+                        <th class="item-type">Type</th>
+                        <th class="item-holdings">Holdings</th>
+                        <th class="item-value">Balance</th>
+                        <th class="item-actions"></th>
+                    </tr>
+                </thead>
+            }
             <tbody>
                 @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
