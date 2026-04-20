@@ -48,6 +48,7 @@ public class Account
 public enum AccountType
 {
     Brokerage,
+    Hsa,
     RetirementRoth,
     Retirement,
     Inherited
@@ -64,6 +65,7 @@ public static class AccountOptionDisplay
     public static IReadOnlyList<AccountType> Types { get; } = new[]
     {
         AccountType.Brokerage,
+        AccountType.Hsa,
         AccountType.RetirementRoth,
         AccountType.Retirement,
         AccountType.Inherited
@@ -80,6 +82,7 @@ public static class AccountOptionDisplay
         return type switch
         {
             AccountType.Brokerage => "Brokerage",
+            AccountType.Hsa => "HSA",
             AccountType.RetirementRoth => "Retirement (Roth)",
             AccountType.Retirement => "Retirement",
             AccountType.Inherited => "Inherited",
