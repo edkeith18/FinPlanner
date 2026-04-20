@@ -12,12 +12,27 @@
     vertical-align: middle;
 }
 
+.compact-table thead th {
+    padding: 0.2rem 0.4rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--bs-secondary-color);
+}
+
 .item-name {
-    width: 60%;
+    width: 32%;
+}
+
+.item-type {
+    width: 20%;
+}
+
+.item-holdings {
+    width: 20%;
 }
 
 .item-value {
-    width: 30%;
+    width: 18%;
 }
 
 .item-actions {
