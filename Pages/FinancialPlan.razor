@@ -23,7 +23,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var row in BuildPlanRows())
+            @foreach (var row in FinancialPlanCalculator.BuildPlanRows(portfolio))
             {
                 <tr>
                     <td>@row.Year</td>
@@ -33,28 +33,4 @@ else
             }
         </tbody>
     </table>
-}
-
-@code {
-    private IEnumerable<FinancialPlanRow> BuildPlanRows()
-    {
-        var rows = new List<FinancialPlanRow>();
-
-        var inflationRateDecimal = portfolio.AnnualInflationRate / 100m;
-        var securitiesRateDecimal = portfolio.SecuritiesAnnualInterestRate / 100m;
-        var currentExpenses = portfolio.AnnualExpenses;
-        var currentBalance = portfolio.Accounts.Sum(account => account.Balance) - currentExpenses;
-
-        for (var year = portfolio.CurrentAge; year <= portfolio.LifeExpectancy; year++)
-        {
-            rows.Add(new FinancialPlanRow(year, currentExpenses, currentBalance));
-
-            currentExpenses *= 1m + inflationRateDecimal;
-            currentBalance = (currentBalance * (1m + securitiesRateDecimal)) - currentExpenses;
-        }
-
-        return rows;
-    }
-
-    private sealed record FinancialPlanRow(int Year, decimal Expenses, decimal Balance);
 }

@@ -1,4 +1,8 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+﻿@using FinPlanner.Data
+@implements IDisposable
+@inject Portfolio portfolio
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">FinPlanner</a>
         <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
@@ -8,23 +12,31 @@
 </div>
 
 <div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="nav d-flex flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ">
-            <NavLink class="nav-link" href="financial-profile">
-                <span class="bi bi-clipboard2-data-fill-nav-menu" aria-hidden="true"></span> Financial Profile
-            </NavLink>
-        </div>
-        <div class="nav-item px-3 ">
-            <NavLink class="nav-link" href="financial-plan">
-                <span class="bi bi-rocket-takeoff-nav-menu" aria-hidden="true"></span> Financial Plan
-            </NavLink>
-        </div>
-    </nav>
+    <div class="nav-shell">
+        <nav class="nav d-flex flex-column">
+            <div class="nav-item px-3">
+                <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
+                    <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ">
+                <NavLink class="nav-link" href="financial-profile">
+                    <span class="bi bi-clipboard2-data-fill-nav-menu" aria-hidden="true"></span> Financial Profile
+                </NavLink>
+            </div>
+            <div class="nav-item px-3 ">
+                <NavLink class="nav-link" href="financial-plan">
+                    <span class="bi bi-rocket-takeoff-nav-menu" aria-hidden="true"></span> Financial Plan
+                </NavLink>
+            </div>
+        </nav>
+
+        <section class="quick-plan-panel" aria-label="Quick plan">
+            <h3 class="quick-plan-title">Quick plan</h3>
+            <p class="quick-plan-label">Maximum annual expenses</p>
+            <p class="quick-plan-value">@MaximumAnnualExpensesDisplay</p>
+        </section>
+    </div>
 </div>
 
 @code {
@@ -32,8 +44,27 @@
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
+    private string MaximumAnnualExpensesDisplay => FinancialPlanCalculator.TryCalculateMaximumAnnualExpenses(portfolio, out var maximumAnnualExpenses)
+        ? maximumAnnualExpenses.ToString("C")
+        : "—";
+
+    protected override void OnInitialized()
+    {
+        portfolio.Changed += OnPortfolioChanged;
+    }
+
+    private void OnPortfolioChanged()
+    {
+        _ = InvokeAsync(StateHasChanged);
+    }
+
     private void ToggleNavMenu()
     {
         collapseNavMenu = !collapseNavMenu;
+    }
+
+    public void Dispose()
+    {
+        portfolio.Changed -= OnPortfolioChanged;
     }
 }

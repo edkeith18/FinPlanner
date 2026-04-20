@@ -1014,6 +1014,7 @@
     private void UpdateDirtyState()
     {
         isDirty = SerializePortfolio() != baselineSnapshot;
+        portfolio.NotifyStateChanged();
     }
 
     private string SerializePortfolio(bool pretty = false)
