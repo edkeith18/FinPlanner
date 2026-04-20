@@ -26,6 +26,26 @@ else
             <InputNumber @bind-Value="account.Balance" class="form-control" />
         </div>
 
+        <div class="mb-3">
+            <label class="form-label">Type</label>
+            <InputSelect @bind-Value="account.Type" class="form-select">
+                @foreach (var typeOption in AccountOptionDisplay.Types)
+                {
+                    <option value="@typeOption">@typeOption.ToDisplayLabel()</option>
+                }
+            </InputSelect>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Holdings</label>
+            <InputSelect @bind-Value="account.Holdings" class="form-select">
+                @foreach (var holdingsOption in AccountOptionDisplay.Holdings)
+                {
+                    <option value="@holdingsOption">@holdingsOption.ToDisplayLabel()</option>
+                }
+            </InputSelect>
+        </div>
+
         <button class="btn btn-primary" @onclick="Save">
             @(IsNew ? "Create" : "Save")
         </button>
@@ -46,7 +66,7 @@ else
     {
         if (IsNew)
         {
-            account = new Account { Name = "", Balance = 0 };
+            account = new Account { Name = "", Balance = 0, Type = AccountType.Brokerage, Holdings = AccountHoldings.Equities };
         }
         else
         {
@@ -61,7 +81,7 @@ else
 
         if (IsNew)
         {
-            portfolio.AddAccount(account.Name, account.Balance);
+            portfolio.AddAccount(account.Name, account.Balance, account.Type, account.Holdings);
         }
 
         Nav.NavigateTo("financial-profile");

@@ -1,6 +1,7 @@
 @page "/financial-profile"
 
 @using System.Text.Json
+@using System.Text.Json.Serialization
 @using FinPlanner.Data
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
@@ -142,6 +143,15 @@
             </button>
         </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            <thead>
+                <tr>
+                    <th class="item-name">Name</th>
+                    <th class="item-type">Type</th>
+                    <th class="item-holdings">Holdings</th>
+                    <th class="item-value">Balance</th>
+                    <th class="item-actions"></th>
+                </tr>
+            </thead>
             <tbody>
                 @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
@@ -157,6 +167,42 @@
                             else
                             {
                                 <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
+                            }
+                        </td>
+                        <td class="item-type">
+                            @if (IsEditingType(account))
+                            {
+                                <InputSelect @bind-Value="account.Type"
+                                             class="form-select form-select-sm"
+                                             @onblur="() => StopEditingType(account, commitChanges: true)"
+                                             @onkeydown="(e) => OnAccountTypeKeyDown(account, e)">
+                                    @foreach (var typeOption in AccountOptionDisplay.Types)
+                                    {
+                                        <option value="@typeOption">@typeOption.ToDisplayLabel()</option>
+                                    }
+                                </InputSelect>
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingType(account)">@account.Type.ToDisplayLabel()</span>
+                            }
+                        </td>
+                        <td class="item-holdings">
+                            @if (IsEditingHoldings(account))
+                            {
+                                <InputSelect @bind-Value="account.Holdings"
+                                             class="form-select form-select-sm"
+                                             @onblur="() => StopEditingHoldings(account, commitChanges: true)"
+                                             @onkeydown="(e) => OnAccountHoldingsKeyDown(account, e)">
+                                    @foreach (var holdingsOption in AccountOptionDisplay.Holdings)
+                                    {
+                                        <option value="@holdingsOption">@holdingsOption.ToDisplayLabel()</option>
+                                    }
+                                </InputSelect>
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingHoldings(account)">@account.Holdings.ToDisplayLabel()</span>
                             }
                         </td>
                         <td class="item-value">
@@ -188,6 +234,26 @@
                                        @bind-Value="newItemName"
                                        class="form-control form-control-sm"
                                        @onblur="OnAddInputBlur" />
+                        </td>
+                        <td class="item-type">
+                            <InputSelect @bind-Value="newAccountType"
+                                         class="form-select form-select-sm"
+                                         @onblur="OnAddInputBlur">
+                                @foreach (var typeOption in AccountOptionDisplay.Types)
+                                {
+                                    <option value="@typeOption">@typeOption.ToDisplayLabel()</option>
+                                }
+                            </InputSelect>
+                        </td>
+                        <td class="item-holdings">
+                            <InputSelect @bind-Value="newAccountHoldings"
+                                         class="form-select form-select-sm"
+                                         @onblur="OnAddInputBlur">
+                                @foreach (var holdingsOption in AccountOptionDisplay.Holdings)
+                                {
+                                    <option value="@holdingsOption">@holdingsOption.ToDisplayLabel()</option>
+                                }
+                            </InputSelect>
                         </td>
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
@@ -382,6 +448,8 @@
 @code {
     private readonly Dictionary<object, decimal> originalValues = new();
     private readonly Dictionary<object, string> originalNames = new();
+    private readonly Dictionary<Account, AccountType> originalAccountTypes = new();
+    private readonly Dictionary<Account, AccountHoldings> originalAccountHoldings = new();
     private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
     {
         ["step"] = "1",
@@ -392,6 +460,8 @@
     };
     private readonly HashSet<object> editingRows = new();
     private readonly HashSet<object> editingNameRows = new();
+    private readonly HashSet<Account> editingTypeRows = new();
+    private readonly HashSet<Account> editingHoldingsRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private bool isDirty;
@@ -400,8 +470,11 @@
     private AddItemType? activeAddType;
     private string newItemName = string.Empty;
     private decimal newItemValue;
+    private AccountType newAccountType = AccountType.Brokerage;
+    private AccountHoldings newAccountHoldings = AccountHoldings.Equities;
     private bool suppressAddBlurCancel;
     private bool pendingFocusNewRow;
+    private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
 
     protected override void OnInitialized()
     {
@@ -417,7 +490,7 @@
 
         string json = await reader.ReadToEndAsync();
 
-        var data = JsonSerializer.Deserialize<Portfolio>(json);
+        var data = JsonSerializer.Deserialize<Portfolio>(json, profileJsonOptions);
 
         if (data is null)
             return;
@@ -435,8 +508,12 @@
 
         editingRows.Clear();
         editingNameRows.Clear();
+        editingTypeRows.Clear();
+        editingHoldingsRows.Clear();
         originalValues.Clear();
         originalNames.Clear();
+        originalAccountTypes.Clear();
+        originalAccountHoldings.Clear();
         editingParameters.Clear();
         originalParameterValues.Clear();
         activeAddType = null;
@@ -474,6 +551,16 @@
     private bool IsEditingName(object item)
     {
         return editingNameRows.Contains(item);
+    }
+
+    private bool IsEditingType(Account account)
+    {
+        return editingTypeRows.Contains(account);
+    }
+
+    private bool IsEditingHoldings(Account account)
+    {
+        return editingHoldingsRows.Contains(account);
     }
 
     private void StartEditing(object item)
@@ -621,6 +708,86 @@
         }
     }
 
+    private void StartEditingType(Account account)
+    {
+        if (editingTypeRows.Contains(account))
+        {
+            return;
+        }
+
+        originalAccountTypes[account] = account.Type;
+        editingTypeRows.Add(account);
+    }
+
+    private void StopEditingType(Account account, bool commitChanges)
+    {
+        if (!editingTypeRows.Contains(account))
+        {
+            return;
+        }
+
+        editingTypeRows.Remove(account);
+        if (!commitChanges && originalAccountTypes.TryGetValue(account, out var originalType))
+        {
+            account.Type = originalType;
+        }
+
+        originalAccountTypes.Remove(account);
+        UpdateDirtyState();
+    }
+
+    private async Task OnAccountTypeKeyDown(Account account, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BlurActiveElementAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            StopEditingType(account, commitChanges: false);
+        }
+    }
+
+    private void StartEditingHoldings(Account account)
+    {
+        if (editingHoldingsRows.Contains(account))
+        {
+            return;
+        }
+
+        originalAccountHoldings[account] = account.Holdings;
+        editingHoldingsRows.Add(account);
+    }
+
+    private void StopEditingHoldings(Account account, bool commitChanges)
+    {
+        if (!editingHoldingsRows.Contains(account))
+        {
+            return;
+        }
+
+        editingHoldingsRows.Remove(account);
+        if (!commitChanges && originalAccountHoldings.TryGetValue(account, out var originalHoldings))
+        {
+            account.Holdings = originalHoldings;
+        }
+
+        originalAccountHoldings.Remove(account);
+        UpdateDirtyState();
+    }
+
+    private async Task OnAccountHoldingsKeyDown(Account account, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await BlurActiveElementAsync();
+        }
+        else if (e.Key == "Escape")
+        {
+            StopEditingHoldings(account, commitChanges: false);
+        }
+    }
+
     private async Task DeleteAccount(Account account)
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
@@ -628,8 +795,12 @@
             portfolio.Accounts.Remove(account);
             editingRows.Remove(account);
             editingNameRows.Remove(account);
+            editingTypeRows.Remove(account);
+            editingHoldingsRows.Remove(account);
             originalValues.Remove(account);
             originalNames.Remove(account);
+            originalAccountTypes.Remove(account);
+            originalAccountHoldings.Remove(account);
             UpdateDirtyState();
         }
     }
@@ -670,6 +841,8 @@
         activeAddType = itemType;
         newItemName = string.Empty;
         newItemValue = 0;
+        newAccountType = AccountType.Brokerage;
+        newAccountHoldings = AccountHoldings.Equities;
         suppressAddBlurCancel = false;
         pendingFocusNewRow = true;
     }
@@ -679,6 +852,8 @@
         activeAddType = null;
         newItemName = string.Empty;
         newItemValue = 0;
+        newAccountType = AccountType.Brokerage;
+        newAccountHoldings = AccountHoldings.Equities;
         suppressAddBlurCancel = false;
         pendingFocusNewRow = false;
     }
@@ -699,7 +874,7 @@
         switch (activeAddType)
         {
             case AddItemType.Account:
-                portfolio.AddAccount(name, newItemValue);
+                portfolio.AddAccount(name, newItemValue, newAccountType, newAccountHoldings);
                 break;
             case AddItemType.Income:
                 portfolio.AddIncome(name, newItemValue);
@@ -840,7 +1015,16 @@
 
     private string SerializePortfolio(bool pretty = false)
     {
-        return JsonSerializer.Serialize(portfolio, new JsonSerializerOptions { WriteIndented = pretty });
+        var options = CreateProfileJsonOptions();
+        options.WriteIndented = pretty;
+        return JsonSerializer.Serialize(portfolio, options);
+    }
+
+    private static JsonSerializerOptions CreateProfileJsonOptions()
+    {
+        var options = new JsonSerializerOptions();
+        options.Converters.Add(new JsonStringEnumConverter());
+        return options;
     }
 
     private ValueTask BlurActiveElementAsync()
