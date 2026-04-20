@@ -21,21 +21,110 @@
 <div class="financial-profile-layout">
     <div class="financial-profile-panel">
         <h5>Parameters</h5>
+        <h6 class="parameter-subgroup-heading">Personal</h6>
+        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            <tbody>
+                <tr>
+                    <td class="item-name">Current age</td>
+                    <td class="item-value">
+                        @if (IsEditingParameter(ParameterField.CurrentAge))
+                        {
+                            <InputNumber @bind-Value="portfolio.CurrentAge"
+                                         class="form-control form-control-sm"
+                                         @attributes="wholeNumberInputAttributes"
+                                         @onblur="() => OnParameterBlur(ParameterField.CurrentAge)"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@portfolio.CurrentAge</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="item-name">Life expectancy</td>
+                    <td class="item-value">
+                        @if (IsEditingParameter(ParameterField.LifeExpectancy))
+                        {
+                            <InputNumber @bind-Value="portfolio.LifeExpectancy"
+                                         class="form-control form-control-sm"
+                                         @attributes="wholeNumberInputAttributes"
+                                         @onblur="() => OnParameterBlur(ParameterField.LifeExpectancy)"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.LifeExpectancy, e)" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@portfolio.LifeExpectancy</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="item-name">Annual expenses</td>
+                    <td class="item-value">
+                        @if (IsEditingParameter(ParameterField.AnnualExpenses))
+                        {
+                            <InputNumber @bind-Value="portfolio.AnnualExpenses"
+                                         class="form-control form-control-sm"
+                                         @onblur="() => OnParameterBlur(ParameterField.AnnualExpenses)"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@portfolio.AnnualExpenses.ToString("C")</span>
+                        }
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h6 class="parameter-subgroup-heading mt-2">Economic</h6>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
                 <tr>
                     <td class="item-name">Securities annual interest rate</td>
                     <td class="item-value">
-                        @if (editingInterestRate)
+                        @if (IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate))
                         {
                             <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
                                          class="form-control form-control-sm"
-                                         @onblur="OnInterestRateBlur"
-                                         @onkeydown="OnInterestRateKeyDown" />
+                                         @onblur="() => OnParameterBlur(ParameterField.SecuritiesAnnualInterestRate)"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="StartEditingInterestRate">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualInterestRate)">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="item-name">Annual inflation rate</td>
+                    <td class="item-value">
+                        @if (IsEditingParameter(ParameterField.AnnualInflationRate))
+                        {
+                            <InputNumber @bind-Value="portfolio.AnnualInflationRate"
+                                         class="form-control form-control-sm"
+                                         @onblur="() => OnParameterBlur(ParameterField.AnnualInflationRate)"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{portfolio.AnnualInflationRate}%")</span>
+                        }
+                    </td>
+                </tr>
+                <tr>
+                    <td class="item-name">Bonds annual rate of return</td>
+                    <td class="item-value">
+                        @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
+                        {
+                            <InputNumber @bind-Value="portfolio.BondsAnnualRateOfReturn"
+                                         class="form-control form-control-sm"
+                                         @onblur="() => OnParameterBlur(ParameterField.BondsAnnualRateOfReturn)"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{portfolio.BondsAnnualRateOfReturn}%")</span>
                         }
                     </td>
                 </tr>
@@ -293,10 +382,18 @@
 @code {
     private readonly Dictionary<object, decimal> originalValues = new();
     private readonly Dictionary<object, string> originalNames = new();
+    private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
+    {
+        ["step"] = "1",
+        ["min"] = "0",
+        ["inputmode"] = "numeric",
+        ["pattern"] = "[0-9]*",
+        ["onkeydown"] = "return ['Backspace','Delete','ArrowLeft','ArrowRight','Tab','Home','End','Enter','Escape'].includes(event.key) || /^[0-9]$/.test(event.key);"
+    };
     private readonly HashSet<object> editingRows = new();
     private readonly HashSet<object> editingNameRows = new();
-    private bool editingInterestRate;
-    private decimal originalInterestRate;
+    private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
+    private readonly HashSet<ParameterField> editingParameters = new();
     private bool isDirty;
     private string baselineSnapshot = string.Empty;
 
@@ -330,12 +427,18 @@
         portfolio.Expenses = data.Expenses ?? new List<ExpenseItem>();
         portfolio.Year = data.Year;
         portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
+        portfolio.AnnualInflationRate = data.AnnualInflationRate;
+        portfolio.CurrentAge = data.CurrentAge;
+        portfolio.LifeExpectancy = data.LifeExpectancy;
+        portfolio.AnnualExpenses = data.AnnualExpenses;
+        portfolio.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
 
         editingRows.Clear();
         editingNameRows.Clear();
         originalValues.Clear();
         originalNames.Clear();
-        editingInterestRate = false;
+        editingParameters.Clear();
+        originalParameterValues.Clear();
         activeAddType = null;
 
         baselineSnapshot = SerializePortfolio();
@@ -443,39 +546,46 @@
         UpdateDirtyState();
     }
 
-    private void StartEditingInterestRate()
+    private bool IsEditingParameter(ParameterField parameter)
     {
-        if (editingInterestRate)
-        {
-            return;
-        }
-
-        originalInterestRate = portfolio.SecuritiesAnnualInterestRate;
-        editingInterestRate = true;
+        return editingParameters.Contains(parameter);
     }
 
-    private void StopEditingInterestRate(bool commitChanges)
+    private void StartEditingParameter(ParameterField parameter)
     {
-        if (!editingInterestRate)
+        if (editingParameters.Contains(parameter))
         {
             return;
         }
 
-        if (!commitChanges)
+        originalParameterValues[parameter] = GetParameterValue(parameter);
+        editingParameters.Add(parameter);
+    }
+
+    private void StopEditingParameter(ParameterField parameter, bool commitChanges)
+    {
+        if (!editingParameters.Contains(parameter))
         {
-            portfolio.SecuritiesAnnualInterestRate = originalInterestRate;
+            return;
         }
 
-        editingInterestRate = false;
+        editingParameters.Remove(parameter);
+
+        if (!commitChanges && originalParameterValues.TryGetValue(parameter, out var originalValue))
+        {
+            SetParameterValue(parameter, originalValue);
+        }
+
+        originalParameterValues.Remove(parameter);
         UpdateDirtyState();
     }
 
-    private void OnInterestRateBlur(FocusEventArgs _)
+    private void OnParameterBlur(ParameterField parameter)
     {
-        StopEditingInterestRate(commitChanges: true);
+        StopEditingParameter(parameter, commitChanges: true);
     }
 
-    private async Task OnInterestRateKeyDown(KeyboardEventArgs e)
+    private async Task OnParameterKeyDown(ParameterField parameter, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
@@ -483,7 +593,7 @@
         }
         else if (e.Key == "Escape")
         {
-            StopEditingInterestRate(commitChanges: false);
+            StopEditingParameter(parameter, commitChanges: false);
         }
     }
 
@@ -684,6 +794,45 @@
         }
     }
 
+    private decimal GetParameterValue(ParameterField parameter)
+    {
+        return parameter switch
+        {
+            ParameterField.CurrentAge => portfolio.CurrentAge,
+            ParameterField.LifeExpectancy => portfolio.LifeExpectancy,
+            ParameterField.AnnualExpenses => portfolio.AnnualExpenses,
+            ParameterField.SecuritiesAnnualInterestRate => portfolio.SecuritiesAnnualInterestRate,
+            ParameterField.AnnualInflationRate => portfolio.AnnualInflationRate,
+            ParameterField.BondsAnnualRateOfReturn => portfolio.BondsAnnualRateOfReturn,
+            _ => 0m
+        };
+    }
+
+    private void SetParameterValue(ParameterField parameter, decimal value)
+    {
+        switch (parameter)
+        {
+            case ParameterField.CurrentAge:
+                portfolio.CurrentAge = decimal.ToInt32(decimal.Truncate(value));
+                break;
+            case ParameterField.LifeExpectancy:
+                portfolio.LifeExpectancy = decimal.ToInt32(decimal.Truncate(value));
+                break;
+            case ParameterField.AnnualExpenses:
+                portfolio.AnnualExpenses = value;
+                break;
+            case ParameterField.SecuritiesAnnualInterestRate:
+                portfolio.SecuritiesAnnualInterestRate = value;
+                break;
+            case ParameterField.AnnualInflationRate:
+                portfolio.AnnualInflationRate = value;
+                break;
+            case ParameterField.BondsAnnualRateOfReturn:
+                portfolio.BondsAnnualRateOfReturn = value;
+                break;
+        }
+    }
+
     private void UpdateDirtyState()
     {
         isDirty = SerializePortfolio() != baselineSnapshot;
@@ -719,5 +868,15 @@
         Account,
         Income,
         Expense
+    }
+
+    private enum ParameterField
+    {
+        CurrentAge,
+        LifeExpectancy,
+        AnnualExpenses,
+        SecuritiesAnnualInterestRate,
+        AnnualInflationRate,
+        BondsAnnualRateOfReturn
     }
 }
