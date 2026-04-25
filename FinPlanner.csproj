@@ -25,15 +25,22 @@
   <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <BuildVersionTimestamp>$([System.DateTime]::Now.ToString("yyyyMMdd.HHmmss"))</BuildVersionTimestamp>
-      <BuildVersionInfoFile>$(IntermediateOutputPath)BuildVersionInfo.g.cs</BuildVersionInfoFile>
+      <BuildVersionInfoDirectory>$(MSBuildProjectDirectory)/Generated</BuildVersionInfoDirectory>
+      <BuildVersionInfoFile>$(BuildVersionInfoDirectory)/BuildVersioningInfo.g.cs</BuildVersionInfoFile>
     </PropertyGroup>
+    <MakeDir Directories="$(BuildVersionInfoDirectory)" />
+    <ItemGroup>
+      <BuildVersionInfoLines Include="namespace FinPlanner;" />
+      <BuildVersionInfoLines Include="" />
+      <BuildVersionInfoLines Include="public static class BuildVersioningInfo" />
+      <BuildVersionInfoLines Include="{" />
+      <BuildVersionInfoLines Include="    public const string Value = &quot;$(BuildVersionTimestamp)&quot;;" />
+      <BuildVersionInfoLines Include="}" />
+    </ItemGroup>
     <WriteLinesToFile
       File="$(BuildVersionInfoFile)"
       Overwrite="true"
-      Lines="namespace FinPlanner;%0A%0Apublic static class BuildVersionInfo%0A{%0A    public const string Value = &quot;$(BuildVersionTimestamp)&quot;;%0A}" />
-    <ItemGroup>
-      <Compile Include="$(BuildVersionInfoFile)" />
-    </ItemGroup>
+      Lines="@(BuildVersionInfoLines)" />
   </Target>
  
 </Project>
