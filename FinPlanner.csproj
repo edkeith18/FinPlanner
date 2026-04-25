@@ -21,5 +21,19 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.1" PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <BuildVersionTimestamp>$([System.DateTime]::Now.ToString("yyyyMMdd.HHmmss"))</BuildVersionTimestamp>
+      <BuildVersionInfoFile>$(IntermediateOutputPath)BuildVersionInfo.g.cs</BuildVersionInfoFile>
+    </PropertyGroup>
+    <WriteLinesToFile
+      File="$(BuildVersionInfoFile)"
+      Overwrite="true"
+      Lines="namespace FinPlanner;%0A%0Apublic static class BuildVersionInfo%0A{%0A    public const string Value = &quot;$(BuildVersionTimestamp)&quot;;%0A}" />
+    <ItemGroup>
+      <Compile Include="$(BuildVersionInfoFile)" />
+    </ItemGroup>
+  </Target>
  
 </Project>
