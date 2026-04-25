@@ -63,12 +63,22 @@
     color: var(--bs-primary);
 }
 
+.heading-add-button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    color: var(--bs-secondary-color);
+}
+
 .parameter-subgroup-heading {
     margin-bottom: 0.25rem;
 }
 
 .add-mode-row {
     background-color: rgba(var(--bs-info-rgb), 0.08);
+}
+
+.edit-mode-row {
+    background-color: rgba(var(--bs-warning-rgb), 0.1);
 }
 
 @media (max-width: 768px) {

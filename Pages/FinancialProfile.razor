@@ -32,13 +32,13 @@
                         {
                             <InputNumber @bind-Value="portfolio.CurrentAge"
                                          class="form-control form-control-sm"
+                                         tabindex="1"
                                          @attributes="wholeNumberInputAttributes"
-                                         @onblur="() => OnParameterBlur(ParameterField.CurrentAge)"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@portfolio.CurrentAge</span>
+                            <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@portfolio.CurrentAge</span>
                         }
                     </td>
                 </tr>
@@ -49,13 +49,13 @@
                         {
                             <InputNumber @bind-Value="portfolio.LifeExpectancy"
                                          class="form-control form-control-sm"
+                                         tabindex="2"
                                          @attributes="wholeNumberInputAttributes"
-                                         @onblur="() => OnParameterBlur(ParameterField.LifeExpectancy)"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.LifeExpectancy, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@portfolio.LifeExpectancy</span>
+                            <span role="button" tabindex="2" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@portfolio.LifeExpectancy</span>
                         }
                     </td>
                 </tr>
@@ -66,12 +66,12 @@
                         {
                             <InputNumber @bind-Value="portfolio.AnnualExpenses"
                                          class="form-control form-control-sm"
-                                         @onblur="() => OnParameterBlur(ParameterField.AnnualExpenses)"
+                                         tabindex="3"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@portfolio.AnnualExpenses.ToString("C")</span>
+                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@portfolio.AnnualExpenses.ToString("C")</span>
                         }
                     </td>
                 </tr>
@@ -88,12 +88,12 @@
                         {
                             <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
                                          class="form-control form-control-sm"
-                                         @onblur="() => OnParameterBlur(ParameterField.SecuritiesAnnualInterestRate)"
+                                         tabindex="4"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualInterestRate)">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                            <span role="button" tabindex="4" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualInterestRate)">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
                         }
                     </td>
                 </tr>
@@ -104,12 +104,12 @@
                         {
                             <InputNumber @bind-Value="portfolio.AnnualInflationRate"
                                          class="form-control form-control-sm"
-                                         @onblur="() => OnParameterBlur(ParameterField.AnnualInflationRate)"
+                                         tabindex="5"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{portfolio.AnnualInflationRate}%")</span>
+                            <span role="button" tabindex="5" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{portfolio.AnnualInflationRate}%")</span>
                         }
                     </td>
                 </tr>
@@ -120,12 +120,12 @@
                         {
                             <InputNumber @bind-Value="portfolio.BondsAnnualRateOfReturn"
                                          class="form-control form-control-sm"
-                                         @onblur="() => OnParameterBlur(ParameterField.BondsAnnualRateOfReturn)"
+                                         tabindex="6"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{portfolio.BondsAnnualRateOfReturn}%")</span>
+                            <span role="button" tabindex="6" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{portfolio.BondsAnnualRateOfReturn}%")</span>
                         }
                     </td>
                 </tr>
@@ -137,6 +137,7 @@
         <div class="section-heading">
             <h5 class="mb-0">Accounts</h5>
             <button class="btn btn-link p-0 heading-add-button"
+                    disabled="@IsSectionBusy(AddItemType.Account)"
                     @onclick="() => StartAdd(AddItemType.Account)"
                     aria-label="Add Account">
                 <i class="bi bi-plus-square"></i>
@@ -158,13 +159,12 @@
             <tbody>
                 @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    <tr>
+                    <tr class="@(IsAccountRowEditing(account) ? "edit-mode-row" : null)">
                         <td class="item-name">
                             @if (IsEditingName(account))
                             {
                                 <InputText @bind-Value="account.Name"
                                            class="form-control form-control-sm"
-                                           @onblur="() => StopEditingName(account, commitChanges: true)"
                                            @onkeydown="(e) => OnItemNameKeyDown(account, e)" />
                             }
                             else
@@ -177,7 +177,6 @@
                             {
                                 <InputSelect @bind-Value="account.Type"
                                              class="form-select form-select-sm"
-                                             @onblur="() => StopEditingType(account, commitChanges: true)"
                                              @onkeydown="(e) => OnAccountTypeKeyDown(account, e)">
                                     @foreach (var typeOption in AccountOptionDisplay.Types)
                                     {
@@ -195,7 +194,6 @@
                             {
                                 <InputSelect @bind-Value="account.Holdings"
                                              class="form-select form-select-sm"
-                                             @onblur="() => StopEditingHoldings(account, commitChanges: true)"
                                              @onkeydown="(e) => OnAccountHoldingsKeyDown(account, e)">
                                     @foreach (var holdingsOption in AccountOptionDisplay.Holdings)
                                     {
@@ -213,7 +211,6 @@
                             {
                                 <InputNumber @bind-Value="account.Balance"
                                              class="form-control form-control-sm"
-                                             @onblur="() => StopEditing(account, commitChanges: true)"
                                              @onkeydown="(e) => OnItemValueKeyDown(account, e)" />
                             }
                             else
@@ -222,9 +219,25 @@
                             }
                         </td>
                         <td class="item-actions">
-                            <button class="btn btn-link text-danger p-0" @onclick="() => DeleteAccount(account)" aria-label="Delete @account.Name">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            @if (IsAccountRowEditing(account))
+                            {
+                                <button class="btn btn-link text-success p-0 me-2"
+                                        @onclick="() => CommitAccountEdit(account)"
+                                        aria-label="Commit account edits for @account.Name">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-link text-secondary p-0"
+                                        @onclick="() => CancelAccountEdit(account)"
+                                        aria-label="Cancel account edits for @account.Name">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteAccount(account)" aria-label="Delete @account.Name">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
@@ -236,12 +249,12 @@
                             <InputText id="@GetAddNameInputId(AddItemType.Account)"
                                        @bind-Value="newItemName"
                                        class="form-control form-control-sm"
-                                       @onblur="OnAddInputBlur" />
+                                       @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-type">
                             <InputSelect @bind-Value="newAccountType"
                                          class="form-select form-select-sm"
-                                         @onblur="OnAddInputBlur">
+                                         @onkeydown="OnAddInputKeyDown">
                                 @foreach (var typeOption in AccountOptionDisplay.Types)
                                 {
                                     <option value="@typeOption">@typeOption.ToDisplayLabel()</option>
@@ -251,7 +264,7 @@
                         <td class="item-holdings">
                             <InputSelect @bind-Value="newAccountHoldings"
                                          class="form-select form-select-sm"
-                                         @onblur="OnAddInputBlur">
+                                         @onkeydown="OnAddInputKeyDown">
                                 @foreach (var holdingsOption in AccountOptionDisplay.Holdings)
                                 {
                                     <option value="@holdingsOption">@holdingsOption.ToDisplayLabel()</option>
@@ -261,17 +274,15 @@
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
                                          class="form-control form-control-sm"
-                                         @onblur="OnAddInputBlur" />
+                                         @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-actions">
                             <button class="btn btn-link text-success p-0 me-2"
-                                    @onmousedown="PrepareAddRowAction"
                                     @onclick="SaveNewItem"
                                     aria-label="Commit new account">
                                 <i class="bi bi-check-circle"></i>
                             </button>
                             <button class="btn btn-link text-secondary p-0"
-                                    @onmousedown="PrepareAddRowAction"
                                     @onclick="CancelAdd"
                                     aria-label="Cancel new account">
                                 <i class="bi bi-x-circle"></i>
@@ -287,6 +298,7 @@
         <div class="section-heading">
             <h5 class="mb-0">Income</h5>
             <button class="btn btn-link p-0 heading-add-button"
+                    disabled="@IsSectionBusy(AddItemType.Income)"
                     @onclick="() => StartAdd(AddItemType.Income)"
                     aria-label="Add Income">
                 <i class="bi bi-plus-square"></i>
@@ -296,13 +308,12 @@
             <tbody>
                 @foreach (var income in portfolio.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    <tr>
+                    <tr class="@(IsIncomeRowEditing(income) ? "edit-mode-row" : null)">
                         <td class="item-name">
                             @if (IsEditingName(income))
                             {
                                 <InputText @bind-Value="income.Name"
                                            class="form-control form-control-sm"
-                                           @onblur="() => StopEditingName(income, commitChanges: true)"
                                            @onkeydown="(e) => OnItemNameKeyDown(income, e)" />
                             }
                             else
@@ -315,7 +326,6 @@
                             {
                                 <InputNumber @bind-Value="income.Amount"
                                              class="form-control form-control-sm"
-                                             @onblur="() => StopEditing(income, commitChanges: true)"
                                              @onkeydown="(e) => OnItemValueKeyDown(income, e)" />
                             }
                             else
@@ -324,9 +334,25 @@
                             }
                         </td>
                         <td class="item-actions">
-                            <button class="btn btn-link text-danger p-0" @onclick="() => DeleteIncome(income)" aria-label="Delete @income.Name">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            @if (IsIncomeRowEditing(income))
+                            {
+                                <button class="btn btn-link text-success p-0 me-2"
+                                        @onclick="() => CommitItemEdit(income)"
+                                        aria-label="Commit income edits for @income.Name">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-link text-secondary p-0"
+                                        @onclick="() => CancelItemEdit(income)"
+                                        aria-label="Cancel income edits for @income.Name">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteIncome(income)" aria-label="Delete @income.Name">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
@@ -338,22 +364,20 @@
                             <InputText id="@GetAddNameInputId(AddItemType.Income)"
                                        @bind-Value="newItemName"
                                        class="form-control form-control-sm"
-                                       @onblur="OnAddInputBlur" />
+                                       @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
                                          class="form-control form-control-sm"
-                                         @onblur="OnAddInputBlur" />
+                                         @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-actions">
                             <button class="btn btn-link text-success p-0 me-2"
-                                    @onmousedown="PrepareAddRowAction"
                                     @onclick="SaveNewItem"
                                     aria-label="Commit new income">
                                 <i class="bi bi-check-circle"></i>
                             </button>
                             <button class="btn btn-link text-secondary p-0"
-                                    @onmousedown="PrepareAddRowAction"
                                     @onclick="CancelAdd"
                                     aria-label="Cancel new income">
                                 <i class="bi bi-x-circle"></i>
@@ -369,6 +393,7 @@
         <div class="section-heading">
             <h5 class="mb-0">Expenses</h5>
             <button class="btn btn-link p-0 heading-add-button"
+                    disabled="@IsSectionBusy(AddItemType.Expense)"
                     @onclick="() => StartAdd(AddItemType.Expense)"
                     aria-label="Add Expense">
                 <i class="bi bi-plus-square"></i>
@@ -378,13 +403,12 @@
             <tbody>
                 @foreach (var expense in portfolio.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
-                    <tr>
+                    <tr class="@(IsExpenseRowEditing(expense) ? "edit-mode-row" : null)">
                         <td class="item-name">
                             @if (IsEditingName(expense))
                             {
                                 <InputText @bind-Value="expense.Name"
                                            class="form-control form-control-sm"
-                                           @onblur="() => StopEditingName(expense, commitChanges: true)"
                                            @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
                             }
                             else
@@ -397,7 +421,6 @@
                             {
                                 <InputNumber @bind-Value="expense.Amount"
                                              class="form-control form-control-sm"
-                                             @onblur="() => StopEditing(expense, commitChanges: true)"
                                              @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
                             }
                             else
@@ -406,9 +429,25 @@
                             }
                         </td>
                         <td class="item-actions">
-                            <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
-                                <i class="bi bi-trash"></i>
-                            </button>
+                            @if (IsExpenseRowEditing(expense))
+                            {
+                                <button class="btn btn-link text-success p-0 me-2"
+                                        @onclick="() => CommitItemEdit(expense)"
+                                        aria-label="Commit expense edits for @expense.Name">
+                                    <i class="bi bi-check-circle"></i>
+                                </button>
+                                <button class="btn btn-link text-secondary p-0"
+                                        @onclick="() => CancelItemEdit(expense)"
+                                        aria-label="Cancel expense edits for @expense.Name">
+                                    <i class="bi bi-x-circle"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            }
                         </td>
                     </tr>
                 }
@@ -420,22 +459,20 @@
                             <InputText id="@GetAddNameInputId(AddItemType.Expense)"
                                        @bind-Value="newItemName"
                                        class="form-control form-control-sm"
-                                       @onblur="OnAddInputBlur" />
+                                       @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
                                          class="form-control form-control-sm"
-                                         @onblur="OnAddInputBlur" />
+                                         @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-actions">
                             <button class="btn btn-link text-success p-0 me-2"
-                                    @onmousedown="PrepareAddRowAction"
                                     @onclick="SaveNewItem"
                                     aria-label="Commit new expense">
                                 <i class="bi bi-check-circle"></i>
                             </button>
                             <button class="btn btn-link text-secondary p-0"
-                                    @onmousedown="PrepareAddRowAction"
                                     @onclick="CancelAdd"
                                     aria-label="Cancel new expense">
                                 <i class="bi bi-x-circle"></i>
@@ -475,7 +512,6 @@
     private decimal newItemValue;
     private AccountType newAccountType = AccountType.Brokerage;
     private AccountHoldings newAccountHoldings = AccountHoldings.Equities;
-    private bool suppressAddBlurCancel;
     private bool pendingFocusNewRow;
     private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
 
@@ -573,6 +609,11 @@
             return;
         }
 
+        if (!CanStartSectionEdit(item))
+        {
+            return;
+        }
+
         originalValues[item] = GetItemValue(item);
         editingRows.Add(item);
     }
@@ -598,6 +639,11 @@
     private void StartEditingName(object item)
     {
         if (editingNameRows.Contains(item))
+        {
+            return;
+        }
+
+        if (!CanStartSectionEdit(item))
         {
             return;
         }
@@ -670,16 +716,11 @@
         UpdateDirtyState();
     }
 
-    private void OnParameterBlur(ParameterField parameter)
-    {
-        StopEditingParameter(parameter, commitChanges: true);
-    }
-
-    private async Task OnParameterKeyDown(ParameterField parameter, KeyboardEventArgs e)
+    private void OnParameterKeyDown(ParameterField parameter, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await BlurActiveElementAsync();
+            StopEditingParameter(parameter, commitChanges: true);
         }
         else if (e.Key == "Escape")
         {
@@ -687,33 +728,38 @@
         }
     }
 
-    private async Task OnItemValueKeyDown(object item, KeyboardEventArgs e)
+    private void OnItemValueKeyDown(object item, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await BlurActiveElementAsync();
+            CommitItemEdit(item);
         }
         else if (e.Key == "Escape")
         {
-            StopEditing(item, commitChanges: false);
+            CancelItemEdit(item);
         }
     }
 
-    private async Task OnItemNameKeyDown(object item, KeyboardEventArgs e)
+    private void OnItemNameKeyDown(object item, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await BlurActiveElementAsync();
+            CommitItemEdit(item);
         }
         else if (e.Key == "Escape")
         {
-            StopEditingName(item, commitChanges: false);
+            CancelItemEdit(item);
         }
     }
 
     private void StartEditingType(Account account)
     {
         if (editingTypeRows.Contains(account))
+        {
+            return;
+        }
+
+        if (!CanStartSectionEdit(account))
         {
             return;
         }
@@ -739,21 +785,26 @@
         UpdateDirtyState();
     }
 
-    private async Task OnAccountTypeKeyDown(Account account, KeyboardEventArgs e)
+    private void OnAccountTypeKeyDown(Account account, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await BlurActiveElementAsync();
+            CommitAccountEdit(account);
         }
         else if (e.Key == "Escape")
         {
-            StopEditingType(account, commitChanges: false);
+            CancelAccountEdit(account);
         }
     }
 
     private void StartEditingHoldings(Account account)
     {
         if (editingHoldingsRows.Contains(account))
+        {
+            return;
+        }
+
+        if (!CanStartSectionEdit(account))
         {
             return;
         }
@@ -779,15 +830,15 @@
         UpdateDirtyState();
     }
 
-    private async Task OnAccountHoldingsKeyDown(Account account, KeyboardEventArgs e)
+    private void OnAccountHoldingsKeyDown(Account account, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
-            await BlurActiveElementAsync();
+            CommitAccountEdit(account);
         }
         else if (e.Key == "Escape")
         {
-            StopEditingHoldings(account, commitChanges: false);
+            CancelAccountEdit(account);
         }
     }
 
@@ -836,7 +887,7 @@
 
     private void StartAdd(AddItemType itemType)
     {
-        if (activeAddType == itemType)
+        if (activeAddType == itemType || IsSectionBusy(itemType))
         {
             return;
         }
@@ -846,7 +897,6 @@
         newItemValue = 0;
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
-        suppressAddBlurCancel = false;
         pendingFocusNewRow = true;
     }
 
@@ -857,7 +907,6 @@
         newItemValue = 0;
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
-        suppressAddBlurCancel = false;
         pendingFocusNewRow = false;
     }
 
@@ -891,21 +940,16 @@
         UpdateDirtyState();
     }
 
-    private async Task OnAddInputBlur(FocusEventArgs _)
+    private void OnAddInputKeyDown(KeyboardEventArgs e)
     {
-        if (suppressAddBlurCancel)
+        if (e.Key == "Enter")
         {
-            suppressAddBlurCancel = false;
-            return;
+            SaveNewItem();
         }
-
-        CancelAdd();
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private void PrepareAddRowAction(MouseEventArgs _)
-    {
-        suppressAddBlurCancel = true;
+        else if (e.Key == "Escape")
+        {
+            CancelAdd();
+        }
     }
 
     private string GetAddRowId(AddItemType itemType)
@@ -1031,9 +1075,115 @@
         return options;
     }
 
-    private ValueTask BlurActiveElementAsync()
+    private bool IsSectionBusy(AddItemType itemType)
     {
-        return JS.InvokeVoidAsync("eval", "document.activeElement && document.activeElement.blur();");
+        if (activeAddType == itemType)
+        {
+            return true;
+        }
+
+        return itemType switch
+        {
+            AddItemType.Account => editingRows.OfType<Account>().Any()
+                || editingNameRows.OfType<Account>().Any()
+                || editingTypeRows.Any()
+                || editingHoldingsRows.Any(),
+            AddItemType.Income => editingRows.OfType<IncomeItem>().Any()
+                || editingNameRows.OfType<IncomeItem>().Any(),
+            AddItemType.Expense => editingRows.OfType<ExpenseItem>().Any()
+                || editingNameRows.OfType<ExpenseItem>().Any(),
+            _ => false
+        };
+    }
+
+    private bool CanStartSectionEdit(object item)
+    {
+        var itemType = GetSectionType(item);
+        if (itemType is null)
+        {
+            return false;
+        }
+
+        if (activeAddType == itemType)
+        {
+            return false;
+        }
+
+        var activeRow = GetActiveEditRow(itemType.Value);
+        return activeRow is null || ReferenceEquals(activeRow, item);
+    }
+
+    private AddItemType? GetSectionType(object item)
+    {
+        return item switch
+        {
+            Account => AddItemType.Account,
+            IncomeItem => AddItemType.Income,
+            ExpenseItem => AddItemType.Expense,
+            _ => null
+        };
+    }
+
+    private object? GetActiveEditRow(AddItemType itemType)
+    {
+        return itemType switch
+        {
+            AddItemType.Account => editingRows.OfType<Account>().Cast<object>().FirstOrDefault()
+                ?? editingNameRows.OfType<Account>().Cast<object>().FirstOrDefault()
+                ?? editingTypeRows.Cast<object>().FirstOrDefault()
+                ?? editingHoldingsRows.Cast<object>().FirstOrDefault(),
+            AddItemType.Income => editingRows.OfType<IncomeItem>().Cast<object>().FirstOrDefault()
+                ?? editingNameRows.OfType<IncomeItem>().Cast<object>().FirstOrDefault(),
+            AddItemType.Expense => editingRows.OfType<ExpenseItem>().Cast<object>().FirstOrDefault()
+                ?? editingNameRows.OfType<ExpenseItem>().Cast<object>().FirstOrDefault(),
+            _ => null
+        };
+    }
+
+    private bool IsAccountRowEditing(Account account)
+    {
+        return editingRows.Contains(account)
+            || editingNameRows.Contains(account)
+            || editingTypeRows.Contains(account)
+            || editingHoldingsRows.Contains(account);
+    }
+
+    private bool IsIncomeRowEditing(IncomeItem income)
+    {
+        return editingRows.Contains(income) || editingNameRows.Contains(income);
+    }
+
+    private bool IsExpenseRowEditing(ExpenseItem expense)
+    {
+        return editingRows.Contains(expense) || editingNameRows.Contains(expense);
+    }
+
+    private void CommitItemEdit(object item)
+    {
+        StopEditingName(item, commitChanges: true);
+        StopEditing(item, commitChanges: true);
+    }
+
+    private void CancelItemEdit(object item)
+    {
+        StopEditingName(item, commitChanges: false);
+        StopEditing(item, commitChanges: false);
+    }
+
+    private void CommitAccountEdit(Account account)
+    {
+        StopEditingName(account, commitChanges: true);
+        StopEditingType(account, commitChanges: true);
+        StopEditingHoldings(account, commitChanges: true);
+        StopEditing(account, commitChanges: true);
+    }
+
+    private void CancelAccountEdit(Account account)
+    {
+        StopEditingName(account, commitChanges: false);
+        StopEditingType(account, commitChanges: false);
+        StopEditingHoldings(account, commitChanges: false);
+        StopEditing(account, commitChanges: false);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
