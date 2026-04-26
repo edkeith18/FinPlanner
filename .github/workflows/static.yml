@@ -2,6 +2,7 @@
 name: Deploy static content to Pages
 env:
   PUBLISH_DIR: build/wwwroot
+  TZ: America/Los_Angeles
 
 on:
   # Runs on pushes targeting the default branch for the app's folder path
