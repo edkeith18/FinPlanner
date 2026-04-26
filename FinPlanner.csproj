@@ -30,12 +30,10 @@
     </PropertyGroup>
     <MakeDir Directories="$(BuildVersionInfoDirectory)" />
     <ItemGroup>
-      <BuildVersionInfoLines Include="namespace FinPlanner" />
+      <BuildVersionInfoLines Include="namespace FinPlanner%3B" />
+      <BuildVersionInfoLines Include="internal static class BuildVersioningInfo" />
       <BuildVersionInfoLines Include="{" />
-      <BuildVersionInfoLines Include="    public static class BuildVersioningInfo" />
-      <BuildVersionInfoLines Include="    {" />
-      <BuildVersionInfoLines Include="        public const string Value = &quot;$(BuildVersionTimestamp)&quot;;" />
-      <BuildVersionInfoLines Include="    }" />
+      <BuildVersionInfoLines Include="    public const string Version = &quot;Version: $(BuildVersionTimestamp)&quot;%3B" />
       <BuildVersionInfoLines Include="}" />
     </ItemGroup>
     <WriteLinesToFile
