@@ -24,7 +24,7 @@
 
   <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
-      <BuildVersionTimestamp>$([System.DateTime]::Now.ToString("yyyyMMdd.HHmmss"))</BuildVersionTimestamp>
+      <BuildVersionTimestamp>$([System.TimeZoneInfo]::ConvertTimeBySystemTimeZoneId($([System.DateTime]::UtcNow), 'America/Los_Angeles').ToString("yyyyMMdd.HHmmss"))</BuildVersionTimestamp>
       <BuildVersionInfoDirectory>$(IntermediateOutputPath)Generated</BuildVersionInfoDirectory>
       <BuildVersionInfoFile>$(BuildVersionInfoDirectory)/BuildVersioningInfo.g.cs</BuildVersionInfoFile>
     </PropertyGroup>
