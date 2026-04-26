@@ -21,5 +21,28 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.1" PrivateAssets="all" />
   </ItemGroup>
+
+  <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
+    <PropertyGroup>
+      <BuildVersionTimestamp>$([System.DateTime]::Now.ToString('yyyyMMdd.HHmmss'))</BuildVersionTimestamp>
+      <BuildVersionInfoDirectory>$(IntermediateOutputPath)Generated</BuildVersionInfoDirectory>
+      <BuildVersionInfoFile>$(BuildVersionInfoDirectory)/BuildVersioningInfo.g.cs</BuildVersionInfoFile>
+    </PropertyGroup>
+    <MakeDir Directories="$(BuildVersionInfoDirectory)" />
+    <ItemGroup>
+      <BuildVersionInfoLines Include="namespace FinPlanner%3B" />
+      <BuildVersionInfoLines Include="internal static class BuildVersioningInfo" />
+      <BuildVersionInfoLines Include="{" />
+      <BuildVersionInfoLines Include="    public const string Version = &quot;Version: $(BuildVersionTimestamp)&quot;%3B" />
+      <BuildVersionInfoLines Include="}" />
+    </ItemGroup>
+    <WriteLinesToFile
+      File="$(BuildVersionInfoFile)"
+      Overwrite="true"
+      Lines="@(BuildVersionInfoLines)" />
+    <ItemGroup>
+      <Compile Include="$(BuildVersionInfoFile)" />
+    </ItemGroup>
+  </Target>
  
 </Project>

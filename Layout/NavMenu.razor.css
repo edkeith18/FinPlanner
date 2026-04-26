@@ -106,7 +106,16 @@
 .nav-shell {
     display: flex;
     flex-direction: column;
-    min-height: 100%;
+    height: 100%;
+}
+
+.nav-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: auto;
+    padding-bottom: 10px;
 }
 
 .quick-plan-panel {
@@ -141,4 +150,13 @@
     margin: 0.4rem 0 0;
     font-size: 1.1rem;
     font-weight: 700;
+}
+
+.build-version-text {
+    margin: 4px 0 4px;
+    font-size: 0.68rem;
+    line-height: 1.1;
+    text-align: center;
+    color: #f4f6ff;
+    opacity: 0.75;
 }
