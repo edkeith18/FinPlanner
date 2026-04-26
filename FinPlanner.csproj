@@ -25,7 +25,7 @@
   <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <BuildVersionTimestamp>$([System.DateTime]::Now.ToString("yyyyMMdd.HHmmss"))</BuildVersionTimestamp>
-      <BuildVersionInfoDirectory>$(MSBuildProjectDirectory)/Generated</BuildVersionInfoDirectory>
+      <BuildVersionInfoDirectory>$(IntermediateOutputPath)Generated</BuildVersionInfoDirectory>
       <BuildVersionInfoFile>$(BuildVersionInfoDirectory)/BuildVersioningInfo.g.cs</BuildVersionInfoFile>
     </PropertyGroup>
     <MakeDir Directories="$(BuildVersionInfoDirectory)" />
@@ -40,6 +40,9 @@
       File="$(BuildVersionInfoFile)"
       Overwrite="true"
       Lines="@(BuildVersionInfoLines)" />
+    <ItemGroup>
+      <Compile Include="$(BuildVersionInfoFile)" />
+    </ItemGroup>
   </Target>
  
 </Project>
