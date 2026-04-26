@@ -144,9 +144,9 @@
 }
 
 .build-version-text {
-    margin: 0 10px 12px;
+    margin: 0 10px 8px;
     font-size: 0.72rem;
-    line-height: 1.3;
+    line-height: 1.1;
     text-align: center;
     color: #f4f6ff;
     opacity: 0.75;
