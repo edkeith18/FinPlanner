@@ -112,7 +112,6 @@
 .quick-plan-panel {
     margin: 10px;
     margin-top: auto;
-    transform: translateY(-5px);
     border-radius: 12px;
     width: calc(100% - 20px);
     aspect-ratio: 1 / 1;
