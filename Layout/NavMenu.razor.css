@@ -115,28 +115,24 @@
     align-items: center;
     justify-content: center;
     margin-top: auto;
-    padding-bottom: 10px;
 }
 
 .quick-plan-panel {
-    margin: 10px;
+    margin: 5px;
     margin-top: auto;
     border-radius: 12px;
     width: calc(100% - 20px);
     aspect-ratio: 1 / 1;
     background-color: rgba(255, 255, 255, 0.14);
     color: #f4f6ff;
-    display: flex;
-    flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 0.75rem;
     text-align: center;
 }
 
 .quick-plan-title {
-    margin: 0;
-    font-size: 1rem;
+    margin: 7px;
+    font-size: 1.2rem;
     font-weight: 600;
 }
 
@@ -153,7 +149,7 @@
 }
 
 .build-version-text {
-    margin: 4px 0 4px;
+    margin-bottom: 3px;
     font-size: 0.68rem;
     line-height: 1.1;
     text-align: center;
