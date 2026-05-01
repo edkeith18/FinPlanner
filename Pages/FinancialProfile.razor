@@ -36,7 +36,7 @@
                                          tabindex="1"
                                          @attributes="wholeNumberInputAttributes"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)"
-                                         @onblur="() => OnParameterBlur(ParameterField.CurrentAge)" />
+                                         @onfocusout="() => OnParameterBlur(ParameterField.CurrentAge)" />
                         }
                         else
                         {
@@ -54,7 +54,7 @@
                                          tabindex="2"
                                          @attributes="wholeNumberInputAttributes"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.LifeExpectancy, e)"
-                                         @onblur="() => OnParameterBlur(ParameterField.LifeExpectancy)" />
+                                         @onfocusout="() => OnParameterBlur(ParameterField.LifeExpectancy)" />
                         }
                         else
                         {
@@ -68,10 +68,10 @@
                         @if (IsEditingParameter(ParameterField.AnnualExpenses))
                         {
                             <InputNumber @bind-Value="portfolio.AnnualExpenses"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm no-spinner"
                                          tabindex="3"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)"
-                                         @onblur="() => OnParameterBlur(ParameterField.AnnualExpenses)" />
+                                         @onfocusout="() => OnParameterBlur(ParameterField.AnnualExpenses)" />
                         }
                         else
                         {
@@ -94,7 +94,7 @@
                                          class="form-control form-control-sm"
                                          tabindex="4"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)"
-                                         @onblur="() => OnParameterBlur(ParameterField.SecuritiesAnnualInterestRate)" />
+                                         @onfocusout="() => OnParameterBlur(ParameterField.SecuritiesAnnualInterestRate)" />
                         }
                         else
                         {
@@ -111,7 +111,7 @@
                                          class="form-control form-control-sm"
                                          tabindex="5"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)"
-                                         @onblur="() => OnParameterBlur(ParameterField.AnnualInflationRate)" />
+                                         @onfocusout="() => OnParameterBlur(ParameterField.AnnualInflationRate)" />
                         }
                         else
                         {
@@ -125,10 +125,10 @@
                         @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
                         {
                             <InputNumber @bind-Value="portfolio.BondsAnnualRateOfReturn"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm no-spinner"
                                          tabindex="6"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)"
-                                         @onblur="() => OnParameterBlur(ParameterField.BondsAnnualRateOfReturn)" />
+                                         @onfocusout="() => OnParameterBlur(ParameterField.BondsAnnualRateOfReturn)" />
                         }
                         else
                         {
