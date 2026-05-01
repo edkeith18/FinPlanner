@@ -35,7 +35,8 @@
                                          class="form-control form-control-sm"
                                          tabindex="1"
                                          @attributes="wholeNumberInputAttributes"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)"
+                                         @onblur="() => OnParameterBlur(ParameterField.CurrentAge)" />
                         }
                         else
                         {
@@ -52,7 +53,8 @@
                                          class="form-control form-control-sm"
                                          tabindex="2"
                                          @attributes="wholeNumberInputAttributes"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.LifeExpectancy, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.LifeExpectancy, e)"
+                                         @onblur="() => OnParameterBlur(ParameterField.LifeExpectancy)" />
                         }
                         else
                         {
@@ -68,7 +70,8 @@
                             <InputNumber @bind-Value="portfolio.AnnualExpenses"
                                          class="form-control form-control-sm"
                                          tabindex="3"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)"
+                                         @onblur="() => OnParameterBlur(ParameterField.AnnualExpenses)" />
                         }
                         else
                         {
@@ -90,7 +93,8 @@
                             <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
                                          class="form-control form-control-sm"
                                          tabindex="4"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)"
+                                         @onblur="() => OnParameterBlur(ParameterField.SecuritiesAnnualInterestRate)" />
                         }
                         else
                         {
@@ -106,7 +110,8 @@
                             <InputNumber @bind-Value="portfolio.AnnualInflationRate"
                                          class="form-control form-control-sm"
                                          tabindex="5"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)"
+                                         @onblur="() => OnParameterBlur(ParameterField.AnnualInflationRate)" />
                         }
                         else
                         {
@@ -122,7 +127,8 @@
                             <InputNumber @bind-Value="portfolio.BondsAnnualRateOfReturn"
                                          class="form-control form-control-sm"
                                          tabindex="6"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)"
+                                         @onblur="() => OnParameterBlur(ParameterField.BondsAnnualRateOfReturn)" />
                         }
                         else
                         {
@@ -715,6 +721,11 @@
 
         originalParameterValues.Remove(parameter);
         UpdateDirtyState();
+    }
+
+    private void OnParameterBlur(ParameterField parameter)
+    {
+        StopEditingParameter(parameter, commitChanges: true);
     }
 
     private void OnParameterKeyDown(ParameterField parameter, KeyboardEventArgs e)
