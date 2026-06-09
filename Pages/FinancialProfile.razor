@@ -21,12 +21,12 @@
 </div>
 
 <div class="financial-profile-layout">
-    <div class="financial-profile-panel">
+    <div class="@FinancialProfilePanelClass">
         <h5>Parameters</h5>
         <h6 class="parameter-subgroup-heading">Personal</h6>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
-                <tr>
+                <tr class="@(IsEditingParameter(ParameterField.CurrentAge) ? "edit-mode-row" : null)">
                     <td class="item-name">Current age</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.CurrentAge))
@@ -42,8 +42,23 @@
                             <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@portfolio.CurrentAge</span>
                         }
                     </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.CurrentAge))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.CurrentAge)"
+                                    aria-label="Commit current age edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.CurrentAge)"
+                                    aria-label="Cancel current age edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </td>
                 </tr>
-                <tr>
+                <tr class="@(IsEditingParameter(ParameterField.LifeExpectancy) ? "edit-mode-row" : null)">
                     <td class="item-name">Life expectancy</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.LifeExpectancy))
@@ -59,8 +74,23 @@
                             <span role="button" tabindex="2" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@portfolio.LifeExpectancy</span>
                         }
                     </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.LifeExpectancy))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.LifeExpectancy)"
+                                    aria-label="Commit life expectancy edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.LifeExpectancy)"
+                                    aria-label="Cancel life expectancy edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </td>
                 </tr>
-                <tr>
+                <tr class="@(IsEditingParameter(ParameterField.AnnualExpenses) ? "edit-mode-row" : null)">
                     <td class="item-name">Annual expenses</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.AnnualExpenses))
@@ -75,6 +105,21 @@
                             <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@portfolio.AnnualExpenses.ToString("C")</span>
                         }
                     </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.AnnualExpenses))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.AnnualExpenses)"
+                                    aria-label="Commit annual expenses edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.AnnualExpenses)"
+                                    aria-label="Cancel annual expenses edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -82,7 +127,7 @@
         <h6 class="parameter-subgroup-heading mt-2">Economic</h6>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
-                <tr>
+                <tr class="@(IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate) ? "edit-mode-row" : null)">
                     <td class="item-name">Securities annual interest rate</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate))
@@ -97,8 +142,23 @@
                             <span role="button" tabindex="4" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualInterestRate)">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
                         }
                     </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.SecuritiesAnnualInterestRate)"
+                                    aria-label="Commit securities annual interest rate edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.SecuritiesAnnualInterestRate)"
+                                    aria-label="Cancel securities annual interest rate edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </td>
                 </tr>
-                <tr>
+                <tr class="@(IsEditingParameter(ParameterField.AnnualInflationRate) ? "edit-mode-row" : null)">
                     <td class="item-name">Annual inflation rate</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.AnnualInflationRate))
@@ -113,8 +173,23 @@
                             <span role="button" tabindex="5" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{portfolio.AnnualInflationRate}%")</span>
                         }
                     </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.AnnualInflationRate))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.AnnualInflationRate)"
+                                    aria-label="Commit annual inflation rate edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.AnnualInflationRate)"
+                                    aria-label="Cancel annual inflation rate edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </td>
                 </tr>
-                <tr>
+                <tr class="@(IsEditingParameter(ParameterField.BondsAnnualRateOfReturn) ? "edit-mode-row" : null)">
                     <td class="item-name">Bonds annual rate of return</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
@@ -127,6 +202,21 @@
                         else
                         {
                             <span role="button" tabindex="6" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{portfolio.BondsAnnualRateOfReturn}%")</span>
+                        }
+                    </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.BondsAnnualRateOfReturn)"
+                                    aria-label="Commit bonds annual rate of return edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.BondsAnnualRateOfReturn)"
+                                    aria-label="Cancel bonds annual rate of return edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
                         }
                     </td>
                 </tr>
@@ -695,8 +785,23 @@
             return;
         }
 
+        if (HasActiveEditOrAdd)
+        {
+            return;
+        }
+
         originalParameterValues[parameter] = GetParameterValue(parameter);
         editingParameters.Add(parameter);
+    }
+
+    private void CommitParameterEdit(ParameterField parameter)
+    {
+        StopEditingParameter(parameter, commitChanges: true);
+    }
+
+    private void CancelParameterEdit(ParameterField parameter)
+    {
+        StopEditingParameter(parameter, commitChanges: false);
     }
 
     private void StopEditingParameter(ParameterField parameter, bool commitChanges)
@@ -721,11 +826,11 @@
     {
         if (e.Key == "Enter")
         {
-            StopEditingParameter(parameter, commitChanges: true);
+            CommitParameterEdit(parameter);
         }
         else if (e.Key == "Escape")
         {
-            StopEditingParameter(parameter, commitChanges: false);
+            CancelParameterEdit(parameter);
         }
     }
 
@@ -888,7 +993,7 @@
 
     private void StartAdd(AddItemType itemType)
     {
-        if (activeAddType == itemType || IsSectionBusy(itemType))
+        if (activeAddType == itemType || HasActiveEditOrAdd)
         {
             return;
         }
@@ -1069,6 +1174,17 @@
         return JsonSerializer.Serialize(portfolio, options);
     }
 
+    private bool HasActiveEditOrAdd => activeAddType is not null
+        || editingParameters.Any()
+        || editingRows.Any()
+        || editingNameRows.Any()
+        || editingTypeRows.Any()
+        || editingHoldingsRows.Any();
+
+    private string FinancialProfilePanelClass => HasActiveEditOrAdd
+        ? "financial-profile-panel edit-active"
+        : "financial-profile-panel";
+
     private static JsonSerializerOptions CreateProfileJsonOptions()
     {
         var options = new JsonSerializerOptions();
@@ -1078,40 +1194,12 @@
 
     private bool IsSectionBusy(AddItemType itemType)
     {
-        if (activeAddType == itemType)
-        {
-            return true;
-        }
-
-        return itemType switch
-        {
-            AddItemType.Account => editingRows.OfType<Account>().Any()
-                || editingNameRows.OfType<Account>().Any()
-                || editingTypeRows.Any()
-                || editingHoldingsRows.Any(),
-            AddItemType.Income => editingRows.OfType<IncomeItem>().Any()
-                || editingNameRows.OfType<IncomeItem>().Any(),
-            AddItemType.Expense => editingRows.OfType<ExpenseItem>().Any()
-                || editingNameRows.OfType<ExpenseItem>().Any(),
-            _ => false
-        };
+        return HasActiveEditOrAdd;
     }
 
     private bool CanStartSectionEdit(object item)
     {
-        var itemType = GetSectionType(item);
-        if (itemType is null)
-        {
-            return false;
-        }
-
-        if (activeAddType == itemType)
-        {
-            return false;
-        }
-
-        var activeRow = GetActiveEditRow(itemType.Value);
-        return activeRow is null || ReferenceEquals(activeRow, item);
+        return GetSectionType(item) is not null && !HasActiveEditOrAdd;
     }
 
     private AddItemType? GetSectionType(object item)
@@ -1121,22 +1209,6 @@
             Account => AddItemType.Account,
             IncomeItem => AddItemType.Income,
             ExpenseItem => AddItemType.Expense,
-            _ => null
-        };
-    }
-
-    private object? GetActiveEditRow(AddItemType itemType)
-    {
-        return itemType switch
-        {
-            AddItemType.Account => editingRows.OfType<Account>().Cast<object>().FirstOrDefault()
-                ?? editingNameRows.OfType<Account>().Cast<object>().FirstOrDefault()
-                ?? editingTypeRows.Cast<object>().FirstOrDefault()
-                ?? editingHoldingsRows.Cast<object>().FirstOrDefault(),
-            AddItemType.Income => editingRows.OfType<IncomeItem>().Cast<object>().FirstOrDefault()
-                ?? editingNameRows.OfType<IncomeItem>().Cast<object>().FirstOrDefault(),
-            AddItemType.Expense => editingRows.OfType<ExpenseItem>().Cast<object>().FirstOrDefault()
-                ?? editingNameRows.OfType<ExpenseItem>().Cast<object>().FirstOrDefault(),
             _ => null
         };
     }
