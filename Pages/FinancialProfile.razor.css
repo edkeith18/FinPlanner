@@ -90,3 +90,9 @@
         width: 100%;
     }
 }
+
+.edit-active .clickable-value,
+.edit-active .clickable-name {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
