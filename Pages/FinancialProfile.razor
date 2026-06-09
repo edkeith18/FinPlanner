@@ -96,7 +96,7 @@
                         @if (IsEditingParameter(ParameterField.AnnualExpenses))
                         {
                             <InputNumber @bind-Value="portfolio.AnnualExpenses"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="3"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)" />
                         }
@@ -133,7 +133,7 @@
                         @if (IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate))
                         {
                             <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="4"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)" />
                         }
@@ -164,7 +164,7 @@
                         @if (IsEditingParameter(ParameterField.AnnualInflationRate))
                         {
                             <InputNumber @bind-Value="portfolio.AnnualInflationRate"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="5"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)" />
                         }
@@ -195,7 +195,7 @@
                         @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
                         {
                             <InputNumber @bind-Value="portfolio.BondsAnnualRateOfReturn"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="6"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)" />
                         }
@@ -301,7 +301,7 @@
                             @if (IsEditing(account))
                             {
                                 <InputNumber @bind-Value="account.Balance"
-                                             class="form-control form-control-sm"
+                                             class="form-control form-control-sm number-input-no-spinner"
                                              @onkeydown="(e) => OnItemValueKeyDown(account, e)" />
                             }
                             else
@@ -364,7 +364,7 @@
                         </td>
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-actions">
@@ -416,7 +416,7 @@
                             @if (IsEditing(income))
                             {
                                 <InputNumber @bind-Value="income.Amount"
-                                             class="form-control form-control-sm"
+                                             class="form-control form-control-sm number-input-no-spinner"
                                              @onkeydown="(e) => OnItemValueKeyDown(income, e)" />
                             }
                             else
@@ -459,7 +459,7 @@
                         </td>
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-actions">
@@ -511,7 +511,7 @@
                             @if (IsEditing(expense))
                             {
                                 <InputNumber @bind-Value="expense.Amount"
-                                             class="form-control form-control-sm"
+                                             class="form-control form-control-sm number-input-no-spinner"
                                              @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
                             }
                             else
@@ -554,7 +554,7 @@
                         </td>
                         <td class="item-value">
                             <InputNumber @bind-Value="newItemValue"
-                                         class="form-control form-control-sm"
+                                         class="form-control form-control-sm number-input-no-spinner"
                                          @onkeydown="OnAddInputKeyDown" />
                         </td>
                         <td class="item-actions">

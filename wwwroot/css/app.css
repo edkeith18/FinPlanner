@@ -36,6 +36,17 @@ a, .btn-link {
     color: red;
 }
 
+.number-input-no-spinner {
+    appearance: textfield;
+    -moz-appearance: textfield;
+}
+
+.number-input-no-spinner::-webkit-inner-spin-button,
+.number-input-no-spinner::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
 #blazor-error-ui {
     color-scheme: light only;
     background: lightyellow;
