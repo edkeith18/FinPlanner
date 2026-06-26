@@ -42,7 +42,15 @@ public class Portfolio
 
     public void AddExpense(string name, decimal amount, int yearStart, int yearEnd, decimal annualRateOfIncrease)
     {
-        Expenses.Add(new Expense { Name = name, Amount = amount, LastUpdated = DateTime.Now });
+        Expenses.Add(new Expense
+        {
+            Name = name,
+            Amount = amount,
+            YearStart = yearStart,
+            YearEnd = yearEnd,
+            AnnualRateOfIncrease = annualRateOfIncrease,
+            LastUpdated = DateTime.Now
+        });
         NotifyStateChanged();
     }
 }

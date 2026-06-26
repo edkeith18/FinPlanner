@@ -491,6 +491,19 @@
             </button>
         </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
+            @if (portfolio.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
+            {
+                <thead>
+                    <tr>
+                        <th class="item-name">Name</th>
+                        <th class="item-value">Start Year</th>
+                        <th class="item-value">End Year</th>
+                        <th class="item-value">Amount</th>
+                        <th class="item-value">Annual rate of increase</th>
+                        <th class="item-actions"></th>
+                    </tr>
+                </thead>
+            }
             <tbody>
                 @foreach (var expense in portfolio.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
@@ -498,9 +511,7 @@
                         <td class="item-name">
                             @if (IsEditingName(expense))
                             {
-                                <InputText @bind-Value="expense.Name"
-                                           class="form-control form-control-sm"
-                                           @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
+                                <InputText @bind-Value="expense.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
                             }
                             else
                             {
@@ -508,36 +519,54 @@
                             }
                         </td>
                         <td class="item-value">
+                            @if (IsEditingExpenseStartYear(expense))
+                            {
+                                <InputNumber @bind-Value="expense.YearStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartYear(expense)">@expense.YearStart</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingExpenseEndYear(expense))
+                            {
+                                <InputNumber @bind-Value="expense.YearEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndYear(expense)">@expense.YearEnd</span>
+                            }
+                        </td>
+                        <td class="item-value">
                             @if (IsEditing(expense))
                             {
-                                <InputNumber @bind-Value="expense.Amount"
-                                             class="form-control form-control-sm number-input-no-spinner"
-                                             @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
+                                <InputNumber @bind-Value="expense.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
                             }
                             else
                             {
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
                             }
                         </td>
-                        <td class="item-actions">
-                            @if (IsExpenseRowEditing(expense))
+                        <td class="item-value">
+                            @if (IsEditingExpenseAnnualRate(expense))
                             {
-                                <button class="btn btn-link text-success p-0 me-2"
-                                        @onclick="() => CommitItemEdit(expense)"
-                                        aria-label="Commit expense edits for @expense.Name">
-                                    <i class="bi bi-check-circle"></i>
-                                </button>
-                                <button class="btn btn-link text-secondary p-0"
-                                        @onclick="() => CancelItemEdit(expense)"
-                                        aria-label="Cancel expense edits for @expense.Name">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
+                                <InputNumber @bind-Value="expense.AnnualRateOfIncrease" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
                             }
                             else
                             {
-                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@($"{expense.AnnualRateOfIncrease}%")</span>
+                            }
+                        </td>
+                        <td class="item-actions">
+                            @if (IsExpenseRowEditing(expense))
+                            {
+                                <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitExpenseEdit(expense)" aria-label="Commit expense edits for @expense.Name"><i class="bi bi-check-circle"></i></button>
+                                <button class="btn btn-link text-secondary p-0" @onclick="() => CancelExpenseEdit(expense)" aria-label="Cancel expense edits for @expense.Name"><i class="bi bi-x-circle"></i></button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name"><i class="bi bi-trash"></i></button>
                             }
                         </td>
                     </tr>
@@ -546,28 +575,14 @@
                 @if (activeAddType == AddItemType.Expense)
                 {
                     <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Expense)">
-                        <td class="item-name">
-                            <InputText id="@GetAddNameInputId(AddItemType.Expense)"
-                                       @bind-Value="newItemName"
-                                       class="form-control form-control-sm"
-                                       @onkeydown="OnAddInputKeyDown" />
-                        </td>
-                        <td class="item-value">
-                            <InputNumber @bind-Value="newItemValue"
-                                         class="form-control form-control-sm number-input-no-spinner"
-                                         @onkeydown="OnAddInputKeyDown" />
-                        </td>
+                        <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Expense)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartYear" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndYear" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseAnnualRateOfIncrease" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                         <td class="item-actions">
-                            <button class="btn btn-link text-success p-0 me-2"
-                                    @onclick="SaveNewItem"
-                                    aria-label="Commit new expense">
-                                <i class="bi bi-check-circle"></i>
-                            </button>
-                            <button class="btn btn-link text-secondary p-0"
-                                    @onclick="CancelAdd"
-                                    aria-label="Cancel new expense">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
+                            <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new expense"><i class="bi bi-check-circle"></i></button>
+                            <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new expense"><i class="bi bi-x-circle"></i></button>
                         </td>
                     </tr>
                 }
@@ -581,6 +596,9 @@
     private readonly Dictionary<object, string> originalNames = new();
     private readonly Dictionary<Account, AccountType> originalAccountTypes = new();
     private readonly Dictionary<Account, AccountHoldings> originalAccountHoldings = new();
+    private readonly Dictionary<Expense, int> originalExpenseStartYears = new();
+    private readonly Dictionary<Expense, int> originalExpenseEndYears = new();
+    private readonly Dictionary<Expense, decimal> originalExpenseAnnualRates = new();
     private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
     {
         ["step"] = "1",
@@ -593,6 +611,9 @@
     private readonly HashSet<object> editingNameRows = new();
     private readonly HashSet<Account> editingTypeRows = new();
     private readonly HashSet<Account> editingHoldingsRows = new();
+    private readonly HashSet<Expense> editingExpenseStartYearRows = new();
+    private readonly HashSet<Expense> editingExpenseEndYearRows = new();
+    private readonly HashSet<Expense> editingExpenseAnnualRateRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private bool isDirty;
@@ -603,6 +624,9 @@
     private decimal newItemValue;
     private AccountType newAccountType = AccountType.Brokerage;
     private AccountHoldings newAccountHoldings = AccountHoldings.Equities;
+    private int newExpenseStartYear;
+    private int newExpenseEndYear;
+    private decimal newExpenseAnnualRateOfIncrease;
     private bool pendingFocusNewRow;
     private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
 
@@ -640,10 +664,16 @@
         editingNameRows.Clear();
         editingTypeRows.Clear();
         editingHoldingsRows.Clear();
+        editingExpenseStartYearRows.Clear();
+        editingExpenseEndYearRows.Clear();
+        editingExpenseAnnualRateRows.Clear();
         originalValues.Clear();
         originalNames.Clear();
         originalAccountTypes.Clear();
         originalAccountHoldings.Clear();
+        originalExpenseStartYears.Clear();
+        originalExpenseEndYears.Clear();
+        originalExpenseAnnualRates.Clear();
         editingParameters.Clear();
         originalParameterValues.Clear();
         activeAddType = null;
@@ -987,6 +1017,12 @@
             editingNameRows.Remove(expense);
             originalValues.Remove(expense);
             originalNames.Remove(expense);
+            editingExpenseStartYearRows.Remove(expense);
+            editingExpenseEndYearRows.Remove(expense);
+            editingExpenseAnnualRateRows.Remove(expense);
+            originalExpenseStartYears.Remove(expense);
+            originalExpenseEndYears.Remove(expense);
+            originalExpenseAnnualRates.Remove(expense);
             UpdateDirtyState();
         }
     }
@@ -1003,6 +1039,7 @@
         newItemValue = 0;
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
+        SetNewExpenseDefaults();
         pendingFocusNewRow = true;
     }
 
@@ -1013,6 +1050,9 @@
         newItemValue = 0;
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
+        newExpenseStartYear = 0;
+        newExpenseEndYear = 0;
+        newExpenseAnnualRateOfIncrease = 0;
         pendingFocusNewRow = false;
     }
 
@@ -1038,7 +1078,7 @@
                 portfolio.AddIncome(name, newItemValue);
                 break;
             case AddItemType.Expense:
-                portfolio.AddExpense(name, newItemValue, 0, 0, 0);
+                portfolio.AddExpense(name, newItemValue, newExpenseStartYear, newExpenseEndYear, newExpenseAnnualRateOfIncrease);
                 break;
         }
 
@@ -1179,7 +1219,10 @@
         || editingRows.Any()
         || editingNameRows.Any()
         || editingTypeRows.Any()
-        || editingHoldingsRows.Any();
+        || editingHoldingsRows.Any()
+        || editingExpenseStartYearRows.Any()
+        || editingExpenseEndYearRows.Any()
+        || editingExpenseAnnualRateRows.Any();
 
     private string FinancialProfilePanelClass => HasActiveEditOrAdd
         ? "financial-profile-panel edit-active"
@@ -1228,7 +1271,11 @@
 
     private bool IsExpenseRowEditing(Expense expense)
     {
-        return editingRows.Contains(expense) || editingNameRows.Contains(expense);
+        return editingRows.Contains(expense)
+            || editingNameRows.Contains(expense)
+            || editingExpenseStartYearRows.Contains(expense)
+            || editingExpenseEndYearRows.Contains(expense)
+            || editingExpenseAnnualRateRows.Contains(expense);
     }
 
     private void CommitItemEdit(object item)
@@ -1241,6 +1288,88 @@
     {
         StopEditingName(item, commitChanges: false);
         StopEditing(item, commitChanges: false);
+    }
+
+
+    private void SetNewExpenseDefaults()
+    {
+        newExpenseStartYear = DateTime.Now.Year;
+        newExpenseEndYear = newExpenseStartYear + portfolio.LifeExpectancy - portfolio.CurrentAge;
+        newExpenseAnnualRateOfIncrease = portfolio.AnnualInflationRate;
+    }
+
+    private bool IsEditingExpenseStartYear(Expense expense) => editingExpenseStartYearRows.Contains(expense);
+
+    private bool IsEditingExpenseEndYear(Expense expense) => editingExpenseEndYearRows.Contains(expense);
+
+    private bool IsEditingExpenseAnnualRate(Expense expense) => editingExpenseAnnualRateRows.Contains(expense);
+
+    private void StartEditingExpenseStartYear(Expense expense)
+    {
+        if (editingExpenseStartYearRows.Contains(expense) || !CanStartSectionEdit(expense)) return;
+        originalExpenseStartYears[expense] = expense.YearStart;
+        editingExpenseStartYearRows.Add(expense);
+    }
+
+    private void StartEditingExpenseEndYear(Expense expense)
+    {
+        if (editingExpenseEndYearRows.Contains(expense) || !CanStartSectionEdit(expense)) return;
+        originalExpenseEndYears[expense] = expense.YearEnd;
+        editingExpenseEndYearRows.Add(expense);
+    }
+
+    private void StartEditingExpenseAnnualRate(Expense expense)
+    {
+        if (editingExpenseAnnualRateRows.Contains(expense) || !CanStartSectionEdit(expense)) return;
+        originalExpenseAnnualRates[expense] = expense.AnnualRateOfIncrease;
+        editingExpenseAnnualRateRows.Add(expense);
+    }
+
+    private void StopEditingExpenseFields(Expense expense, bool commitChanges)
+    {
+        if (editingExpenseStartYearRows.Remove(expense) && !commitChanges && originalExpenseStartYears.TryGetValue(expense, out var originalStartYear))
+        {
+            expense.YearStart = originalStartYear;
+        }
+
+        if (editingExpenseEndYearRows.Remove(expense) && !commitChanges && originalExpenseEndYears.TryGetValue(expense, out var originalEndYear))
+        {
+            expense.YearEnd = originalEndYear;
+        }
+
+        if (editingExpenseAnnualRateRows.Remove(expense) && !commitChanges && originalExpenseAnnualRates.TryGetValue(expense, out var originalAnnualRate))
+        {
+            expense.AnnualRateOfIncrease = originalAnnualRate;
+        }
+
+        originalExpenseStartYears.Remove(expense);
+        originalExpenseEndYears.Remove(expense);
+        originalExpenseAnnualRates.Remove(expense);
+        UpdateDirtyState();
+    }
+
+    private void OnExpenseFieldKeyDown(Expense expense, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            CommitExpenseEdit(expense);
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelExpenseEdit(expense);
+        }
+    }
+
+    private void CommitExpenseEdit(Expense expense)
+    {
+        CommitItemEdit(expense);
+        StopEditingExpenseFields(expense, commitChanges: true);
+    }
+
+    private void CancelExpenseEdit(Expense expense)
+    {
+        CancelItemEdit(expense);
+        StopEditingExpenseFields(expense, commitChanges: false);
     }
 
     private void CommitAccountEdit(Account account)
