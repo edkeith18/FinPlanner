@@ -4,7 +4,7 @@ public class Portfolio
 {
     public List<Account> Accounts { get; set; } = new();
     public List<IncomeItem> Income { get; set; } = new();
-    public List<ExpenseItem> Expenses { get; set; } = new();
+    public List<Expense> Expenses { get; set; } = new();
     public decimal Year { get; set; } = 0;
     public decimal SecuritiesAnnualInterestRate { get; set; } = 0.0m;
     public decimal AnnualInflationRate { get; set; } = 0.0m;
@@ -40,9 +40,9 @@ public class Portfolio
         NotifyStateChanged();
     }
 
-    public void AddExpense(string name, decimal amount)
+    public void AddExpense(string name, decimal amount, int yearStart, int yearEnd, decimal annualRateOfIncrease)
     {
-        Expenses.Add(new ExpenseItem { Name = name, Amount = amount, LastUpdated = DateTime.Now });
+        Expenses.Add(new Expense { Name = name, Amount = amount, LastUpdated = DateTime.Now });
         NotifyStateChanged();
     }
 }
