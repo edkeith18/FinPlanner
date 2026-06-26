@@ -490,7 +490,21 @@
                 <i class="bi bi-plus-square"></i>
             </button>
         </div>
-        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+        <div class="expenses-table-wrapper">
+        <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
+            @if (portfolio.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
+            {
+                <thead>
+                    <tr>
+                        <th class="item-name">Name</th>
+                        <th class="item-value">Start age</th>
+                        <th class="item-value">End age</th>
+                        <th class="item-value">Amount</th>
+                        <th class="item-value">Annual rate of increase</th>
+                        <th class="item-actions"></th>
+                    </tr>
+                </thead>
+            }
             <tbody>
                 @foreach (var expense in portfolio.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
@@ -498,9 +512,7 @@
                         <td class="item-name">
                             @if (IsEditingName(expense))
                             {
-                                <InputText @bind-Value="expense.Name"
-                                           class="form-control form-control-sm"
-                                           @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
+                                <InputText @bind-Value="expense.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
                             }
                             else
                             {
@@ -508,36 +520,66 @@
                             }
                         </td>
                         <td class="item-value">
+                            @if (IsEditingExpenseStartAge(expense))
+                            {
+                                <InputNumber @bind-Value="expense.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartAge(expense)">@expense.AgeStart</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingExpenseEndAge(expense))
+                            {
+                                <InputNumber @bind-Value="expense.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndAge(expense)">@expense.AgeEnd</span>
+                            }
+                        </td>
+                        <td class="item-value">
                             @if (IsEditing(expense))
                             {
-                                <InputNumber @bind-Value="expense.Amount"
-                                             class="form-control form-control-sm number-input-no-spinner"
-                                             @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
+                                <InputNumber @bind-Value="expense.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
                             }
                             else
                             {
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
                             }
                         </td>
-                        <td class="item-actions">
-                            @if (IsExpenseRowEditing(expense))
+                        <td class="item-value">
+                            @if (IsEditingExpenseAnnualRate(expense))
                             {
-                                <button class="btn btn-link text-success p-0 me-2"
-                                        @onclick="() => CommitItemEdit(expense)"
-                                        aria-label="Commit expense edits for @expense.Name">
-                                    <i class="bi bi-check-circle"></i>
-                                </button>
-                                <button class="btn btn-link text-secondary p-0"
-                                        @onclick="() => CancelItemEdit(expense)"
-                                        aria-label="Cancel expense edits for @expense.Name">
-                                    <i class="bi bi-x-circle"></i>
-                                </button>
+                                <div class="expense-rate-edit">
+                                    <InputNumber @bind-Value="expense.AnnualRateOfIncrease"
+                                                 class="form-control form-control-sm number-input-no-spinner"
+                                                 disabled="@expense.UseInflationValue"
+                                                 @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                                    <label class="form-check-label expense-inflation-toggle">
+                                        <input type="checkbox"
+                                               class="form-check-input me-1"
+                                               checked="@expense.UseInflationValue"
+                                               @onchange="(e) => OnExpenseUseInflationChanged(expense, e)" />
+                                        Use inflation value
+                                    </label>
+                                </div>
                             }
                             else
                             {
-                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name">
-                                    <i class="bi bi-trash"></i>
-                                </button>
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@FormatExpenseAnnualRate(expense)</span>
+                            }
+                        </td>
+                        <td class="item-actions">
+                            @if (IsExpenseRowEditing(expense))
+                            {
+                                <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitExpenseEdit(expense)" aria-label="Commit expense edits for @expense.Name"><i class="bi bi-check-circle"></i></button>
+                                <button class="btn btn-link text-secondary p-0" @onclick="() => CancelExpenseEdit(expense)" aria-label="Cancel expense edits for @expense.Name"><i class="bi bi-x-circle"></i></button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name"><i class="bi bi-trash"></i></button>
                             }
                         </td>
                     </tr>
@@ -546,33 +588,34 @@
                 @if (activeAddType == AddItemType.Expense)
                 {
                     <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Expense)">
-                        <td class="item-name">
-                            <InputText id="@GetAddNameInputId(AddItemType.Expense)"
-                                       @bind-Value="newItemName"
-                                       class="form-control form-control-sm"
-                                       @onkeydown="OnAddInputKeyDown" />
-                        </td>
+                        <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Expense)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                         <td class="item-value">
-                            <InputNumber @bind-Value="newItemValue"
-                                         class="form-control form-control-sm number-input-no-spinner"
-                                         @onkeydown="OnAddInputKeyDown" />
+                            <div class="expense-rate-edit">
+                                <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
+                                             class="form-control form-control-sm number-input-no-spinner"
+                                             disabled="@newExpenseUseInflationValue"
+                                             @onkeydown="OnAddInputKeyDown" />
+                                <label class="form-check-label expense-inflation-toggle">
+                                    <input type="checkbox"
+                                           class="form-check-input me-1"
+                                           checked="@newExpenseUseInflationValue"
+                                           @onchange="OnNewExpenseUseInflationChanged" />
+                                    Use inflation value
+                                </label>
+                            </div>
                         </td>
                         <td class="item-actions">
-                            <button class="btn btn-link text-success p-0 me-2"
-                                    @onclick="SaveNewItem"
-                                    aria-label="Commit new expense">
-                                <i class="bi bi-check-circle"></i>
-                            </button>
-                            <button class="btn btn-link text-secondary p-0"
-                                    @onclick="CancelAdd"
-                                    aria-label="Cancel new expense">
-                                <i class="bi bi-x-circle"></i>
-                            </button>
+                            <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new expense"><i class="bi bi-check-circle"></i></button>
+                            <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new expense"><i class="bi bi-x-circle"></i></button>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
+        </div>
     </div>
 </div>
 
@@ -581,6 +624,10 @@
     private readonly Dictionary<object, string> originalNames = new();
     private readonly Dictionary<Account, AccountType> originalAccountTypes = new();
     private readonly Dictionary<Account, AccountHoldings> originalAccountHoldings = new();
+    private readonly Dictionary<Expense, int> originalExpenseStartAges = new();
+    private readonly Dictionary<Expense, int> originalExpenseEndAges = new();
+    private readonly Dictionary<Expense, decimal> originalExpenseAnnualRates = new();
+    private readonly Dictionary<Expense, bool> originalExpenseUseInflationValues = new();
     private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
     {
         ["step"] = "1",
@@ -593,6 +640,9 @@
     private readonly HashSet<object> editingNameRows = new();
     private readonly HashSet<Account> editingTypeRows = new();
     private readonly HashSet<Account> editingHoldingsRows = new();
+    private readonly HashSet<Expense> editingExpenseStartAgeRows = new();
+    private readonly HashSet<Expense> editingExpenseEndAgeRows = new();
+    private readonly HashSet<Expense> editingExpenseAnnualRateRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private bool isDirty;
@@ -603,6 +653,10 @@
     private decimal newItemValue;
     private AccountType newAccountType = AccountType.Brokerage;
     private AccountHoldings newAccountHoldings = AccountHoldings.Equities;
+    private int newExpenseStartAge;
+    private int newExpenseEndAge;
+    private decimal newExpenseAnnualRateOfIncrease;
+    private bool newExpenseUseInflationValue = true;
     private bool pendingFocusNewRow;
     private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
 
@@ -625,6 +679,8 @@
         if (data is null)
             return;
 
+        ApplyLegacyExpenseInflationDefaults(data, json);
+
         portfolio.Accounts = data.Accounts ?? new List<Account>();
         portfolio.Income = data.Income ?? new List<IncomeItem>();
         portfolio.Expenses = data.Expenses ?? new List<Expense>();
@@ -635,21 +691,80 @@
         portfolio.LifeExpectancy = data.LifeExpectancy;
         portfolio.AnnualExpenses = data.AnnualExpenses;
         portfolio.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
+        NormalizeLoadedExpenses(portfolio.Expenses);
 
         editingRows.Clear();
         editingNameRows.Clear();
         editingTypeRows.Clear();
         editingHoldingsRows.Clear();
+        editingExpenseStartAgeRows.Clear();
+        editingExpenseEndAgeRows.Clear();
+        editingExpenseAnnualRateRows.Clear();
         originalValues.Clear();
         originalNames.Clear();
         originalAccountTypes.Clear();
         originalAccountHoldings.Clear();
+        originalExpenseStartAges.Clear();
+        originalExpenseEndAges.Clear();
+        originalExpenseAnnualRates.Clear();
+        originalExpenseUseInflationValues.Clear();
         editingParameters.Clear();
         originalParameterValues.Clear();
         activeAddType = null;
 
         baselineSnapshot = SerializePortfolio();
         UpdateDirtyState();
+    }
+
+
+    private static void ApplyLegacyExpenseInflationDefaults(Portfolio data, string json)
+    {
+        if (data.Expenses is null || data.Expenses.Count == 0)
+        {
+            return;
+        }
+
+        using var document = JsonDocument.Parse(json);
+
+        if (!document.RootElement.TryGetProperty(nameof(Portfolio.Expenses), out var expensesElement)
+            || expensesElement.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        var index = 0;
+        foreach (var expenseElement in expensesElement.EnumerateArray())
+        {
+            if (index >= data.Expenses.Count)
+            {
+                break;
+            }
+
+            var expense = data.Expenses[index];
+            if (!expenseElement.TryGetProperty(nameof(Expense.UseInflationValue), out _))
+            {
+                expense.UseInflationValue = !HasCustomLegacyExpenseRate(expenseElement, data.AnnualInflationRate);
+            }
+
+            index++;
+        }
+    }
+
+    private static bool HasCustomLegacyExpenseRate(JsonElement expenseElement, decimal annualInflationRate)
+    {
+        if (expenseElement.TryGetProperty(nameof(Expense.AnnualRateOfIncrease), out var annualRateElement)
+            && annualRateElement.TryGetDecimal(out var annualRate))
+        {
+            return annualRate != annualInflationRate;
+        }
+
+        if (expenseElement.TryGetProperty("annualRateOfIncrease", out var legacyAnnualRateElement)
+            && legacyAnnualRateElement.TryGetDecimal(out var legacyAnnualRate))
+        {
+            return legacyAnnualRate != annualInflationRate;
+        }
+
+        return false;
     }
 
     private async Task Save()
@@ -819,6 +934,12 @@
         }
 
         originalParameterValues.Remove(parameter);
+
+        if (commitChanges && parameter == ParameterField.AnnualInflationRate)
+        {
+            ApplyInflationRateToLinkedExpenses();
+        }
+
         UpdateDirtyState();
     }
 
@@ -987,6 +1108,13 @@
             editingNameRows.Remove(expense);
             originalValues.Remove(expense);
             originalNames.Remove(expense);
+            editingExpenseStartAgeRows.Remove(expense);
+            editingExpenseEndAgeRows.Remove(expense);
+            editingExpenseAnnualRateRows.Remove(expense);
+            originalExpenseStartAges.Remove(expense);
+            originalExpenseEndAges.Remove(expense);
+            originalExpenseAnnualRates.Remove(expense);
+            originalExpenseUseInflationValues.Remove(expense);
             UpdateDirtyState();
         }
     }
@@ -1003,6 +1131,7 @@
         newItemValue = 0;
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
+        SetNewExpenseDefaults();
         pendingFocusNewRow = true;
     }
 
@@ -1013,6 +1142,10 @@
         newItemValue = 0;
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
+        newExpenseStartAge = 0;
+        newExpenseEndAge = 0;
+        newExpenseAnnualRateOfIncrease = 0;
+        newExpenseUseInflationValue = true;
         pendingFocusNewRow = false;
     }
 
@@ -1038,7 +1171,7 @@
                 portfolio.AddIncome(name, newItemValue);
                 break;
             case AddItemType.Expense:
-                portfolio.AddExpense(name, newItemValue, 0, 0, 0);
+                portfolio.AddExpense(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
                 break;
         }
 
@@ -1179,7 +1312,10 @@
         || editingRows.Any()
         || editingNameRows.Any()
         || editingTypeRows.Any()
-        || editingHoldingsRows.Any();
+        || editingHoldingsRows.Any()
+        || editingExpenseStartAgeRows.Any()
+        || editingExpenseEndAgeRows.Any()
+        || editingExpenseAnnualRateRows.Any();
 
     private string FinancialProfilePanelClass => HasActiveEditOrAdd
         ? "financial-profile-panel edit-active"
@@ -1228,7 +1364,11 @@
 
     private bool IsExpenseRowEditing(Expense expense)
     {
-        return editingRows.Contains(expense) || editingNameRows.Contains(expense);
+        return editingRows.Contains(expense)
+            || editingNameRows.Contains(expense)
+            || editingExpenseStartAgeRows.Contains(expense)
+            || editingExpenseEndAgeRows.Contains(expense)
+            || editingExpenseAnnualRateRows.Contains(expense);
     }
 
     private void CommitItemEdit(object item)
@@ -1241,6 +1381,168 @@
     {
         StopEditingName(item, commitChanges: false);
         StopEditing(item, commitChanges: false);
+    }
+
+
+
+    private static string FormatExpenseAnnualRate(Expense expense)
+    {
+        var suffix = expense.UseInflationValue ? " (inflation)" : string.Empty;
+        return $"{expense.AnnualRateOfIncrease}%{suffix}";
+    }
+
+    private void NormalizeLoadedExpenses(IEnumerable<Expense> expenses)
+    {
+        var currentCalendarYear = DateTime.Now.Year;
+
+        foreach (var expense in expenses)
+        {
+            if (expense.AgeStart >= 1900)
+            {
+                expense.AgeStart = portfolio.CurrentAge + expense.AgeStart - currentCalendarYear;
+            }
+
+            if (expense.AgeEnd >= 1900)
+            {
+                expense.AgeEnd = portfolio.CurrentAge + expense.AgeEnd - currentCalendarYear;
+            }
+
+            if (expense.UseInflationValue)
+            {
+                expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            }
+        }
+    }
+
+    private void ApplyInflationRateToLinkedExpenses()
+    {
+        foreach (var expense in portfolio.Expenses.Where(expense => expense.UseInflationValue))
+        {
+            expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
+    }
+
+    private void OnExpenseUseInflationChanged(Expense expense, ChangeEventArgs e)
+    {
+        expense.UseInflationValue = e.Value is bool value && value;
+
+        if (expense.UseInflationValue)
+        {
+            expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
+    }
+
+    private void OnNewExpenseUseInflationChanged(ChangeEventArgs e)
+    {
+        newExpenseUseInflationValue = e.Value is bool value && value;
+
+        if (newExpenseUseInflationValue)
+        {
+            newExpenseAnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
+    }
+
+    private void SetNewExpenseDefaults()
+    {
+        newExpenseStartAge = portfolio.CurrentAge;
+        newExpenseEndAge = portfolio.LifeExpectancy;
+        newExpenseUseInflationValue = true;
+        newExpenseAnnualRateOfIncrease = portfolio.AnnualInflationRate;
+    }
+
+    private bool IsEditingExpenseStartAge(Expense expense) => editingExpenseStartAgeRows.Contains(expense);
+
+    private bool IsEditingExpenseEndAge(Expense expense) => editingExpenseEndAgeRows.Contains(expense);
+
+    private bool IsEditingExpenseAnnualRate(Expense expense) => editingExpenseAnnualRateRows.Contains(expense);
+
+    private void StartEditingExpenseStartAge(Expense expense)
+    {
+        if (editingExpenseStartAgeRows.Contains(expense) || !CanStartSectionEdit(expense)) return;
+        originalExpenseStartAges[expense] = expense.AgeStart;
+        editingExpenseStartAgeRows.Add(expense);
+    }
+
+    private void StartEditingExpenseEndAge(Expense expense)
+    {
+        if (editingExpenseEndAgeRows.Contains(expense) || !CanStartSectionEdit(expense)) return;
+        originalExpenseEndAges[expense] = expense.AgeEnd;
+        editingExpenseEndAgeRows.Add(expense);
+    }
+
+    private void StartEditingExpenseAnnualRate(Expense expense)
+    {
+        if (editingExpenseAnnualRateRows.Contains(expense) || !CanStartSectionEdit(expense)) return;
+        originalExpenseAnnualRates[expense] = expense.AnnualRateOfIncrease;
+        originalExpenseUseInflationValues[expense] = expense.UseInflationValue;
+        if (expense.UseInflationValue)
+        {
+            expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
+        editingExpenseAnnualRateRows.Add(expense);
+    }
+
+    private void StopEditingExpenseFields(Expense expense, bool commitChanges)
+    {
+        if (editingExpenseStartAgeRows.Remove(expense) && !commitChanges && originalExpenseStartAges.TryGetValue(expense, out var originalStartAge))
+        {
+            expense.AgeStart = originalStartAge;
+        }
+
+        if (editingExpenseEndAgeRows.Remove(expense) && !commitChanges && originalExpenseEndAges.TryGetValue(expense, out var originalEndAge))
+        {
+            expense.AgeEnd = originalEndAge;
+        }
+
+        if (editingExpenseAnnualRateRows.Remove(expense))
+        {
+            if (!commitChanges)
+            {
+                if (originalExpenseAnnualRates.TryGetValue(expense, out var originalAnnualRate))
+                {
+                    expense.AnnualRateOfIncrease = originalAnnualRate;
+                }
+
+                if (originalExpenseUseInflationValues.TryGetValue(expense, out var originalUseInflationValue))
+                {
+                    expense.UseInflationValue = originalUseInflationValue;
+                }
+            }
+            else if (expense.UseInflationValue)
+            {
+                expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            }
+        }
+
+        originalExpenseStartAges.Remove(expense);
+        originalExpenseEndAges.Remove(expense);
+        originalExpenseAnnualRates.Remove(expense);
+        originalExpenseUseInflationValues.Remove(expense);
+        UpdateDirtyState();
+    }
+
+    private void OnExpenseFieldKeyDown(Expense expense, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            CommitExpenseEdit(expense);
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelExpenseEdit(expense);
+        }
+    }
+
+    private void CommitExpenseEdit(Expense expense)
+    {
+        CommitItemEdit(expense);
+        StopEditingExpenseFields(expense, commitChanges: true);
+    }
+
+    private void CancelExpenseEdit(Expense expense)
+    {
+        CancelItemEdit(expense);
+        StopEditingExpenseFields(expense, commitChanges: false);
     }
 
     private void CommitAccountEdit(Account account)
