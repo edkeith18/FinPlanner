@@ -40,15 +40,16 @@ public class Portfolio
         NotifyStateChanged();
     }
 
-    public void AddExpense(string name, decimal amount, int yearStart, int yearEnd, decimal annualRateOfIncrease)
+    public void AddExpense(string name, decimal amount, int ageStart, int ageEnd, decimal annualRateOfIncrease, bool useInflationValue = true)
     {
         Expenses.Add(new Expense
         {
             Name = name,
             Amount = amount,
-            YearStart = yearStart,
-            YearEnd = yearEnd,
+            AgeStart = ageStart,
+            AgeEnd = ageEnd,
             AnnualRateOfIncrease = annualRateOfIncrease,
+            UseInflationValue = useInflationValue,
             LastUpdated = DateTime.Now
         });
         NotifyStateChanged();

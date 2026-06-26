@@ -96,3 +96,27 @@
     opacity: 0.55;
     cursor: not-allowed;
 }
+
+.expenses-table-wrapper {
+    overflow-x: auto;
+}
+
+.expenses-table {
+    min-width: 64rem;
+}
+
+.expenses-table .item-actions {
+    white-space: nowrap;
+}
+
+.expense-rate-edit {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 18rem;
+}
+
+.expense-inflation-toggle {
+    white-space: nowrap;
+    font-size: 0.85rem;
+}
