@@ -553,6 +553,10 @@
                             @if (IsEditingExpenseAnnualRate(expense))
                             {
                                 <div class="expense-rate-edit">
+                                    <InputNumber @bind-Value="expense.AnnualRateOfIncrease"
+                                                 class="form-control form-control-sm number-input-no-spinner"
+                                                 disabled="@expense.UseInflationValue"
+                                                 @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
                                     <label class="form-check-label expense-inflation-toggle">
                                         <input type="checkbox"
                                                class="form-check-input me-1"
@@ -560,15 +564,11 @@
                                                @onchange="(e) => OnExpenseUseInflationChanged(expense, e)" />
                                         Use inflation value
                                     </label>
-                                    <InputNumber @bind-Value="expense.AnnualRateOfIncrease"
-                                                 class="form-control form-control-sm number-input-no-spinner"
-                                                 disabled="@expense.UseInflationValue"
-                                                 @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
                                 </div>
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@($"{expense.AnnualRateOfIncrease}%")</span>
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@FormatExpenseAnnualRate(expense)</span>
                             }
                         </td>
                         <td class="item-actions">
@@ -594,6 +594,10 @@
                         <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                         <td class="item-value">
                             <div class="expense-rate-edit">
+                                <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
+                                             class="form-control form-control-sm number-input-no-spinner"
+                                             disabled="@newExpenseUseInflationValue"
+                                             @onkeydown="OnAddInputKeyDown" />
                                 <label class="form-check-label expense-inflation-toggle">
                                     <input type="checkbox"
                                            class="form-check-input me-1"
@@ -601,10 +605,6 @@
                                            @onchange="OnNewExpenseUseInflationChanged" />
                                     Use inflation value
                                 </label>
-                                <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
-                                             class="form-control form-control-sm number-input-no-spinner"
-                                             disabled="@newExpenseUseInflationValue"
-                                             @onkeydown="OnAddInputKeyDown" />
                             </div>
                         </td>
                         <td class="item-actions">
@@ -1384,6 +1384,12 @@
     }
 
 
+
+    private static string FormatExpenseAnnualRate(Expense expense)
+    {
+        var suffix = expense.UseInflationValue ? " (inflation)" : string.Empty;
+        return $"{expense.AnnualRateOfIncrease}%{suffix}";
+    }
 
     private void NormalizeLoadedExpenses(IEnumerable<Expense> expenses)
     {
