@@ -627,7 +627,7 @@
 
         portfolio.Accounts = data.Accounts ?? new List<Account>();
         portfolio.Income = data.Income ?? new List<IncomeItem>();
-        portfolio.Expenses = data.Expenses ?? new List<ExpenseItem>();
+        portfolio.Expenses = data.Expenses ?? new List<Expense>();
         portfolio.Year = data.Year;
         portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
         portfolio.AnnualInflationRate = data.AnnualInflationRate;
@@ -978,7 +978,7 @@
         }
     }
 
-    private async Task DeleteExpense(ExpenseItem expense)
+    private async Task DeleteExpense(Expense expense)
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete expense '{expense.Name}'?"))
         {
@@ -1038,7 +1038,7 @@
                 portfolio.AddIncome(name, newItemValue);
                 break;
             case AddItemType.Expense:
-                portfolio.AddExpense(name, newItemValue);
+                portfolio.AddExpense(name, newItemValue, 0, 0, 0);
                 break;
         }
 
@@ -1074,7 +1074,7 @@
         {
             Account account => account.Balance,
             IncomeItem income => income.Amount,
-            ExpenseItem expense => expense.Amount,
+            Expense expense => expense.Amount,
             _ => 0m
         };
     }
@@ -1089,7 +1089,7 @@
             case IncomeItem income:
                 income.Amount = value;
                 break;
-            case ExpenseItem expense:
+            case Expense expense:
                 expense.Amount = value;
                 break;
         }
@@ -1101,7 +1101,7 @@
         {
             Account account => account.Name,
             IncomeItem income => income.Name,
-            ExpenseItem expense => expense.Name,
+            Expense expense => expense.Name,
             _ => string.Empty
         };
     }
@@ -1116,7 +1116,7 @@
             case IncomeItem income:
                 income.Name = value;
                 break;
-            case ExpenseItem expense:
+            case Expense expense:
                 expense.Name = value;
                 break;
         }
@@ -1208,7 +1208,7 @@
         {
             Account => AddItemType.Account,
             IncomeItem => AddItemType.Income,
-            ExpenseItem => AddItemType.Expense,
+            Expense => AddItemType.Expense,
             _ => null
         };
     }
@@ -1226,7 +1226,7 @@
         return editingRows.Contains(income) || editingNameRows.Contains(income);
     }
 
-    private bool IsExpenseRowEditing(ExpenseItem expense)
+    private bool IsExpenseRowEditing(Expense expense)
     {
         return editingRows.Contains(expense) || editingNameRows.Contains(expense);
     }
