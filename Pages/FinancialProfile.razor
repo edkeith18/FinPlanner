@@ -17,7 +17,7 @@
 <div class="d-flex gap-2 align-items-center mb-3">
     <label for="profileFileInput" class="btn btn-secondary mb-0">Load profile</label>
     <InputFile id="profileFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" />
-    <button class="btn btn-primary" @onclick="Save" disabled="@(!isDirty)">Download profile</button>
+    <button class="@SaveProfileButtonClass" @onclick="Save" disabled="@(!isDirty)">Save profile (download)</button>
 </div>
 
 <div class="financial-profile-layout">
@@ -659,6 +659,8 @@
     private bool newExpenseUseInflationValue = true;
     private bool pendingFocusNewRow;
     private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
+
+    private string SaveProfileButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
 
     protected override void OnInitialized()
     {
