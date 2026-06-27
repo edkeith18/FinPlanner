@@ -142,6 +142,12 @@
     opacity: 0.9;
 }
 
+.quick-plan-label-detail {
+    margin: 0.1rem 0 0;
+    font-size: 0.625rem;
+    opacity: 0.9;
+}
+
 .quick-plan-value {
     margin: 0.4rem 0 0;
     font-size: 1.1rem;
@@ -155,4 +161,8 @@
     text-align: center;
     color: #f4f6ff;
     opacity: 0.75;
+}
+
+.build-version-text p {
+    margin: 0;
 }
