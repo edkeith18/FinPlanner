@@ -59,9 +59,9 @@ public static class FinancialPlanCalculator
         var currentBalance = portfolio.Accounts.Sum(account => account.Balance);
         decimal finalBalance = 0m;
 
-        for (var year = portfolio.CurrentAge; year <= portfolio.LifeExpectancy; year++)
+        for (var age = portfolio.CurrentAge; age <= portfolio.LifeExpectancy; age++)
         {
-            if (year > portfolio.CurrentAge)
+            if (age > portfolio.CurrentAge)
             {
                 discretionaryExpenses *= 1m + inflationRateDecimal;
 
@@ -77,21 +77,21 @@ public static class FinancialPlanCalculator
             var expenseBreakdowns = copiedExpenses
                 .Select(expense => new FinancialPlanExpenseBreakdown(
                     expense.Name,
-                    IsExpenseActive(expense, year) ? expense.Amount : 0m))
+                    IsExpenseActive(expense, age) ? expense.Amount : 0m))
                 .ToList();
             var totalExpenses = expenseBreakdowns.Sum(expense => expense.Amount) + discretionaryExpenses;
             finalBalance = currentBalance - totalExpenses;
             currentBalance = finalBalance;
 
-            rows?.Add(new FinancialPlanRow(year, totalExpenses, expenseBreakdowns, discretionaryExpenses, finalBalance));
+            rows?.Add(new FinancialPlanRow(age, totalExpenses, expenseBreakdowns, discretionaryExpenses, finalBalance));
         }
 
         return finalBalance;
     }
 
-    private static bool IsExpenseActive(Expense expense, int year)
+    private static bool IsExpenseActive(Expense expense, int age)
     {
-        return expense.AgeStart <= year && expense.AgeEnd >= year;
+        return expense.AgeStart <= age && expense.AgeEnd >= age;
     }
 
     private static List<Expense> CopyExpenses(IEnumerable<Expense> expenses)
@@ -112,7 +112,7 @@ public static class FinancialPlanCalculator
 }
 
 public sealed record FinancialPlanRow(
-    int Year,
+    int Age,
     decimal TotalExpenses,
     IReadOnlyList<FinancialPlanExpenseBreakdown> Expenses,
     decimal DiscretionaryExpenses,

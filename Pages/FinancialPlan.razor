@@ -24,7 +24,7 @@ else
     <table class="table table-bordered table-sm align-middle">
         <thead class="table-light">
             <tr>
-                <th scope="col">Year</th>
+                <th scope="col">Age</th>
                 <th scope="col" class="expense-header">Total Expenses</th>
                 @foreach (var expenseName in expenseNames)
                 {
@@ -38,7 +38,7 @@ else
             @foreach (var row in planRows)
             {
                 <tr>
-                    <td>@row.Year</td>
+                    <td>@row.Age</td>
                     <td>@row.TotalExpenses.ToString("C")</td>
                     @foreach (var expenseName in expenseNames)
                     {
