@@ -33,7 +33,7 @@ public static class FinancialPlanCalculator
         {
             int midPoint = (lowerBound + upperBound) / 2;
             decimal annualExpenses = midPoint * ExpenseStep;
-            decimal finalBalance = ComputeFinalBalance(portfolio, annualExpenses, new List<FinancialPlanRow>());
+            decimal finalBalance = ComputeFinalBalance(portfolio, annualExpenses);
 
             if (finalBalance >= 0m)
             {
@@ -50,24 +50,65 @@ public static class FinancialPlanCalculator
         return true;
     }
 
-    private static decimal ComputeFinalBalance(Portfolio portfolio, decimal annualExpenses, List<FinancialPlanRow> rows)
+    private static decimal ComputeFinalBalance(Portfolio portfolio, decimal annualExpenses, List<FinancialPlanRow>? rows = null)
     {
         var inflationRateDecimal = portfolio.AnnualInflationRate / 100m;
         var securitiesRateDecimal = portfolio.SecuritiesAnnualInterestRate / 100m;
-        var currentExpenses = annualExpenses;
-        var currentBalance = portfolio.Accounts.Sum(account => account.Balance) - currentExpenses;
+        var copiedExpenses = CopyExpenses(portfolio.Expenses);
+        var discretionaryExpenses = annualExpenses - copiedExpenses.Sum(expense => expense.Amount);
+        var currentBalance = portfolio.Accounts.Sum(account => account.Balance);
+        decimal finalBalance = 0m;
 
         for (var year = portfolio.CurrentAge; year <= portfolio.LifeExpectancy; year++)
         {
-            rows?.Add(new FinancialPlanRow(year, currentExpenses, currentBalance));
+            if (year > portfolio.CurrentAge)
+            {
+                discretionaryExpenses *= 1m + inflationRateDecimal;
 
-            currentExpenses *= 1m + inflationRateDecimal;
-            currentBalance = (currentBalance * (1m + securitiesRateDecimal)) - currentExpenses;
+                foreach (var expense in copiedExpenses)
+                {
+                    var annualRateOfIncreaseDecimal = expense.AnnualRateOfIncrease / 100m;
+                    expense.Amount *= 1m + annualRateOfIncreaseDecimal;
+                }
+
+                currentBalance *= 1m + securitiesRateDecimal;
+            }
+
+            var expenseBreakdowns = copiedExpenses
+                .Select(expense => new FinancialPlanExpenseBreakdown(expense.Name, expense.Amount))
+                .ToList();
+            var totalExpenses = expenseBreakdowns.Sum(expense => expense.Amount) + discretionaryExpenses;
+            finalBalance = currentBalance - totalExpenses;
+            currentBalance = finalBalance;
+
+            rows?.Add(new FinancialPlanRow(year, totalExpenses, expenseBreakdowns, discretionaryExpenses, finalBalance));
         }
 
-        // The final balance after the last year of life expectancy is the last row's balance if rows were collected, otherwise it's just the computed balance. 
-        return rows is { Count: > 0 } ? rows[^1].Balance : 0m;
+        return finalBalance;
+    }
+
+    private static List<Expense> CopyExpenses(IEnumerable<Expense> expenses)
+    {
+        return expenses
+            .Select(expense => new Expense
+            {
+                Name = expense.Name,
+                Amount = expense.Amount,
+                AgeStart = expense.AgeStart,
+                AgeEnd = expense.AgeEnd,
+                AnnualRateOfIncrease = expense.AnnualRateOfIncrease,
+                UseInflationValue = expense.UseInflationValue,
+                LastUpdated = expense.LastUpdated
+            })
+            .ToList();
     }
 }
 
-public sealed record FinancialPlanRow(int Year, decimal Expenses, decimal Balance);
+public sealed record FinancialPlanRow(
+    int Year,
+    decimal TotalExpenses,
+    IReadOnlyList<FinancialPlanExpenseBreakdown> Expenses,
+    decimal DiscretionaryExpenses,
+    decimal Balance);
+
+public sealed record FinancialPlanExpenseBreakdown(string Name, decimal Amount);
