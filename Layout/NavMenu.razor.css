@@ -156,3 +156,7 @@
     color: #f4f6ff;
     opacity: 0.75;
 }
+
+.build-version-text p {
+    margin: 0;
+}

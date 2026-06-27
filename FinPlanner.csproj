@@ -25,8 +25,21 @@
   <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <BuildVersionTimestamp>$([System.DateTime]::Now.ToString('yyyyMMdd.HHmmss'))</BuildVersionTimestamp>
+      <BuildBranchName Condition="'$(GITHUB_HEAD_REF)' != ''">$(GITHUB_HEAD_REF)</BuildBranchName>
+      <BuildBranchName Condition="'$(BuildBranchName)' == '' and '$(GITHUB_REF_NAME)' != ''">$(GITHUB_REF_NAME)</BuildBranchName>
       <BuildVersionInfoDirectory>$(IntermediateOutputPath)Generated</BuildVersionInfoDirectory>
       <BuildVersionInfoFile>$(BuildVersionInfoDirectory)/BuildVersioningInfo.g.cs</BuildVersionInfoFile>
+    </PropertyGroup>
+    <Exec
+      Command="git branch --show-current"
+      ConsoleToMSBuild="true"
+      IgnoreExitCode="true"
+      Condition="'$(BuildBranchName)' == ''">
+      <Output TaskParameter="ConsoleOutput" ItemName="BuildBranchNameOutput" />
+    </Exec>
+    <PropertyGroup>
+      <BuildBranchName Condition="'$(BuildBranchName)' == ''">@(BuildBranchNameOutput)</BuildBranchName>
+      <BuildBranchName Condition="'$(BuildBranchName)' == ''">unknown</BuildBranchName>
     </PropertyGroup>
     <MakeDir Directories="$(BuildVersionInfoDirectory)" />
     <ItemGroup>
@@ -34,6 +47,7 @@
       <BuildVersionInfoLines Include="internal static class BuildVersioningInfo" />
       <BuildVersionInfoLines Include="{" />
       <BuildVersionInfoLines Include="    public const string Version = &quot;Version: $(BuildVersionTimestamp)&quot;%3B" />
+      <BuildVersionInfoLines Include="    public const string Branch = &quot;Branch: $(BuildBranchName)&quot;%3B" />
       <BuildVersionInfoLines Include="}" />
     </ItemGroup>
     <WriteLinesToFile
