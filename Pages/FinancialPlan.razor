@@ -14,23 +14,48 @@
 }
 else
 {
+    var planRows = FinancialPlanCalculator.BuildPlanRows(portfolio);
+    var expenseNames = planRows
+        .SelectMany(row => row.Expenses)
+        .Select(expense => expense.Name)
+        .Distinct(StringComparer.CurrentCultureIgnoreCase)
+        .ToList();
+
     <table class="table table-bordered table-sm align-middle">
         <thead class="table-light">
             <tr>
-                <th scope="col">Year</th>
-                <th scope="col">Expenses</th>
+                <th scope="col">Age</th>
+                <th scope="col" class="expense-header">Total Expenses</th>
+                @foreach (var expenseName in expenseNames)
+                {
+                    <th scope="col" class="expense-header">@expenseName</th>
+                }
+                <th scope="col" class="expense-header">Discretionary expenses</th>
                 <th scope="col">Balance</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var row in FinancialPlanCalculator.BuildPlanRows(portfolio))
+            @foreach (var row in planRows)
             {
                 <tr>
-                    <td>@row.Year</td>
-                    <td>@row.Expenses.ToString("C")</td>
+                    <td>@row.Age</td>
+                    <td>@row.TotalExpenses.ToString("C")</td>
+                    @foreach (var expenseName in expenseNames)
+                    {
+                        var expenseAmount = row.Expenses.FirstOrDefault(expense => string.Equals(expense.Name, expenseName, StringComparison.CurrentCultureIgnoreCase))?.Amount ?? 0m;
+                        <td>@expenseAmount.ToString("C")</td>
+                    }
+                    <td>@row.DiscretionaryExpenses.ToString("C")</td>
                     <td>@row.Balance.ToString("C")</td>
                 </tr>
             }
         </tbody>
     </table>
 }
+
+<style>
+    .expense-header {
+        background-color: #fff3cd;
+        color: #b02a37;
+    }
+</style>
