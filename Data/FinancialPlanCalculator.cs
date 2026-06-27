@@ -75,7 +75,9 @@ public static class FinancialPlanCalculator
             }
 
             var expenseBreakdowns = copiedExpenses
-                .Select(expense => new FinancialPlanExpenseBreakdown(expense.Name, expense.Amount))
+                .Select(expense => new FinancialPlanExpenseBreakdown(
+                    expense.Name,
+                    IsExpenseActive(expense, year) ? expense.Amount : 0m))
                 .ToList();
             var totalExpenses = expenseBreakdowns.Sum(expense => expense.Amount) + discretionaryExpenses;
             finalBalance = currentBalance - totalExpenses;
@@ -85,6 +87,11 @@ public static class FinancialPlanCalculator
         }
 
         return finalBalance;
+    }
+
+    private static bool IsExpenseActive(Expense expense, int year)
+    {
+        return expense.AgeStart <= year && expense.AgeEnd >= year;
     }
 
     private static List<Expense> CopyExpenses(IEnumerable<Expense> expenses)
