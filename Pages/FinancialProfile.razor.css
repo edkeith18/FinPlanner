@@ -7,44 +7,67 @@
     width: min(100%, 76rem);
 }
 
+.compact-table {
+    table-layout: auto;
+    width: auto;
+    max-width: 100%;
+}
+
 .compact-table td {
-    padding: 0.2rem 0.4rem;
+    padding: 0.2rem 0.3rem;
     vertical-align: middle;
 }
 
 .compact-table thead th {
-    padding: 0.2rem 0.4rem;
+    padding: 0.2rem 0.3rem;
     font-size: 0.85rem;
     font-weight: 600;
     color: var(--bs-secondary-color);
+    line-height: 1.15;
+    vertical-align: bottom;
+}
+
+.compact-table th:not(.item-name) {
+    width: 1%;
+    max-width: 7rem;
+    white-space: normal;
+    overflow-wrap: normal;
+}
+
+.compact-table td:not(.item-name) {
+    width: 1%;
+    white-space: nowrap;
 }
 
 .item-name {
-    width: 32%;
+    min-width: 12rem;
 }
 
-.item-type {
-    width: 20%;
-}
-
-.item-holdings {
-    width: 20%;
-}
-
+.item-type,
+.item-holdings,
 .item-value {
-    width: 18%;
+    width: 1%;
 }
 
 .item-actions {
-    width: 10%;
+    width: 1%;
     text-align: right;
+    white-space: nowrap;
+}
+
+.item-actions .btn {
+    white-space: nowrap;
 }
 
 .clickable-value,
 .clickable-name {
     display: inline-block;
-    min-width: 8rem;
+    min-width: 0;
     cursor: pointer;
+}
+
+.clickable-name {
+    min-width: 8rem;
 }
 
 .section-heading {
@@ -102,7 +125,7 @@
 }
 
 .expenses-table {
-    min-width: 68rem;
+    min-width: 54rem;
 }
 
 .expenses-table .item-actions {
@@ -113,7 +136,11 @@
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    min-width: 20rem;
+    min-width: 15rem;
+}
+
+.expense-rate-edit .form-control {
+    width: 5.5rem;
 }
 
 .expense-inflation-toggle {

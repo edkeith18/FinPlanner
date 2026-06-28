@@ -56,7 +56,7 @@ public class Portfolio
         NotifyStateChanged();
     }
 
-    public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, string fromAccountName, string toAccountName, decimal annualRateOfIncrease)
+    public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, string fromAccountName, string toAccountName, decimal annualRateOfIncrease, bool useInflationValue = true)
     {
         Transfers.Add(new Transfer
         {
@@ -66,7 +66,8 @@ public class Portfolio
             AgeEnd = ageEnd,
             FromAccountName = fromAccountName,
             ToAccountName = toAccountName,
-            AnnualRateOfIncrease = annualRateOfIncrease
+            AnnualRateOfIncrease = annualRateOfIncrease,
+            UseInflationValue = useInflationValue
         });
         NotifyStateChanged();
     }

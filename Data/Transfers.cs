@@ -9,6 +9,7 @@ public class Transfer
     public int AgeEnd { get; set; }
     public decimal Amount { get; set; }
     public decimal AnnualRateOfIncrease { get; set; }
+    public bool UseInflationValue { get; set; } = true;
 
     public decimal Execute(IEnumerable<Account> accounts)
     {
