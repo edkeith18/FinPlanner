@@ -5,6 +5,7 @@ public class Portfolio
     public List<Account> Accounts { get; set; } = new();
     public List<IncomeItem> Income { get; set; } = new();
     public List<Expense> Expenses { get; set; } = new();
+    public List<Transfer> Transfers { get; set; } = new();
     public decimal Year { get; set; } = 0;
     public decimal SecuritiesAnnualInterestRate { get; set; } = 0.0m;
     public decimal AnnualInflationRate { get; set; } = 0.0m;
@@ -51,6 +52,21 @@ public class Portfolio
             AnnualRateOfIncrease = annualRateOfIncrease,
             UseInflationValue = useInflationValue,
             LastUpdated = DateTime.Now
+        });
+        NotifyStateChanged();
+    }
+
+    public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, string fromAccountName, string toAccountName, decimal annualRateOfIncrease)
+    {
+        Transfers.Add(new Transfer
+        {
+            Name = name,
+            Amount = amount,
+            AgeStart = ageStart,
+            AgeEnd = ageEnd,
+            FromAccountName = fromAccountName,
+            ToAccountName = toAccountName,
+            AnnualRateOfIncrease = annualRateOfIncrease
         });
         NotifyStateChanged();
     }
