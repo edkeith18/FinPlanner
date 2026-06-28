@@ -866,25 +866,24 @@
 
     private string SaveProfileButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
 
-    private string FinancialProfileColumnStyle => $"--financial-profile-name-column-width: {GetNameColumnWidthCh().ToString(CultureInfo.InvariantCulture)}ch;";
+    private string FinancialProfileColumnStyle => $"--financial-profile-name-column-width: {GetAccountNameColumnWidthCh().ToString(CultureInfo.InvariantCulture)}ch;";
 
-    private double GetNameColumnWidthCh()
+    private double GetAccountNameColumnWidthCh()
     {
-        var longestNameLength = new[]
+        var accountNames = portfolio.Accounts.Select(account => account.Name);
+
+        if (activeAddType == AddItemType.Account && !string.IsNullOrWhiteSpace(newItemName))
         {
-            portfolio.Accounts.Select(account => account.Name),
-            portfolio.Income.Select(income => income.Name),
-            portfolio.Expenses.Select(expense => expense.Name),
-            portfolio.Transfers.Select(transfer => transfer.Name),
-            string.IsNullOrWhiteSpace(newItemName) ? Enumerable.Empty<string>() : new[] { newItemName }
+            accountNames = accountNames.Append(newItemName);
         }
-            .SelectMany(names => names)
+
+        var longestAccountNameLength = accountNames
             .Where(name => !string.IsNullOrEmpty(name))
             .Select(name => name.Length)
             .DefaultIfEmpty("Name".Length)
             .Max();
 
-        return Math.Clamp(Math.Ceiling(longestNameLength * 1.2) + 2, 12, 32);
+        return Math.Clamp(Math.Ceiling(longestAccountNameLength * 1.2) + 2, 12, 32);
     }
 
     protected override void OnInitialized()
