@@ -1,6 +1,7 @@
 @page "/"
 @page "/financial-profile"
 
+@using System.Globalization
 @using System.Text.Json
 @using System.Text.Json.Serialization
 @using FinPlanner.Data
@@ -21,7 +22,7 @@
 </div>
 
 <div class="financial-profile-layout">
-    <div class="@FinancialProfilePanelClass">
+    <div class="@FinancialProfilePanelClass" style="@FinancialProfileColumnStyle">
         <h5>Parameters</h5>
         <h6 class="parameter-subgroup-heading">Personal</h6>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
@@ -497,10 +498,10 @@
                 <thead>
                     <tr>
                         <th class="item-name">Name</th>
-                        <th class="item-value">Start age</th>
-                        <th class="item-value">End age</th>
-                        <th class="item-value">Amount</th>
-                        <th class="item-value">Annual rate of increase</th>
+                        <th class="item-value item-age">Start age</th>
+                        <th class="item-value item-age">End age</th>
+                        <th class="item-value item-money">Amount</th>
+                        <th class="item-value item-rate">Annual rate of increase</th>
                         <th class="item-actions"></th>
                     </tr>
                 </thead>
@@ -519,7 +520,7 @@
                                 <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(expense)">@expense.Name</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-age">
                             @if (IsEditingExpenseStartAge(expense))
                             {
                                 <InputNumber @bind-Value="expense.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
@@ -529,7 +530,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartAge(expense)">@expense.AgeStart</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-age">
                             @if (IsEditingExpenseEndAge(expense))
                             {
                                 <InputNumber @bind-Value="expense.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
@@ -539,7 +540,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndAge(expense)">@expense.AgeEnd</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-money">
                             @if (IsEditing(expense))
                             {
                                 <InputNumber @bind-Value="expense.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
@@ -549,7 +550,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-rate">
                             @if (IsEditingExpenseAnnualRate(expense))
                             {
                                 <div class="expense-rate-edit">
@@ -589,10 +590,10 @@
                 {
                     <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Expense)">
                         <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Expense)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value">
+                        <td class="item-value item-age"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value item-age"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value item-money"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value item-rate">
                             <div class="expense-rate-edit">
                                 <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
                                              class="form-control form-control-sm number-input-no-spinner"
@@ -639,12 +640,12 @@
                 <thead>
                     <tr>
                         <th class="item-name">Name</th>
-                        <th class="item-value">Start age</th>
-                        <th class="item-value">End age</th>
-                        <th class="item-value">Amount</th>
-                        <th class="item-value">From Account</th>
-                        <th class="item-value">To Account</th>
-                        <th class="item-value">Annual rate of increase</th>
+                        <th class="item-value item-age">Start age</th>
+                        <th class="item-value item-age">End age</th>
+                        <th class="item-value item-money">Amount</th>
+                        <th class="item-value item-account-reference">From Account</th>
+                        <th class="item-value item-account-reference">To Account</th>
+                        <th class="item-value item-rate">Annual rate of increase</th>
                         <th class="item-actions"></th>
                     </tr>
                 </thead>
@@ -663,7 +664,7 @@
                                 <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(transfer)">@transfer.Name</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-age">
                             @if (IsEditingTransferStartAge(transfer))
                             {
                                 <InputNumber @bind-Value="transfer.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
@@ -673,7 +674,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferStartAge(transfer)">@transfer.AgeStart</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-age">
                             @if (IsEditingTransferEndAge(transfer))
                             {
                                 <InputNumber @bind-Value="transfer.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
@@ -683,7 +684,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferEndAge(transfer)">@transfer.AgeEnd</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-money">
                             @if (IsEditing(transfer))
                             {
                                 <InputNumber @bind-Value="transfer.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(transfer, e)" />
@@ -693,7 +694,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(transfer)">@transfer.Amount.ToString("C")</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-account-reference">
                             @if (IsEditingTransferFromAccount(transfer))
                             {
                                 <InputSelect @bind-Value="transfer.FromAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
@@ -708,7 +709,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferFromAccount(transfer)">@transfer.FromAccountName</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-account-reference">
                             @if (IsEditingTransferToAccount(transfer))
                             {
                                 <InputSelect @bind-Value="transfer.ToAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
@@ -723,7 +724,7 @@
                                 <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferToAccount(transfer)">@transfer.ToAccountName</span>
                             }
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-rate">
                             @if (IsEditingTransferAnnualRate(transfer))
                             {
                                 <div class="expense-rate-edit">
@@ -763,10 +764,10 @@
                 {
                     <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Transfer)">
                         <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Transfer)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value">
+                        <td class="item-value item-age"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value item-age"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value item-money"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value item-account-reference">
                             <InputSelect @bind-Value="newTransferFromAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
                                 @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                 {
@@ -774,7 +775,7 @@
                                 }
                             </InputSelect>
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-account-reference">
                             <InputSelect @bind-Value="newTransferToAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
                                 @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                 {
@@ -782,7 +783,7 @@
                                 }
                             </InputSelect>
                         </td>
-                        <td class="item-value">
+                        <td class="item-value item-rate">
                             <div class="expense-rate-edit">
                                 <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
                                              class="form-control form-control-sm number-input-no-spinner"
@@ -864,6 +865,27 @@
     private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
 
     private string SaveProfileButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
+
+    private string FinancialProfileColumnStyle => $"--financial-profile-name-column-width: {GetNameColumnWidthCh().ToString(CultureInfo.InvariantCulture)}ch;";
+
+    private double GetNameColumnWidthCh()
+    {
+        var longestNameLength = new[]
+        {
+            portfolio.Accounts.Select(account => account.Name),
+            portfolio.Income.Select(income => income.Name),
+            portfolio.Expenses.Select(expense => expense.Name),
+            portfolio.Transfers.Select(transfer => transfer.Name),
+            string.IsNullOrWhiteSpace(newItemName) ? Enumerable.Empty<string>() : new[] { newItemName }
+        }
+            .SelectMany(names => names)
+            .Where(name => !string.IsNullOrEmpty(name))
+            .Select(name => name.Length)
+            .DefaultIfEmpty("Name".Length)
+            .Max();
+
+        return Math.Clamp(Math.Ceiling(longestNameLength * 1.2) + 2, 12, 32);
+    }
 
     protected override void OnInitialized()
     {

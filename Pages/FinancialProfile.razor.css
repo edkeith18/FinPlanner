@@ -29,7 +29,6 @@
 
 .compact-table th:not(.item-name) {
     width: 1%;
-    max-width: 7rem;
     white-space: normal;
     overflow-wrap: normal;
 }
@@ -40,13 +39,52 @@
 }
 
 .item-name {
-    min-width: 12rem;
+    width: max(12rem, var(--financial-profile-name-column-width, 12rem));
+    min-width: max(12rem, var(--financial-profile-name-column-width, 12rem));
+    max-width: max(12rem, var(--financial-profile-name-column-width, 12rem));
+}
+
+.item-name .form-control,
+.item-name .clickable-name {
+    width: 100%;
 }
 
 .item-type,
 .item-holdings,
 .item-value {
     width: 1%;
+}
+
+.item-type,
+.item-holdings {
+    min-width: 10rem;
+}
+
+.item-value {
+    min-width: 8.5rem;
+}
+
+.item-age {
+    min-width: 5.5rem;
+}
+
+.item-money {
+    min-width: 9.5rem;
+}
+
+.item-account-reference {
+    min-width: max(12rem, var(--financial-profile-name-column-width, 12rem));
+}
+
+.item-rate {
+    min-width: 15rem;
+}
+
+.item-type .form-select,
+.item-holdings .form-select,
+.item-value .form-control,
+.item-value .form-select {
+    min-width: 100%;
 }
 
 .item-actions {
@@ -67,7 +105,7 @@
 }
 
 .clickable-name {
-    min-width: 8rem;
+    min-width: 0;
 }
 
 .section-heading {
@@ -125,7 +163,7 @@
 }
 
 .expenses-table {
-    min-width: 54rem;
+    min-width: max-content;
 }
 
 .expenses-table .item-actions {
@@ -137,6 +175,7 @@
     align-items: center;
     gap: 0.5rem;
     min-width: 15rem;
+    white-space: nowrap;
 }
 
 .expense-rate-edit .form-control {
