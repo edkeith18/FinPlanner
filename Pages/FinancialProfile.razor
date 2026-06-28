@@ -616,6 +616,196 @@
             </tbody>
         </table>
         </div>
+
+        <hr />
+
+        <div class="section-heading">
+            <h5 class="mb-0">Transfers</h5>
+            <button class="btn btn-link p-0 heading-add-button"
+                    disabled="@(IsSectionBusy(AddItemType.Transfer) || !CanAddTransfer)"
+                    @onclick="() => StartAdd(AddItemType.Transfer)"
+                    aria-label="Add Transfer">
+                <i class="bi bi-plus-square"></i>
+            </button>
+        </div>
+        @if (portfolio.Accounts.Count == 0)
+        {
+            <p class="text-muted mb-2">Add an account before creating transfers.</p>
+        }
+        <div class="expenses-table-wrapper">
+        <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
+            @if (portfolio.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
+            {
+                <thead>
+                    <tr>
+                        <th class="item-name">Name</th>
+                        <th class="item-value">Start age</th>
+                        <th class="item-value">End age</th>
+                        <th class="item-value">Amount</th>
+                        <th class="item-value">From Account</th>
+                        <th class="item-value">To Account</th>
+                        <th class="item-value">Annual rate of increase</th>
+                        <th class="item-actions"></th>
+                    </tr>
+                </thead>
+            }
+            <tbody>
+                @foreach (var transfer in portfolio.Transfers.OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase))
+                {
+                    <tr class="@(IsTransferRowEditing(transfer) ? "edit-mode-row" : null)">
+                        <td class="item-name">
+                            @if (IsEditingName(transfer))
+                            {
+                                <InputText @bind-Value="transfer.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(transfer, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(transfer)">@transfer.Name</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingTransferStartAge(transfer))
+                            {
+                                <InputNumber @bind-Value="transfer.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferStartAge(transfer)">@transfer.AgeStart</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingTransferEndAge(transfer))
+                            {
+                                <InputNumber @bind-Value="transfer.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferEndAge(transfer)">@transfer.AgeEnd</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditing(transfer))
+                            {
+                                <InputNumber @bind-Value="transfer.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(transfer, e)" />
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(transfer)">@transfer.Amount.ToString("C")</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingTransferFromAccount(transfer))
+                            {
+                                <InputSelect @bind-Value="transfer.FromAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
+                                    @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                    {
+                                        <option value="@account.Name">@account.Name</option>
+                                    }
+                                </InputSelect>
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferFromAccount(transfer)">@transfer.FromAccountName</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingTransferToAccount(transfer))
+                            {
+                                <InputSelect @bind-Value="transfer.ToAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
+                                    @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                    {
+                                        <option value="@account.Name">@account.Name</option>
+                                    }
+                                </InputSelect>
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferToAccount(transfer)">@transfer.ToAccountName</span>
+                            }
+                        </td>
+                        <td class="item-value">
+                            @if (IsEditingTransferAnnualRate(transfer))
+                            {
+                                <div class="expense-rate-edit">
+                                    <InputNumber @bind-Value="transfer.AnnualRateOfIncrease"
+                                                 class="form-control form-control-sm number-input-no-spinner"
+                                                 disabled="@transfer.UseInflationValue"
+                                                 @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                                    <label class="form-check-label expense-inflation-toggle">
+                                        <input type="checkbox"
+                                               class="form-check-input me-1"
+                                               checked="@transfer.UseInflationValue"
+                                               @onchange="(e) => OnTransferUseInflationChanged(transfer, e)" />
+                                        Use inflation value
+                                    </label>
+                                </div>
+                            }
+                            else
+                            {
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferAnnualRate(transfer)">@FormatTransferAnnualRate(transfer)</span>
+                            }
+                        </td>
+                        <td class="item-actions">
+                            @if (IsTransferRowEditing(transfer))
+                            {
+                                <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitTransferEdit(transfer)" aria-label="Commit transfer edits for @transfer.Name"><i class="bi bi-check-circle"></i></button>
+                                <button class="btn btn-link text-secondary p-0" @onclick="() => CancelTransferEdit(transfer)" aria-label="Cancel transfer edits for @transfer.Name"><i class="bi bi-x-circle"></i></button>
+                            }
+                            else
+                            {
+                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteTransfer(transfer)" aria-label="Delete @transfer.Name"><i class="bi bi-trash"></i></button>
+                            }
+                        </td>
+                    </tr>
+                }
+
+                @if (activeAddType == AddItemType.Transfer)
+                {
+                    <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Transfer)">
+                        <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Transfer)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
+                        <td class="item-value">
+                            <InputSelect @bind-Value="newTransferFromAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
+                                @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                {
+                                    <option value="@account.Name">@account.Name</option>
+                                }
+                            </InputSelect>
+                        </td>
+                        <td class="item-value">
+                            <InputSelect @bind-Value="newTransferToAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
+                                @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                {
+                                    <option value="@account.Name">@account.Name</option>
+                                }
+                            </InputSelect>
+                        </td>
+                        <td class="item-value">
+                            <div class="expense-rate-edit">
+                                <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
+                                             class="form-control form-control-sm number-input-no-spinner"
+                                             disabled="@newExpenseUseInflationValue"
+                                             @onkeydown="OnAddInputKeyDown" />
+                                <label class="form-check-label expense-inflation-toggle">
+                                    <input type="checkbox"
+                                           class="form-check-input me-1"
+                                           checked="@newExpenseUseInflationValue"
+                                           @onchange="OnNewExpenseUseInflationChanged" />
+                                    Use inflation value
+                                </label>
+                            </div>
+                        </td>
+                        <td class="item-actions">
+                            <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new transfer"><i class="bi bi-check-circle"></i></button>
+                            <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new transfer"><i class="bi bi-x-circle"></i></button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        </div>
     </div>
 </div>
 
@@ -628,6 +818,12 @@
     private readonly Dictionary<Expense, int> originalExpenseEndAges = new();
     private readonly Dictionary<Expense, decimal> originalExpenseAnnualRates = new();
     private readonly Dictionary<Expense, bool> originalExpenseUseInflationValues = new();
+    private readonly Dictionary<Transfer, int> originalTransferStartAges = new();
+    private readonly Dictionary<Transfer, int> originalTransferEndAges = new();
+    private readonly Dictionary<Transfer, decimal> originalTransferAnnualRates = new();
+    private readonly Dictionary<Transfer, bool> originalTransferUseInflationValues = new();
+    private readonly Dictionary<Transfer, string> originalTransferFromAccountNames = new();
+    private readonly Dictionary<Transfer, string> originalTransferToAccountNames = new();
     private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
     {
         ["step"] = "1",
@@ -643,6 +839,11 @@
     private readonly HashSet<Expense> editingExpenseStartAgeRows = new();
     private readonly HashSet<Expense> editingExpenseEndAgeRows = new();
     private readonly HashSet<Expense> editingExpenseAnnualRateRows = new();
+    private readonly HashSet<Transfer> editingTransferStartAgeRows = new();
+    private readonly HashSet<Transfer> editingTransferEndAgeRows = new();
+    private readonly HashSet<Transfer> editingTransferAnnualRateRows = new();
+    private readonly HashSet<Transfer> editingTransferFromAccountRows = new();
+    private readonly HashSet<Transfer> editingTransferToAccountRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private bool isDirty;
@@ -657,6 +858,8 @@
     private int newExpenseEndAge;
     private decimal newExpenseAnnualRateOfIncrease;
     private bool newExpenseUseInflationValue = true;
+    private string newTransferFromAccountName = string.Empty;
+    private string newTransferToAccountName = string.Empty;
     private bool pendingFocusNewRow;
     private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
 
@@ -682,10 +885,12 @@
             return;
 
         ApplyLegacyExpenseInflationDefaults(data, json);
+        ApplyLegacyTransferInflationDefaults(data, json);
 
         portfolio.Accounts = data.Accounts ?? new List<Account>();
         portfolio.Income = data.Income ?? new List<IncomeItem>();
         portfolio.Expenses = data.Expenses ?? new List<Expense>();
+        portfolio.Transfers = data.Transfers ?? new List<Transfer>();
         portfolio.Year = data.Year;
         portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
         portfolio.AnnualInflationRate = data.AnnualInflationRate;
@@ -694,6 +899,7 @@
         portfolio.AnnualExpenses = data.AnnualExpenses;
         portfolio.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
         NormalizeLoadedExpenses(portfolio.Expenses);
+        NormalizeLoadedTransfers(portfolio.Transfers);
 
         editingRows.Clear();
         editingNameRows.Clear();
@@ -710,6 +916,7 @@
         originalExpenseEndAges.Clear();
         originalExpenseAnnualRates.Clear();
         originalExpenseUseInflationValues.Clear();
+        ClearTransferEditState();
         editingParameters.Clear();
         originalParameterValues.Clear();
         activeAddType = null;
@@ -752,15 +959,54 @@
         }
     }
 
+
+    private static void ApplyLegacyTransferInflationDefaults(Portfolio data, string json)
+    {
+        if (data.Transfers is null || data.Transfers.Count == 0)
+        {
+            return;
+        }
+
+        using var document = JsonDocument.Parse(json);
+
+        if (!document.RootElement.TryGetProperty(nameof(Portfolio.Transfers), out var transfersElement)
+            || transfersElement.ValueKind != JsonValueKind.Array)
+        {
+            return;
+        }
+
+        var index = 0;
+        foreach (var transferElement in transfersElement.EnumerateArray())
+        {
+            if (index >= data.Transfers.Count)
+            {
+                break;
+            }
+
+            var transfer = data.Transfers[index];
+            if (!transferElement.TryGetProperty(nameof(Transfer.UseInflationValue), out _))
+            {
+                transfer.UseInflationValue = !HasCustomAnnualRate(transferElement, data.AnnualInflationRate);
+            }
+
+            index++;
+        }
+    }
+
     private static bool HasCustomLegacyExpenseRate(JsonElement expenseElement, decimal annualInflationRate)
     {
-        if (expenseElement.TryGetProperty(nameof(Expense.AnnualRateOfIncrease), out var annualRateElement)
+        return HasCustomAnnualRate(expenseElement, annualInflationRate);
+    }
+
+    private static bool HasCustomAnnualRate(JsonElement itemElement, decimal annualInflationRate)
+    {
+        if (itemElement.TryGetProperty(nameof(Expense.AnnualRateOfIncrease), out var annualRateElement)
             && annualRateElement.TryGetDecimal(out var annualRate))
         {
             return annualRate != annualInflationRate;
         }
 
-        if (expenseElement.TryGetProperty("annualRateOfIncrease", out var legacyAnnualRateElement)
+        if (itemElement.TryGetProperty("annualRateOfIncrease", out var legacyAnnualRateElement)
             && legacyAnnualRateElement.TryGetDecimal(out var legacyAnnualRate))
         {
             return legacyAnnualRate != annualInflationRate;
@@ -939,7 +1185,7 @@
 
         if (commitChanges && parameter == ParameterField.AnnualInflationRate)
         {
-            ApplyInflationRateToLinkedExpenses();
+            ApplyInflationRateToLinkedItems();
         }
 
         UpdateDirtyState();
@@ -1121,6 +1367,30 @@
         }
     }
 
+    private async Task DeleteTransfer(Transfer transfer)
+    {
+        if (await JS.InvokeAsync<bool>("confirm", $"Delete transfer '{transfer.Name}'?"))
+        {
+            portfolio.Transfers.Remove(transfer);
+            editingRows.Remove(transfer);
+            editingNameRows.Remove(transfer);
+            originalValues.Remove(transfer);
+            originalNames.Remove(transfer);
+            editingTransferStartAgeRows.Remove(transfer);
+            editingTransferEndAgeRows.Remove(transfer);
+            editingTransferAnnualRateRows.Remove(transfer);
+            editingTransferFromAccountRows.Remove(transfer);
+            editingTransferToAccountRows.Remove(transfer);
+            originalTransferStartAges.Remove(transfer);
+            originalTransferEndAges.Remove(transfer);
+            originalTransferAnnualRates.Remove(transfer);
+            originalTransferUseInflationValues.Remove(transfer);
+            originalTransferFromAccountNames.Remove(transfer);
+            originalTransferToAccountNames.Remove(transfer);
+            UpdateDirtyState();
+        }
+    }
+
     private void StartAdd(AddItemType itemType)
     {
         if (activeAddType == itemType || HasActiveEditOrAdd)
@@ -1134,6 +1404,7 @@
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
         SetNewExpenseDefaults();
+        SetNewTransferDefaults();
         pendingFocusNewRow = true;
     }
 
@@ -1148,6 +1419,8 @@
         newExpenseEndAge = 0;
         newExpenseAnnualRateOfIncrease = 0;
         newExpenseUseInflationValue = true;
+        newTransferFromAccountName = string.Empty;
+        newTransferToAccountName = string.Empty;
         pendingFocusNewRow = false;
     }
 
@@ -1174,6 +1447,13 @@
                 break;
             case AddItemType.Expense:
                 portfolio.AddExpense(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
+                break;
+            case AddItemType.Transfer:
+                if (!CanAddTransfer)
+                {
+                    return;
+                }
+                portfolio.AddTransfer(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newTransferFromAccountName, newTransferToAccountName, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
                 break;
         }
 
@@ -1210,6 +1490,7 @@
             Account account => account.Balance,
             IncomeItem income => income.Amount,
             Expense expense => expense.Amount,
+            Transfer transfer => transfer.Amount,
             _ => 0m
         };
     }
@@ -1227,6 +1508,9 @@
             case Expense expense:
                 expense.Amount = value;
                 break;
+            case Transfer transfer:
+                transfer.Amount = value;
+                break;
         }
     }
 
@@ -1237,6 +1521,7 @@
             Account account => account.Name,
             IncomeItem income => income.Name,
             Expense expense => expense.Name,
+            Transfer transfer => transfer.Name,
             _ => string.Empty
         };
     }
@@ -1253,6 +1538,9 @@
                 break;
             case Expense expense:
                 expense.Name = value;
+                break;
+            case Transfer transfer:
+                transfer.Name = value;
                 break;
         }
     }
@@ -1317,7 +1605,12 @@
         || editingHoldingsRows.Any()
         || editingExpenseStartAgeRows.Any()
         || editingExpenseEndAgeRows.Any()
-        || editingExpenseAnnualRateRows.Any();
+        || editingExpenseAnnualRateRows.Any()
+        || editingTransferStartAgeRows.Any()
+        || editingTransferEndAgeRows.Any()
+        || editingTransferAnnualRateRows.Any()
+        || editingTransferFromAccountRows.Any()
+        || editingTransferToAccountRows.Any();
 
     private string FinancialProfilePanelClass => HasActiveEditOrAdd
         ? "financial-profile-panel edit-active"
@@ -1347,6 +1640,7 @@
             Account => AddItemType.Account,
             IncomeItem => AddItemType.Income,
             Expense => AddItemType.Expense,
+            Transfer => AddItemType.Transfer,
             _ => null
         };
     }
@@ -1373,6 +1667,17 @@
             || editingExpenseAnnualRateRows.Contains(expense);
     }
 
+    private bool IsTransferRowEditing(Transfer transfer)
+    {
+        return editingRows.Contains(transfer)
+            || editingNameRows.Contains(transfer)
+            || editingTransferStartAgeRows.Contains(transfer)
+            || editingTransferEndAgeRows.Contains(transfer)
+            || editingTransferAnnualRateRows.Contains(transfer)
+            || editingTransferFromAccountRows.Contains(transfer)
+            || editingTransferToAccountRows.Contains(transfer);
+    }
+
     private void CommitItemEdit(object item)
     {
         StopEditingName(item, commitChanges: true);
@@ -1389,8 +1694,18 @@
 
     private static string FormatExpenseAnnualRate(Expense expense)
     {
-        var suffix = expense.UseInflationValue ? " (inflation)" : string.Empty;
-        return $"{expense.AnnualRateOfIncrease}%{suffix}";
+        return FormatAnnualRate(expense.AnnualRateOfIncrease, expense.UseInflationValue);
+    }
+
+    private static string FormatTransferAnnualRate(Transfer transfer)
+    {
+        return FormatAnnualRate(transfer.AnnualRateOfIncrease, transfer.UseInflationValue);
+    }
+
+    private static string FormatAnnualRate(decimal annualRateOfIncrease, bool useInflationValue)
+    {
+        var suffix = useInflationValue ? " (inflation)" : string.Empty;
+        return $"{annualRateOfIncrease}%{suffix}";
     }
 
     private void NormalizeLoadedExpenses(IEnumerable<Expense> expenses)
@@ -1416,17 +1731,48 @@
         }
     }
 
-    private void ApplyInflationRateToLinkedExpenses()
+    private void NormalizeLoadedTransfers(IEnumerable<Transfer> transfers)
+    {
+        var currentCalendarYear = DateTime.Now.Year;
+
+        foreach (var transfer in transfers)
+        {
+            if (transfer.AgeStart >= 1900)
+            {
+                transfer.AgeStart = portfolio.CurrentAge + transfer.AgeStart - currentCalendarYear;
+            }
+
+            if (transfer.AgeEnd >= 1900)
+            {
+                transfer.AgeEnd = portfolio.CurrentAge + transfer.AgeEnd - currentCalendarYear;
+            }
+
+            EnsureTransferAccountSelectionIsValid(transfer);
+
+            if (transfer.UseInflationValue)
+            {
+                transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            }
+        }
+    }
+
+
+    private void ApplyInflationRateToLinkedItems()
     {
         foreach (var expense in portfolio.Expenses.Where(expense => expense.UseInflationValue))
         {
             expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
         }
+
+        foreach (var transfer in portfolio.Transfers.Where(transfer => transfer.UseInflationValue))
+        {
+            transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
     }
 
     private void OnExpenseUseInflationChanged(Expense expense, ChangeEventArgs e)
     {
-        expense.UseInflationValue = e.Value is bool value && value;
+        expense.UseInflationValue = IsChecked(e);
 
         if (expense.UseInflationValue)
         {
@@ -1434,14 +1780,29 @@
         }
     }
 
+    private void OnTransferUseInflationChanged(Transfer transfer, ChangeEventArgs e)
+    {
+        transfer.UseInflationValue = IsChecked(e);
+
+        if (transfer.UseInflationValue)
+        {
+            transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
+    }
+
     private void OnNewExpenseUseInflationChanged(ChangeEventArgs e)
     {
-        newExpenseUseInflationValue = e.Value is bool value && value;
+        newExpenseUseInflationValue = IsChecked(e);
 
         if (newExpenseUseInflationValue)
         {
             newExpenseAnnualRateOfIncrease = portfolio.AnnualInflationRate;
         }
+    }
+
+    private static bool IsChecked(ChangeEventArgs e)
+    {
+        return e.Value is bool value && value;
     }
 
     private void SetNewExpenseDefaults()
@@ -1547,6 +1908,196 @@
         StopEditingExpenseFields(expense, commitChanges: false);
     }
 
+    private bool CanAddTransfer => portfolio.Accounts.Count > 0;
+
+    private bool IsEditingTransferStartAge(Transfer transfer) => editingTransferStartAgeRows.Contains(transfer);
+
+    private bool IsEditingTransferEndAge(Transfer transfer) => editingTransferEndAgeRows.Contains(transfer);
+
+    private bool IsEditingTransferAnnualRate(Transfer transfer) => editingTransferAnnualRateRows.Contains(transfer);
+
+    private bool IsEditingTransferFromAccount(Transfer transfer) => editingTransferFromAccountRows.Contains(transfer);
+
+    private bool IsEditingTransferToAccount(Transfer transfer) => editingTransferToAccountRows.Contains(transfer);
+
+    private void StartEditingTransferStartAge(Transfer transfer)
+    {
+        if (editingTransferStartAgeRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
+        originalTransferStartAges[transfer] = transfer.AgeStart;
+        editingTransferStartAgeRows.Add(transfer);
+    }
+
+    private void StartEditingTransferEndAge(Transfer transfer)
+    {
+        if (editingTransferEndAgeRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
+        originalTransferEndAges[transfer] = transfer.AgeEnd;
+        editingTransferEndAgeRows.Add(transfer);
+    }
+
+    private void StartEditingTransferAnnualRate(Transfer transfer)
+    {
+        if (editingTransferAnnualRateRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
+        originalTransferAnnualRates[transfer] = transfer.AnnualRateOfIncrease;
+        originalTransferUseInflationValues[transfer] = transfer.UseInflationValue;
+        if (transfer.UseInflationValue)
+        {
+            transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        }
+        editingTransferAnnualRateRows.Add(transfer);
+    }
+
+    private void StartEditingTransferFromAccount(Transfer transfer)
+    {
+        if (editingTransferFromAccountRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
+        originalTransferFromAccountNames[transfer] = transfer.FromAccountName;
+        EnsureTransferAccountSelectionIsValid(transfer);
+        editingTransferFromAccountRows.Add(transfer);
+    }
+
+    private void StartEditingTransferToAccount(Transfer transfer)
+    {
+        if (editingTransferToAccountRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
+        originalTransferToAccountNames[transfer] = transfer.ToAccountName;
+        EnsureTransferAccountSelectionIsValid(transfer);
+        editingTransferToAccountRows.Add(transfer);
+    }
+
+    private void StopEditingTransferFields(Transfer transfer, bool commitChanges)
+    {
+        if (editingTransferStartAgeRows.Remove(transfer) && !commitChanges && originalTransferStartAges.TryGetValue(transfer, out var originalStartAge))
+        {
+            transfer.AgeStart = originalStartAge;
+        }
+
+        if (editingTransferEndAgeRows.Remove(transfer) && !commitChanges && originalTransferEndAges.TryGetValue(transfer, out var originalEndAge))
+        {
+            transfer.AgeEnd = originalEndAge;
+        }
+
+        if (editingTransferAnnualRateRows.Remove(transfer))
+        {
+            if (!commitChanges)
+            {
+                if (originalTransferAnnualRates.TryGetValue(transfer, out var originalAnnualRate))
+                {
+                    transfer.AnnualRateOfIncrease = originalAnnualRate;
+                }
+
+                if (originalTransferUseInflationValues.TryGetValue(transfer, out var originalUseInflationValue))
+                {
+                    transfer.UseInflationValue = originalUseInflationValue;
+                }
+            }
+            else if (transfer.UseInflationValue)
+            {
+                transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            }
+        }
+
+        if (editingTransferFromAccountRows.Remove(transfer) && !commitChanges && originalTransferFromAccountNames.TryGetValue(transfer, out var originalFromAccountName))
+        {
+            transfer.FromAccountName = originalFromAccountName;
+        }
+
+        if (editingTransferToAccountRows.Remove(transfer) && !commitChanges && originalTransferToAccountNames.TryGetValue(transfer, out var originalToAccountName))
+        {
+            transfer.ToAccountName = originalToAccountName;
+        }
+
+        if (commitChanges)
+        {
+            EnsureTransferAccountSelectionIsValid(transfer);
+        }
+
+        originalTransferStartAges.Remove(transfer);
+        originalTransferEndAges.Remove(transfer);
+        originalTransferAnnualRates.Remove(transfer);
+        originalTransferUseInflationValues.Remove(transfer);
+        originalTransferFromAccountNames.Remove(transfer);
+        originalTransferToAccountNames.Remove(transfer);
+        UpdateDirtyState();
+    }
+
+    private void OnTransferFieldKeyDown(Transfer transfer, KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            CommitTransferEdit(transfer);
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelTransferEdit(transfer);
+        }
+    }
+
+    private void CommitTransferEdit(Transfer transfer)
+    {
+        CommitItemEdit(transfer);
+        StopEditingTransferFields(transfer, commitChanges: true);
+    }
+
+    private void CancelTransferEdit(Transfer transfer)
+    {
+        CancelItemEdit(transfer);
+        StopEditingTransferFields(transfer, commitChanges: false);
+    }
+
+    private void SetNewTransferDefaults()
+    {
+        var orderedAccountNames = portfolio.Accounts
+            .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Select(account => account.Name)
+            .ToList();
+
+        newTransferFromAccountName = orderedAccountNames.FirstOrDefault() ?? string.Empty;
+        newTransferToAccountName = orderedAccountNames.Skip(1).FirstOrDefault() ?? newTransferFromAccountName;
+    }
+
+    private void EnsureTransferAccountSelectionIsValid(Transfer transfer)
+    {
+        var orderedAccountNames = portfolio.Accounts
+            .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)
+            .Select(account => account.Name)
+            .ToList();
+
+        if (orderedAccountNames.Count == 0)
+        {
+            transfer.FromAccountName = string.Empty;
+            transfer.ToAccountName = string.Empty;
+            return;
+        }
+
+        if (!orderedAccountNames.Contains(transfer.FromAccountName))
+        {
+            transfer.FromAccountName = orderedAccountNames[0];
+        }
+
+        if (!orderedAccountNames.Contains(transfer.ToAccountName))
+        {
+            transfer.ToAccountName = orderedAccountNames.Skip(1).FirstOrDefault() ?? orderedAccountNames[0];
+        }
+
+        if (orderedAccountNames.Count > 1 && transfer.FromAccountName == transfer.ToAccountName)
+        {
+            transfer.ToAccountName = orderedAccountNames.First(accountName => accountName != transfer.FromAccountName);
+        }
+    }
+
+    private void ClearTransferEditState()
+    {
+        editingTransferStartAgeRows.Clear();
+        editingTransferEndAgeRows.Clear();
+        editingTransferAnnualRateRows.Clear();
+        editingTransferFromAccountRows.Clear();
+        editingTransferToAccountRows.Clear();
+        originalTransferStartAges.Clear();
+        originalTransferEndAges.Clear();
+        originalTransferAnnualRates.Clear();
+        originalTransferUseInflationValues.Clear();
+        originalTransferFromAccountNames.Clear();
+        originalTransferToAccountNames.Clear();
+    }
+
     private void CommitAccountEdit(Account account)
     {
         StopEditingName(account, commitChanges: true);
@@ -1582,7 +2133,8 @@
     {
         Account,
         Income,
-        Expense
+        Expense,
+        Transfer
     }
 
     private enum ParameterField
