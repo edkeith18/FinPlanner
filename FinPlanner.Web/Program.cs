@@ -1,4 +1,4 @@
-using FinPlanner;
+using FinPlanner.Web;
 using FinPlanner.Data;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
