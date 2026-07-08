@@ -1,4 +1,4 @@
-namespace FinPlanner.Data;
+﻿namespace FinPlanner.Engine;
 
 public static class FinancialPlanCalculator
 {

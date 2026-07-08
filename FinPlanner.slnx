@@ -1,3 +1,5 @@
 <Solution>
+  <Project Path="FinPlanner.Console/FinPlanner.Console.csproj" Id="8a455ac6-8e6f-45c1-bd5a-8f2ef21f6e7a" />
+  <Project Path="FinPlanner.Engine/FinPlanner.Engine.csproj" Id="849c56ae-4f3a-4c09-b1fc-7abe00cc113b" />
   <Project Path="FinPlanner.Web/FinPlanner.Web.csproj" />
 </Solution>

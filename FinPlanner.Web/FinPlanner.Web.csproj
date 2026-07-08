@@ -22,6 +22,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.1" PrivateAssets="all" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\FinPlanner.Engine\FinPlanner.Engine.csproj" />
+  </ItemGroup>
+
   <Target Name="GenerateBuildVersionInfo" BeforeTargets="CoreCompile">
     <PropertyGroup>
       <BuildVersionTimestamp>$([System.DateTime]::Now.ToString('yyyyMMdd.HHmmss'))</BuildVersionTimestamp>
@@ -30,11 +34,7 @@
       <BuildVersionInfoDirectory>$(IntermediateOutputPath)Generated</BuildVersionInfoDirectory>
       <BuildVersionInfoFile>$(BuildVersionInfoDirectory)/BuildVersioningInfo.g.cs</BuildVersionInfoFile>
     </PropertyGroup>
-    <Exec
-      Command="git branch --show-current"
-      ConsoleToMSBuild="true"
-      IgnoreExitCode="true"
-      Condition="'$(BuildBranchName)' == ''">
+    <Exec Command="git branch --show-current" ConsoleToMSBuild="true" IgnoreExitCode="true" Condition="'$(BuildBranchName)' == ''">
       <Output TaskParameter="ConsoleOutput" ItemName="BuildBranchNameOutput" />
     </Exec>
     <PropertyGroup>
@@ -50,10 +50,7 @@
       <BuildVersionInfoLines Include="    public const string Branch = &quot;Branch: $(BuildBranchName)&quot;%3B" />
       <BuildVersionInfoLines Include="}" />
     </ItemGroup>
-    <WriteLinesToFile
-      File="$(BuildVersionInfoFile)"
-      Overwrite="true"
-      Lines="@(BuildVersionInfoLines)" />
+    <WriteLinesToFile File="$(BuildVersionInfoFile)" Overwrite="true" Lines="@(BuildVersionInfoLines)" />
     <ItemGroup>
       <Compile Include="$(BuildVersionInfoFile)" />
     </ItemGroup>
