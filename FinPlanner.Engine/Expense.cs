@@ -1,6 +1,6 @@
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
 
-namespace FinPlanner.Data;
+namespace FinPlanner.Engine;
 
 public class Expense
 {

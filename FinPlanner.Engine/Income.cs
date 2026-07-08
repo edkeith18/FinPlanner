@@ -1,4 +1,5 @@
-namespace FinPlanner.Data;
+﻿namespace FinPlanner.Engine;
+
 public class IncomeItem
 {
     public string Name { get; set; } = "";
