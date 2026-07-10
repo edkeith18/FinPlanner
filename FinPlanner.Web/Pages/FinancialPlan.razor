@@ -2,19 +2,19 @@
 
 @using FinPlanner.Engine
 
-@inject Portfolio portfolio
+@inject Scenario scenario
 
 <PageTitle>Financial Plan</PageTitle>
 
 <h1>Financial Plan</h1>
 
-@if (portfolio.CurrentAge > portfolio.LifeExpectancy)
+@if (scenario.CurrentAge > scenario.LifeExpectancy)
 {
     <p class="text-muted mb-3">No plan rows to display because Current age is greater than Life expectancy.</p>
 }
 else
 {
-    var planRows = FinancialPlanCalculator.BuildPlanRows(portfolio);
+    var planRows = FinancialPlanCalculator.BuildPlanRows(scenario);
     var expenseNames = planRows
         .SelectMany(row => row.Expenses)
         .Select(expense => expense.Name)

@@ -1,9 +1,9 @@
-.financial-profile-layout {
+.financial-scenario-layout {
     display: flex;
     justify-content: flex-start;
 }
 
-.financial-profile-panel {
+.financial-scenario-panel {
     width: min(100%, 76rem);
 }
 
@@ -105,11 +105,11 @@
 }
 
 @media (max-width: 768px) {
-    .financial-profile-layout {
+    .financial-scenario-layout {
         justify-content: stretch;
     }
 
-    .financial-profile-panel {
+    .financial-scenario-panel {
         width: 100%;
     }
 }
