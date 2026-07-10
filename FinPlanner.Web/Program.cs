@@ -10,6 +10,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
 // Register the Accounts service as Scoped.  Scoped will create a new instance for each user session.
-builder.Services.AddScoped<Portfolio>();
+builder.Services.AddScoped<Scenario>();
 
 await builder.Build().RunAsync();

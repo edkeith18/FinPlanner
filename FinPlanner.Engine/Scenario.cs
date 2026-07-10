@@ -1,6 +1,6 @@
 ﻿namespace FinPlanner.Engine;
 
-public class Portfolio
+public class Scenario
 {
     public List<Account> Accounts { get; set; } = new();
     public List<IncomeItem> Income { get; set; } = new();

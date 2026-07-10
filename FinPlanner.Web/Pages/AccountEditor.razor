@@ -4,7 +4,7 @@
 @using FinPlanner.Engine
 @using Microsoft.AspNetCore.Components
 
-@inject Portfolio portfolio
+@inject Scenario scenario
 @inject NavigationManager Nav
 
 <h3>@(IsNew ? "Create Account" : "Account Details")</h3>
@@ -70,7 +70,7 @@ else
         }
         else
         {
-            account = portfolio.Accounts.FirstOrDefault(a => a.Name == Name);
+            account = scenario.Accounts.FirstOrDefault(a => a.Name == Name);
         }
     }
 
@@ -81,14 +81,14 @@ else
 
         if (IsNew)
         {
-            portfolio.AddAccount(account.Name, account.Balance, account.Type, account.Holdings);
+            scenario.AddAccount(account.Name, account.Balance, account.Type, account.Holdings);
         }
 
-        Nav.NavigateTo("financial-profile");
+        Nav.NavigateTo("financial-scenario");
     }
 
     private void Back()
     {
-        Nav.NavigateTo("financial-profile");
+        Nav.NavigateTo("financial-scenario");
     }
 }

@@ -2,31 +2,31 @@
 
 public static class FinancialPlanCalculator
 {
-    public static IReadOnlyList<FinancialPlanRow> BuildPlanRows(Portfolio portfolio)
+    public static IReadOnlyList<FinancialPlanRow> BuildPlanRows(Scenario scenario)
     {
-        return BuildPlanRows(portfolio, portfolio.AnnualExpenses);
+        return BuildPlanRows(scenario, scenario.AnnualExpenses);
     }
 
-    public static IReadOnlyList<FinancialPlanRow> BuildPlanRows(Portfolio portfolio, decimal annualExpenses)
+    public static IReadOnlyList<FinancialPlanRow> BuildPlanRows(Scenario scenario, decimal annualExpenses)
     {
         var rows = new List<FinancialPlanRow>();
-        ComputeFinalBalance(portfolio, annualExpenses, rows);
+        ComputeFinalBalance(scenario, annualExpenses, rows);
         return rows;
     }
 
-    public static bool CalculateMaximumAnnualExpenses(Portfolio portfolio, out decimal maximumAnnualExpenses)
+    public static bool CalculateMaximumAnnualExpenses(Scenario scenario, out decimal maximumAnnualExpenses)
     {
         const decimal ExpenseStep = 1000m;
 
         maximumAnnualExpenses = 0m;
 
-        if (portfolio.Accounts.Count == 0 || portfolio.CurrentAge > portfolio.LifeExpectancy)
+        if (scenario.Accounts.Count == 0 || scenario.CurrentAge > scenario.LifeExpectancy)
         {
             return false;
         }
 
         int lowerBound = 0;
-        int upperBound = Math.Max(1, (int)(portfolio.Accounts.Sum(a => a.Balance) / ExpenseStep));
+        int upperBound = Math.Max(1, (int)(scenario.Accounts.Sum(a => a.Balance) / ExpenseStep));
         int potentialMaximum = 0;
         decimal finalBalance = 0m;
 
@@ -35,7 +35,7 @@ public static class FinancialPlanCalculator
             int midPoint = (lowerBound + upperBound) / 2;
             decimal annualExpenses = midPoint * ExpenseStep;
 
-            finalBalance = ComputeFinalBalance(portfolio, annualExpenses);
+            finalBalance = ComputeFinalBalance(scenario, annualExpenses);
 
             if (finalBalance >= 0m)
             {
@@ -61,17 +61,17 @@ public static class FinancialPlanCalculator
 
     }
 
-    private static decimal ComputeFinalBalance(Portfolio portfolio, decimal annualExpenses, List<FinancialPlanRow>? rows = null)
+    private static decimal ComputeFinalBalance(Scenario scenario, decimal annualExpenses, List<FinancialPlanRow>? rows = null)
     {
-        var inflationRateDecimal = portfolio.AnnualInflationRate / 100m;
-        var securitiesRateDecimal = portfolio.SecuritiesAnnualInterestRate / 100m;
-        var copiedExpenses = CopyExpenses(portfolio.Expenses);
+        var inflationRateDecimal = scenario.AnnualInflationRate / 100m;
+        var securitiesRateDecimal = scenario.SecuritiesAnnualInterestRate / 100m;
+        var copiedExpenses = CopyExpenses(scenario.Expenses);
         var discretionaryExpenses = 0m;
-        var yearEndBalance = portfolio.Accounts.Sum(account => account.Balance);
+        var yearEndBalance = scenario.Accounts.Sum(account => account.Balance);
 
         // Calculate discretionary expenses based on the first year
         // The discretionary expenses will increase with inflation each subsequent year
-        discretionaryExpenses = annualExpenses - copiedExpenses.Sum(expense => IsExpenseActive(expense, portfolio.CurrentAge) ? expense.Amount : 0m);
+        discretionaryExpenses = annualExpenses - copiedExpenses.Sum(expense => IsExpenseActive(expense, scenario.CurrentAge) ? expense.Amount : 0m);
         if (discretionaryExpenses < 0m)
         {
             // If discretionary expenses are negative, it means the specified annual expenses are less than the sum of active expenses
@@ -80,11 +80,11 @@ public static class FinancialPlanCalculator
         }
 
         // Now iterate through each year, updating expenses and balance accordingly and displaying the results in a table format
-        for (var age = portfolio.CurrentAge; age <= portfolio.LifeExpectancy; age++)
+        for (var age = scenario.CurrentAge; age <= scenario.LifeExpectancy; age++)
         {
 
             // Only increment expenses after first year
-            if (age > portfolio.CurrentAge)
+            if (age > scenario.CurrentAge)
             {
 
                 foreach (var expense in copiedExpenses)

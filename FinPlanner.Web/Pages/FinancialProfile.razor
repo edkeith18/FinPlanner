@@ -1,5 +1,5 @@
 @page "/"
-@page "/financial-profile"
+@page "/financial-scenario"
 
 @using System.Text.Json
 @using System.Text.Json.Serialization
@@ -7,21 +7,21 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
 
-@inject Portfolio portfolio
+@inject Scenario scenario
 @inject IJSRuntime JS
 
-<PageTitle>Financial Profile</PageTitle>
+<PageTitle>Financial Scenario</PageTitle>
 
-<h1>Financial Profile</h1>
+<h1>Financial Scenario</h1>
 
 <div class="d-flex gap-2 align-items-center mb-3">
-    <label for="profileFileInput" class="btn btn-secondary mb-0">Load profile</label>
-    <InputFile id="profileFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" />
-    <button class="@SaveProfileButtonClass" @onclick="Save" disabled="@(!isDirty)">Save profile (download)</button>
+    <label for="scenarioFileInput" class="btn btn-secondary mb-0">Load scenario</label>
+    <InputFile id="scenarioFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" />
+    <button class="@SaveScenarioButtonClass" @onclick="Save" disabled="@(!isDirty)">Save scenario (download)</button>
 </div>
 
-<div class="financial-profile-layout">
-    <div class="@FinancialProfilePanelClass">
+<div class="financial-scenario-layout">
+    <div class="@FinancialScenarioPanelClass">
         <h5>Parameters</h5>
         <h6 class="parameter-subgroup-heading">Personal</h6>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
@@ -31,7 +31,7 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.CurrentAge))
                         {
-                            <InputNumber @bind-Value="portfolio.CurrentAge"
+                            <InputNumber @bind-Value="scenario.CurrentAge"
                                          class="form-control form-control-sm"
                                          tabindex="1"
                                          @attributes="wholeNumberInputAttributes"
@@ -39,7 +39,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@portfolio.CurrentAge</span>
+                            <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@scenario.CurrentAge</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -63,7 +63,7 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.LifeExpectancy))
                         {
-                            <InputNumber @bind-Value="portfolio.LifeExpectancy"
+                            <InputNumber @bind-Value="scenario.LifeExpectancy"
                                          class="form-control form-control-sm"
                                          tabindex="2"
                                          @attributes="wholeNumberInputAttributes"
@@ -71,7 +71,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="2" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@portfolio.LifeExpectancy</span>
+                            <span role="button" tabindex="2" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@scenario.LifeExpectancy</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -95,14 +95,14 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.AnnualExpenses))
                         {
-                            <InputNumber @bind-Value="portfolio.AnnualExpenses"
+                            <InputNumber @bind-Value="scenario.AnnualExpenses"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="3"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@portfolio.AnnualExpenses.ToString("C")</span>
+                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@scenario.AnnualExpenses.ToString("C")</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -132,14 +132,14 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate))
                         {
-                            <InputNumber @bind-Value="portfolio.SecuritiesAnnualInterestRate"
+                            <InputNumber @bind-Value="scenario.SecuritiesAnnualInterestRate"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="4"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualInterestRate, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="4" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualInterestRate)">@($"{portfolio.SecuritiesAnnualInterestRate}%")</span>
+                            <span role="button" tabindex="4" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualInterestRate)">@($"{scenario.SecuritiesAnnualInterestRate}%")</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -163,14 +163,14 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.AnnualInflationRate))
                         {
-                            <InputNumber @bind-Value="portfolio.AnnualInflationRate"
+                            <InputNumber @bind-Value="scenario.AnnualInflationRate"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="5"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualInflationRate, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="5" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{portfolio.AnnualInflationRate}%")</span>
+                            <span role="button" tabindex="5" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{scenario.AnnualInflationRate}%")</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -194,14 +194,14 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
                         {
-                            <InputNumber @bind-Value="portfolio.BondsAnnualRateOfReturn"
+                            <InputNumber @bind-Value="scenario.BondsAnnualRateOfReturn"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="6"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="6" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{portfolio.BondsAnnualRateOfReturn}%")</span>
+                            <span role="button" tabindex="6" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{scenario.BondsAnnualRateOfReturn}%")</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -235,7 +235,7 @@
             </button>
         </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
-            @if (portfolio.Accounts.Count > 0)
+            @if (scenario.Accounts.Count > 0)
             {
                 <thead>
                     <tr>
@@ -248,7 +248,7 @@
                 </thead>
             }
             <tbody>
-                @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr class="@(IsAccountRowEditing(account) ? "edit-mode-row" : null)">
                         <td class="item-name">
@@ -397,7 +397,7 @@
         </div>
         <table class="table table-borderless align-middle table-sm compact-table mb-0">
             <tbody>
-                @foreach (var income in portfolio.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
+                @foreach (var income in scenario.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr class="@(IsIncomeRowEditing(income) ? "edit-mode-row" : null)">
                         <td class="item-name">
@@ -492,7 +492,7 @@
         </div>
         <div class="expenses-table-wrapper">
         <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
-            @if (portfolio.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
+            @if (scenario.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
             {
                 <thead>
                     <tr>
@@ -506,7 +506,7 @@
                 </thead>
             }
             <tbody>
-                @foreach (var expense in portfolio.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
+                @foreach (var expense in scenario.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr class="@(IsExpenseRowEditing(expense) ? "edit-mode-row" : null)">
                         <td class="item-name">
@@ -628,13 +628,13 @@
                 <i class="bi bi-plus-square"></i>
             </button>
         </div>
-        @if (portfolio.Accounts.Count == 0)
+        @if (scenario.Accounts.Count == 0)
         {
             <p class="text-muted mb-2">Add an account before creating transfers.</p>
         }
         <div class="expenses-table-wrapper">
         <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
-            @if (portfolio.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
+            @if (scenario.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
             {
                 <thead>
                     <tr>
@@ -650,7 +650,7 @@
                 </thead>
             }
             <tbody>
-                @foreach (var transfer in portfolio.Transfers.OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase))
+                @foreach (var transfer in scenario.Transfers.OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
                     <tr class="@(IsTransferRowEditing(transfer) ? "edit-mode-row" : null)">
                         <td class="item-name">
@@ -697,7 +697,7 @@
                             @if (IsEditingTransferFromAccount(transfer))
                             {
                                 <InputSelect @bind-Value="transfer.FromAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
-                                    @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                    @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                     {
                                         <option value="@account.Name">@account.Name</option>
                                     }
@@ -712,7 +712,7 @@
                             @if (IsEditingTransferToAccount(transfer))
                             {
                                 <InputSelect @bind-Value="transfer.ToAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
-                                    @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                    @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                     {
                                         <option value="@account.Name">@account.Name</option>
                                     }
@@ -768,7 +768,7 @@
                         <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                         <td class="item-value">
                             <InputSelect @bind-Value="newTransferFromAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
-                                @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                 {
                                     <option value="@account.Name">@account.Name</option>
                                 }
@@ -776,7 +776,7 @@
                         </td>
                         <td class="item-value">
                             <InputSelect @bind-Value="newTransferToAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
-                                @foreach (var account in portfolio.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                 {
                                     <option value="@account.Name">@account.Name</option>
                                 }
@@ -861,13 +861,13 @@
     private string newTransferFromAccountName = string.Empty;
     private string newTransferToAccountName = string.Empty;
     private bool pendingFocusNewRow;
-    private static readonly JsonSerializerOptions profileJsonOptions = CreateProfileJsonOptions();
+    private static readonly JsonSerializerOptions scenarioJsonOptions = CreateScenarioJsonOptions();
 
-    private string SaveProfileButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
+    private string SaveScenarioButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
 
     protected override void OnInitialized()
     {
-        baselineSnapshot = SerializePortfolio();
+        baselineSnapshot = Serializescenario();
     }
 
     private async Task LoadFile(InputFileChangeEventArgs e)
@@ -879,7 +879,7 @@
 
         string json = await reader.ReadToEndAsync();
 
-        var data = JsonSerializer.Deserialize<Portfolio>(json, profileJsonOptions);
+        var data = JsonSerializer.Deserialize<Scenario>(json, scenarioJsonOptions);
 
         if (data is null)
             return;
@@ -887,19 +887,19 @@
         ApplyLegacyExpenseInflationDefaults(data, json);
         ApplyLegacyTransferInflationDefaults(data, json);
 
-        portfolio.Accounts = data.Accounts ?? new List<Account>();
-        portfolio.Income = data.Income ?? new List<IncomeItem>();
-        portfolio.Expenses = data.Expenses ?? new List<Expense>();
-        portfolio.Transfers = data.Transfers ?? new List<Transfer>();
-        portfolio.Year = data.Year;
-        portfolio.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
-        portfolio.AnnualInflationRate = data.AnnualInflationRate;
-        portfolio.CurrentAge = data.CurrentAge;
-        portfolio.LifeExpectancy = data.LifeExpectancy;
-        portfolio.AnnualExpenses = data.AnnualExpenses;
-        portfolio.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
-        NormalizeLoadedExpenses(portfolio.Expenses);
-        NormalizeLoadedTransfers(portfolio.Transfers);
+        scenario.Accounts = data.Accounts ?? new List<Account>();
+        scenario.Income = data.Income ?? new List<IncomeItem>();
+        scenario.Expenses = data.Expenses ?? new List<Expense>();
+        scenario.Transfers = data.Transfers ?? new List<Transfer>();
+        scenario.Year = data.Year;
+        scenario.SecuritiesAnnualInterestRate = data.SecuritiesAnnualInterestRate;
+        scenario.AnnualInflationRate = data.AnnualInflationRate;
+        scenario.CurrentAge = data.CurrentAge;
+        scenario.LifeExpectancy = data.LifeExpectancy;
+        scenario.AnnualExpenses = data.AnnualExpenses;
+        scenario.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
+        NormalizeLoadedExpenses(scenario.Expenses);
+        NormalizeLoadedTransfers(scenario.Transfers);
 
         editingRows.Clear();
         editingNameRows.Clear();
@@ -921,12 +921,12 @@
         originalParameterValues.Clear();
         activeAddType = null;
 
-        baselineSnapshot = SerializePortfolio();
+        baselineSnapshot = Serializescenario();
         UpdateDirtyState();
     }
 
 
-    private static void ApplyLegacyExpenseInflationDefaults(Portfolio data, string json)
+    private static void ApplyLegacyExpenseInflationDefaults(Scenario data, string json)
     {
         if (data.Expenses is null || data.Expenses.Count == 0)
         {
@@ -935,7 +935,7 @@
 
         using var document = JsonDocument.Parse(json);
 
-        if (!document.RootElement.TryGetProperty(nameof(Portfolio.Expenses), out var expensesElement)
+        if (!document.RootElement.TryGetProperty(nameof(Scenario.Expenses), out var expensesElement)
             || expensesElement.ValueKind != JsonValueKind.Array)
         {
             return;
@@ -960,7 +960,7 @@
     }
 
 
-    private static void ApplyLegacyTransferInflationDefaults(Portfolio data, string json)
+    private static void ApplyLegacyTransferInflationDefaults(Scenario data, string json)
     {
         if (data.Transfers is null || data.Transfers.Count == 0)
         {
@@ -969,7 +969,7 @@
 
         using var document = JsonDocument.Parse(json);
 
-        if (!document.RootElement.TryGetProperty(nameof(Portfolio.Transfers), out var transfersElement)
+        if (!document.RootElement.TryGetProperty(nameof(scenario.Transfers), out var transfersElement)
             || transfersElement.ValueKind != JsonValueKind.Array)
         {
             return;
@@ -1017,9 +1017,9 @@
 
     private async Task Save()
     {
-        var json = SerializePortfolio(pretty: true);
+        var json = Serializescenario(pretty: true);
         await SaveFileAsync("FinPlanner.json", json);
-        baselineSnapshot = SerializePortfolio();
+        baselineSnapshot = Serializescenario();
         UpdateDirtyState();
     }
 
@@ -1321,7 +1321,7 @@
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
         {
-            portfolio.Accounts.Remove(account);
+            scenario.Accounts.Remove(account);
             editingRows.Remove(account);
             editingNameRows.Remove(account);
             editingTypeRows.Remove(account);
@@ -1338,7 +1338,7 @@
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete income '{income.Name}'?"))
         {
-            portfolio.Income.Remove(income);
+            scenario.Income.Remove(income);
             editingRows.Remove(income);
             editingNameRows.Remove(income);
             originalValues.Remove(income);
@@ -1351,7 +1351,7 @@
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete expense '{expense.Name}'?"))
         {
-            portfolio.Expenses.Remove(expense);
+            scenario.Expenses.Remove(expense);
             editingRows.Remove(expense);
             editingNameRows.Remove(expense);
             originalValues.Remove(expense);
@@ -1371,7 +1371,7 @@
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete transfer '{transfer.Name}'?"))
         {
-            portfolio.Transfers.Remove(transfer);
+            scenario.Transfers.Remove(transfer);
             editingRows.Remove(transfer);
             editingNameRows.Remove(transfer);
             originalValues.Remove(transfer);
@@ -1440,20 +1440,20 @@
         switch (activeAddType)
         {
             case AddItemType.Account:
-                portfolio.AddAccount(name, newItemValue, newAccountType, newAccountHoldings);
+                scenario.AddAccount(name, newItemValue, newAccountType, newAccountHoldings);
                 break;
             case AddItemType.Income:
-                portfolio.AddIncome(name, newItemValue);
+                scenario.AddIncome(name, newItemValue);
                 break;
             case AddItemType.Expense:
-                portfolio.AddExpense(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
+                scenario.AddExpense(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
                 break;
             case AddItemType.Transfer:
                 if (!CanAddTransfer)
                 {
                     return;
                 }
-                portfolio.AddTransfer(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newTransferFromAccountName, newTransferToAccountName, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
+                scenario.AddTransfer(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newTransferFromAccountName, newTransferToAccountName, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
                 break;
         }
 
@@ -1549,12 +1549,12 @@
     {
         return parameter switch
         {
-            ParameterField.CurrentAge => portfolio.CurrentAge,
-            ParameterField.LifeExpectancy => portfolio.LifeExpectancy,
-            ParameterField.AnnualExpenses => portfolio.AnnualExpenses,
-            ParameterField.SecuritiesAnnualInterestRate => portfolio.SecuritiesAnnualInterestRate,
-            ParameterField.AnnualInflationRate => portfolio.AnnualInflationRate,
-            ParameterField.BondsAnnualRateOfReturn => portfolio.BondsAnnualRateOfReturn,
+            ParameterField.CurrentAge => scenario.CurrentAge,
+            ParameterField.LifeExpectancy => scenario.LifeExpectancy,
+            ParameterField.AnnualExpenses => scenario.AnnualExpenses,
+            ParameterField.SecuritiesAnnualInterestRate => scenario.SecuritiesAnnualInterestRate,
+            ParameterField.AnnualInflationRate => scenario.AnnualInflationRate,
+            ParameterField.BondsAnnualRateOfReturn => scenario.BondsAnnualRateOfReturn,
             _ => 0m
         };
     }
@@ -1564,37 +1564,37 @@
         switch (parameter)
         {
             case ParameterField.CurrentAge:
-                portfolio.CurrentAge = decimal.ToInt32(decimal.Truncate(value));
+                scenario.CurrentAge = decimal.ToInt32(decimal.Truncate(value));
                 break;
             case ParameterField.LifeExpectancy:
-                portfolio.LifeExpectancy = decimal.ToInt32(decimal.Truncate(value));
+                scenario.LifeExpectancy = decimal.ToInt32(decimal.Truncate(value));
                 break;
             case ParameterField.AnnualExpenses:
-                portfolio.AnnualExpenses = value;
+                scenario.AnnualExpenses = value;
                 break;
             case ParameterField.SecuritiesAnnualInterestRate:
-                portfolio.SecuritiesAnnualInterestRate = value;
+                scenario.SecuritiesAnnualInterestRate = value;
                 break;
             case ParameterField.AnnualInflationRate:
-                portfolio.AnnualInflationRate = value;
+                scenario.AnnualInflationRate = value;
                 break;
             case ParameterField.BondsAnnualRateOfReturn:
-                portfolio.BondsAnnualRateOfReturn = value;
+                scenario.BondsAnnualRateOfReturn = value;
                 break;
         }
     }
 
     private void UpdateDirtyState()
     {
-        isDirty = SerializePortfolio() != baselineSnapshot;
-        portfolio.NotifyStateChanged();
+        isDirty = Serializescenario() != baselineSnapshot;
+        scenario.NotifyStateChanged();
     }
 
-    private string SerializePortfolio(bool pretty = false)
+    private string Serializescenario(bool pretty = false)
     {
-        var options = CreateProfileJsonOptions();
+        var options = CreateScenarioJsonOptions();
         options.WriteIndented = pretty;
-        return JsonSerializer.Serialize(portfolio, options);
+        return JsonSerializer.Serialize(scenario, options);
     }
 
     private bool HasActiveEditOrAdd => activeAddType is not null
@@ -1612,11 +1612,11 @@
         || editingTransferFromAccountRows.Any()
         || editingTransferToAccountRows.Any();
 
-    private string FinancialProfilePanelClass => HasActiveEditOrAdd
-        ? "financial-profile-panel edit-active"
-        : "financial-profile-panel";
+    private string FinancialScenarioPanelClass => HasActiveEditOrAdd
+        ? "financial-scenario-panel edit-active"
+        : "financial-scenario-panel";
 
-    private static JsonSerializerOptions CreateProfileJsonOptions()
+    private static JsonSerializerOptions CreateScenarioJsonOptions()
     {
         var options = new JsonSerializerOptions();
         options.Converters.Add(new JsonStringEnumConverter());
@@ -1716,17 +1716,17 @@
         {
             if (expense.AgeStart >= 1900)
             {
-                expense.AgeStart = portfolio.CurrentAge + expense.AgeStart - currentCalendarYear;
+                expense.AgeStart = scenario.CurrentAge + expense.AgeStart - currentCalendarYear;
             }
 
             if (expense.AgeEnd >= 1900)
             {
-                expense.AgeEnd = portfolio.CurrentAge + expense.AgeEnd - currentCalendarYear;
+                expense.AgeEnd = scenario.CurrentAge + expense.AgeEnd - currentCalendarYear;
             }
 
             if (expense.UseInflationValue)
             {
-                expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+                expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
             }
         }
     }
@@ -1739,19 +1739,19 @@
         {
             if (transfer.AgeStart >= 1900)
             {
-                transfer.AgeStart = portfolio.CurrentAge + transfer.AgeStart - currentCalendarYear;
+                transfer.AgeStart = scenario.CurrentAge + transfer.AgeStart - currentCalendarYear;
             }
 
             if (transfer.AgeEnd >= 1900)
             {
-                transfer.AgeEnd = portfolio.CurrentAge + transfer.AgeEnd - currentCalendarYear;
+                transfer.AgeEnd = scenario.CurrentAge + transfer.AgeEnd - currentCalendarYear;
             }
 
             EnsureTransferAccountSelectionIsValid(transfer);
 
             if (transfer.UseInflationValue)
             {
-                transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+                transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
             }
         }
     }
@@ -1759,14 +1759,14 @@
 
     private void ApplyInflationRateToLinkedItems()
     {
-        foreach (var expense in portfolio.Expenses.Where(expense => expense.UseInflationValue))
+        foreach (var expense in scenario.Expenses.Where(expense => expense.UseInflationValue))
         {
-            expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
 
-        foreach (var transfer in portfolio.Transfers.Where(transfer => transfer.UseInflationValue))
+        foreach (var transfer in scenario.Transfers.Where(transfer => transfer.UseInflationValue))
         {
-            transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
     }
 
@@ -1776,7 +1776,7 @@
 
         if (expense.UseInflationValue)
         {
-            expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
     }
 
@@ -1786,7 +1786,7 @@
 
         if (transfer.UseInflationValue)
         {
-            transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
     }
 
@@ -1796,7 +1796,7 @@
 
         if (newExpenseUseInflationValue)
         {
-            newExpenseAnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            newExpenseAnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
     }
 
@@ -1807,10 +1807,10 @@
 
     private void SetNewExpenseDefaults()
     {
-        newExpenseStartAge = portfolio.CurrentAge;
-        newExpenseEndAge = portfolio.LifeExpectancy;
+        newExpenseStartAge = scenario.CurrentAge;
+        newExpenseEndAge = scenario.LifeExpectancy;
         newExpenseUseInflationValue = true;
-        newExpenseAnnualRateOfIncrease = portfolio.AnnualInflationRate;
+        newExpenseAnnualRateOfIncrease = scenario.AnnualInflationRate;
     }
 
     private bool IsEditingExpenseStartAge(Expense expense) => editingExpenseStartAgeRows.Contains(expense);
@@ -1840,7 +1840,7 @@
         originalExpenseUseInflationValues[expense] = expense.UseInflationValue;
         if (expense.UseInflationValue)
         {
-            expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
         editingExpenseAnnualRateRows.Add(expense);
     }
@@ -1873,7 +1873,7 @@
             }
             else if (expense.UseInflationValue)
             {
-                expense.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+                expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
             }
         }
 
@@ -1908,7 +1908,7 @@
         StopEditingExpenseFields(expense, commitChanges: false);
     }
 
-    private bool CanAddTransfer => portfolio.Accounts.Count > 0;
+    private bool CanAddTransfer => scenario.Accounts.Count > 0;
 
     private bool IsEditingTransferStartAge(Transfer transfer) => editingTransferStartAgeRows.Contains(transfer);
 
@@ -1941,7 +1941,7 @@
         originalTransferUseInflationValues[transfer] = transfer.UseInflationValue;
         if (transfer.UseInflationValue)
         {
-            transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
         editingTransferAnnualRateRows.Add(transfer);
     }
@@ -1990,7 +1990,7 @@
             }
             else if (transfer.UseInflationValue)
             {
-                transfer.AnnualRateOfIncrease = portfolio.AnnualInflationRate;
+                transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
             }
         }
 
@@ -2044,7 +2044,7 @@
 
     private void SetNewTransferDefaults()
     {
-        var orderedAccountNames = portfolio.Accounts
+        var orderedAccountNames = scenario.Accounts
             .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)
             .Select(account => account.Name)
             .ToList();
@@ -2055,7 +2055,7 @@
 
     private void EnsureTransferAccountSelectionIsValid(Transfer transfer)
     {
-        var orderedAccountNames = portfolio.Accounts
+        var orderedAccountNames = scenario.Accounts
             .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)
             .Select(account => account.Name)
             .ToList();
