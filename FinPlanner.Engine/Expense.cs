@@ -11,22 +11,5 @@ public class Expense
     public decimal AnnualRateOfIncrease { get; set; }
     public bool UseInflationValue { get; set; } = true;
 
-    [JsonPropertyName("YearStart")]
-    public int LegacyYearStart
-    {
-        set => AgeStart = value;
-    }
-
-    [JsonPropertyName("YearEnd")]
-    public int LegacyYearEnd
-    {
-        set => AgeEnd = value;
-    }
-
-    [JsonPropertyName("annualRateOfIncrease")]
-    public decimal LegacyAnnualRateOfIncrease
-    {
-        set => AnnualRateOfIncrease = value;
-    }
     public DateTime LastUpdated { get; set; }
 }

@@ -1,20 +1,81 @@
-﻿namespace FinPlanner.Engine;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+
+namespace FinPlanner.Engine;
 
 public class Scenario
 {
+    private static readonly JsonSerializerOptions SerializerOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+        WriteIndented = true,
+        Converters =
+        {
+            new JsonStringEnumConverter()
+        }
+    };
+
     public List<Account> Accounts { get; set; } = new();
     public List<IncomeItem> Income { get; set; } = new();
     public List<Expense> Expenses { get; set; } = new();
     public List<Transfer> Transfers { get; set; } = new();
-    public decimal Year { get; set; } = 0;
-    public decimal SecuritiesAnnualInterestRate { get; set; } = 0.0m;
-    public decimal AnnualInflationRate { get; set; } = 0.0m;
-    public int CurrentAge { get; set; } = 0;
-    public int LifeExpectancy { get; set; } = 0;
-    public decimal AnnualExpenses { get; set; } = 0.0m;
-    public decimal BondsAnnualRateOfReturn { get; set; } = 0.0m;
+
+    public decimal Year { get; set; }
+    public decimal SecuritiesAnnualInterestRate { get; set; }
+    public decimal AnnualInflationRate { get; set; }
+    public int CurrentAge { get; set; }
+    public int LifeExpectancy { get; set; }
+    public decimal AnnualExpenses { get; set; }
+    public decimal BondsAnnualRateOfReturn { get; set; }
 
     public event Action? Changed;
+
+    public string Serialize()
+    {
+        return JsonSerializer.Serialize(this, SerializerOptions);
+    }
+
+    public async Task SerializeAsync(
+        Stream stream,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        await JsonSerializer.SerializeAsync(
+            stream,
+            this,
+            SerializerOptions,
+            cancellationToken);
+    }
+
+    public static Scenario Deserialize(string json)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(json);
+
+        var scenario = JsonSerializer.Deserialize<Scenario>(
+            json,
+            SerializerOptions);
+
+        return scenario
+            ?? throw new JsonException(
+                "The JSON did not contain a valid scenario.");
+    }
+
+    public static async Task<Scenario> DeserializeAsync(
+        Stream stream,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(stream);
+
+        var scenario = await JsonSerializer.DeserializeAsync<Scenario>(
+            stream,
+            SerializerOptions,
+            cancellationToken);
+
+        return scenario
+            ?? throw new JsonException(
+                "The JSON did not contain a valid scenario.");
+    }
 
     public void NotifyStateChanged()
     {

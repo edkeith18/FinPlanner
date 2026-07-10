@@ -2,7 +2,6 @@
 @page "/financial-scenario"
 
 @using System.Text.Json
-@using System.Text.Json.Serialization
 @using FinPlanner.Engine
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
@@ -491,130 +490,130 @@
             </button>
         </div>
         <div class="expenses-table-wrapper">
-        <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
-            @if (scenario.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
-            {
-                <thead>
-                    <tr>
-                        <th class="item-name">Name</th>
-                        <th class="item-value">Start age</th>
-                        <th class="item-value">End age</th>
-                        <th class="item-value">Amount</th>
-                        <th class="item-value">Annual rate of increase</th>
-                        <th class="item-actions"></th>
-                    </tr>
-                </thead>
-            }
-            <tbody>
-                @foreach (var expense in scenario.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
+            <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
+                @if (scenario.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
                 {
-                    <tr class="@(IsExpenseRowEditing(expense) ? "edit-mode-row" : null)">
-                        <td class="item-name">
-                            @if (IsEditingName(expense))
-                            {
-                                <InputText @bind-Value="expense.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(expense)">@expense.Name</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingExpenseStartAge(expense))
-                            {
-                                <InputNumber @bind-Value="expense.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartAge(expense)">@expense.AgeStart</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingExpenseEndAge(expense))
-                            {
-                                <InputNumber @bind-Value="expense.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndAge(expense)">@expense.AgeEnd</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditing(expense))
-                            {
-                                <InputNumber @bind-Value="expense.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingExpenseAnnualRate(expense))
-                            {
+                    <thead>
+                        <tr>
+                            <th class="item-name">Name</th>
+                            <th class="item-value">Start age</th>
+                            <th class="item-value">End age</th>
+                            <th class="item-value">Amount</th>
+                            <th class="item-value">Annual rate of increase</th>
+                            <th class="item-actions"></th>
+                        </tr>
+                    </thead>
+                }
+                <tbody>
+                    @foreach (var expense in scenario.Expenses.OrderBy(e => e.Name, StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        <tr class="@(IsExpenseRowEditing(expense) ? "edit-mode-row" : null)">
+                            <td class="item-name">
+                                @if (IsEditingName(expense))
+                                {
+                                    <InputText @bind-Value="expense.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(expense, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(expense)">@expense.Name</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingExpenseStartAge(expense))
+                                {
+                                    <InputNumber @bind-Value="expense.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartAge(expense)">@expense.AgeStart</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingExpenseEndAge(expense))
+                                {
+                                    <InputNumber @bind-Value="expense.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndAge(expense)">@expense.AgeEnd</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditing(expense))
+                                {
+                                    <InputNumber @bind-Value="expense.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(expense, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingExpenseAnnualRate(expense))
+                                {
+                                    <div class="expense-rate-edit">
+                                        <InputNumber @bind-Value="expense.AnnualRateOfIncrease"
+                                                     class="form-control form-control-sm number-input-no-spinner"
+                                                     disabled="@expense.UseInflationValue"
+                                                     @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                                        <label class="form-check-label expense-inflation-toggle">
+                                            <input type="checkbox"
+                                                   class="form-check-input me-1"
+                                                   checked="@expense.UseInflationValue"
+                                                   @onchange="(e) => OnExpenseUseInflationChanged(expense, e)" />
+                                            Use inflation value
+                                        </label>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@FormatExpenseAnnualRate(expense)</span>
+                                }
+                            </td>
+                            <td class="item-actions">
+                                @if (IsExpenseRowEditing(expense))
+                                {
+                                    <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitExpenseEdit(expense)" aria-label="Commit expense edits for @expense.Name"><i class="bi bi-check-circle"></i></button>
+                                    <button class="btn btn-link text-secondary p-0" @onclick="() => CancelExpenseEdit(expense)" aria-label="Cancel expense edits for @expense.Name"><i class="bi bi-x-circle"></i></button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name"><i class="bi bi-trash"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+
+                    @if (activeAddType == AddItemType.Expense)
+                    {
+                        <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Expense)">
+                            <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Expense)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value">
                                 <div class="expense-rate-edit">
-                                    <InputNumber @bind-Value="expense.AnnualRateOfIncrease"
+                                    <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
                                                  class="form-control form-control-sm number-input-no-spinner"
-                                                 disabled="@expense.UseInflationValue"
-                                                 @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
+                                                 disabled="@newExpenseUseInflationValue"
+                                                 @onkeydown="OnAddInputKeyDown" />
                                     <label class="form-check-label expense-inflation-toggle">
                                         <input type="checkbox"
                                                class="form-check-input me-1"
-                                               checked="@expense.UseInflationValue"
-                                               @onchange="(e) => OnExpenseUseInflationChanged(expense, e)" />
+                                               checked="@newExpenseUseInflationValue"
+                                               @onchange="OnNewExpenseUseInflationChanged" />
                                         Use inflation value
                                     </label>
                                 </div>
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@FormatExpenseAnnualRate(expense)</span>
-                            }
-                        </td>
-                        <td class="item-actions">
-                            @if (IsExpenseRowEditing(expense))
-                            {
-                                <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitExpenseEdit(expense)" aria-label="Commit expense edits for @expense.Name"><i class="bi bi-check-circle"></i></button>
-                                <button class="btn btn-link text-secondary p-0" @onclick="() => CancelExpenseEdit(expense)" aria-label="Cancel expense edits for @expense.Name"><i class="bi bi-x-circle"></i></button>
-                            }
-                            else
-                            {
-                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteExpense(expense)" aria-label="Delete @expense.Name"><i class="bi bi-trash"></i></button>
-                            }
-                        </td>
-                    </tr>
-                }
-
-                @if (activeAddType == AddItemType.Expense)
-                {
-                    <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Expense)">
-                        <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Expense)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value">
-                            <div class="expense-rate-edit">
-                                <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
-                                             class="form-control form-control-sm number-input-no-spinner"
-                                             disabled="@newExpenseUseInflationValue"
-                                             @onkeydown="OnAddInputKeyDown" />
-                                <label class="form-check-label expense-inflation-toggle">
-                                    <input type="checkbox"
-                                           class="form-check-input me-1"
-                                           checked="@newExpenseUseInflationValue"
-                                           @onchange="OnNewExpenseUseInflationChanged" />
-                                    Use inflation value
-                                </label>
-                            </div>
-                        </td>
-                        <td class="item-actions">
-                            <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new expense"><i class="bi bi-check-circle"></i></button>
-                            <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new expense"><i class="bi bi-x-circle"></i></button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                            </td>
+                            <td class="item-actions">
+                                <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new expense"><i class="bi bi-check-circle"></i></button>
+                                <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new expense"><i class="bi bi-x-circle"></i></button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
 
         <hr />
@@ -633,178 +632,178 @@
             <p class="text-muted mb-2">Add an account before creating transfers.</p>
         }
         <div class="expenses-table-wrapper">
-        <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
-            @if (scenario.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
-            {
-                <thead>
-                    <tr>
-                        <th class="item-name">Name</th>
-                        <th class="item-value">Start age</th>
-                        <th class="item-value">End age</th>
-                        <th class="item-value">Amount</th>
-                        <th class="item-value">From Account</th>
-                        <th class="item-value">To Account</th>
-                        <th class="item-value">Annual rate of increase</th>
-                        <th class="item-actions"></th>
-                    </tr>
-                </thead>
-            }
-            <tbody>
-                @foreach (var transfer in scenario.Transfers.OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase))
+            <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
+                @if (scenario.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
                 {
-                    <tr class="@(IsTransferRowEditing(transfer) ? "edit-mode-row" : null)">
-                        <td class="item-name">
-                            @if (IsEditingName(transfer))
-                            {
-                                <InputText @bind-Value="transfer.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(transfer, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(transfer)">@transfer.Name</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingTransferStartAge(transfer))
-                            {
-                                <InputNumber @bind-Value="transfer.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferStartAge(transfer)">@transfer.AgeStart</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingTransferEndAge(transfer))
-                            {
-                                <InputNumber @bind-Value="transfer.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferEndAge(transfer)">@transfer.AgeEnd</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditing(transfer))
-                            {
-                                <InputNumber @bind-Value="transfer.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(transfer, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(transfer)">@transfer.Amount.ToString("C")</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingTransferFromAccount(transfer))
-                            {
-                                <InputSelect @bind-Value="transfer.FromAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
+                    <thead>
+                        <tr>
+                            <th class="item-name">Name</th>
+                            <th class="item-value">Start age</th>
+                            <th class="item-value">End age</th>
+                            <th class="item-value">Amount</th>
+                            <th class="item-value">From Account</th>
+                            <th class="item-value">To Account</th>
+                            <th class="item-value">Annual rate of increase</th>
+                            <th class="item-actions"></th>
+                        </tr>
+                    </thead>
+                }
+                <tbody>
+                    @foreach (var transfer in scenario.Transfers.OrderBy(t => t.Name, StringComparer.CurrentCultureIgnoreCase))
+                    {
+                        <tr class="@(IsTransferRowEditing(transfer) ? "edit-mode-row" : null)">
+                            <td class="item-name">
+                                @if (IsEditingName(transfer))
+                                {
+                                    <InputText @bind-Value="transfer.Name" class="form-control form-control-sm" @onkeydown="(e) => OnItemNameKeyDown(transfer, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(transfer)">@transfer.Name</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingTransferStartAge(transfer))
+                                {
+                                    <InputNumber @bind-Value="transfer.AgeStart" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferStartAge(transfer)">@transfer.AgeStart</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingTransferEndAge(transfer))
+                                {
+                                    <InputNumber @bind-Value="transfer.AgeEnd" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferEndAge(transfer)">@transfer.AgeEnd</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditing(transfer))
+                                {
+                                    <InputNumber @bind-Value="transfer.Amount" class="form-control form-control-sm number-input-no-spinner" @onkeydown="(e) => OnItemValueKeyDown(transfer, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(transfer)">@transfer.Amount.ToString("C")</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingTransferFromAccount(transfer))
+                                {
+                                    <InputSelect @bind-Value="transfer.FromAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
+                                        @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                        {
+                                            <option value="@account.Name">@account.Name</option>
+                                        }
+                                    </InputSelect>
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferFromAccount(transfer)">@transfer.FromAccountName</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingTransferToAccount(transfer))
+                                {
+                                    <InputSelect @bind-Value="transfer.ToAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
+                                        @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                                        {
+                                            <option value="@account.Name">@account.Name</option>
+                                        }
+                                    </InputSelect>
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferToAccount(transfer)">@transfer.ToAccountName</span>
+                                }
+                            </td>
+                            <td class="item-value">
+                                @if (IsEditingTransferAnnualRate(transfer))
+                                {
+                                    <div class="expense-rate-edit">
+                                        <InputNumber @bind-Value="transfer.AnnualRateOfIncrease"
+                                                     class="form-control form-control-sm number-input-no-spinner"
+                                                     disabled="@transfer.UseInflationValue"
+                                                     @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                                        <label class="form-check-label expense-inflation-toggle">
+                                            <input type="checkbox"
+                                                   class="form-check-input me-1"
+                                                   checked="@transfer.UseInflationValue"
+                                                   @onchange="(e) => OnTransferUseInflationChanged(transfer, e)" />
+                                            Use inflation value
+                                        </label>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferAnnualRate(transfer)">@FormatTransferAnnualRate(transfer)</span>
+                                }
+                            </td>
+                            <td class="item-actions">
+                                @if (IsTransferRowEditing(transfer))
+                                {
+                                    <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitTransferEdit(transfer)" aria-label="Commit transfer edits for @transfer.Name"><i class="bi bi-check-circle"></i></button>
+                                    <button class="btn btn-link text-secondary p-0" @onclick="() => CancelTransferEdit(transfer)" aria-label="Cancel transfer edits for @transfer.Name"><i class="bi bi-x-circle"></i></button>
+                                }
+                                else
+                                {
+                                    <button class="btn btn-link text-danger p-0" @onclick="() => DeleteTransfer(transfer)" aria-label="Delete @transfer.Name"><i class="bi bi-trash"></i></button>
+                                }
+                            </td>
+                        </tr>
+                    }
+
+                    @if (activeAddType == AddItemType.Transfer)
+                    {
+                        <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Transfer)">
+                            <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Transfer)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
+                            <td class="item-value">
+                                <InputSelect @bind-Value="newTransferFromAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
                                     @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                     {
                                         <option value="@account.Name">@account.Name</option>
                                     }
                                 </InputSelect>
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferFromAccount(transfer)">@transfer.FromAccountName</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingTransferToAccount(transfer))
-                            {
-                                <InputSelect @bind-Value="transfer.ToAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
+                            </td>
+                            <td class="item-value">
+                                <InputSelect @bind-Value="newTransferToAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
                                     @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
                                     {
                                         <option value="@account.Name">@account.Name</option>
                                     }
                                 </InputSelect>
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferToAccount(transfer)">@transfer.ToAccountName</span>
-                            }
-                        </td>
-                        <td class="item-value">
-                            @if (IsEditingTransferAnnualRate(transfer))
-                            {
+                            </td>
+                            <td class="item-value">
                                 <div class="expense-rate-edit">
-                                    <InputNumber @bind-Value="transfer.AnnualRateOfIncrease"
+                                    <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
                                                  class="form-control form-control-sm number-input-no-spinner"
-                                                 disabled="@transfer.UseInflationValue"
-                                                 @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
+                                                 disabled="@newExpenseUseInflationValue"
+                                                 @onkeydown="OnAddInputKeyDown" />
                                     <label class="form-check-label expense-inflation-toggle">
                                         <input type="checkbox"
                                                class="form-check-input me-1"
-                                               checked="@transfer.UseInflationValue"
-                                               @onchange="(e) => OnTransferUseInflationChanged(transfer, e)" />
+                                               checked="@newExpenseUseInflationValue"
+                                               @onchange="OnNewExpenseUseInflationChanged" />
                                         Use inflation value
                                     </label>
                                 </div>
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferAnnualRate(transfer)">@FormatTransferAnnualRate(transfer)</span>
-                            }
-                        </td>
-                        <td class="item-actions">
-                            @if (IsTransferRowEditing(transfer))
-                            {
-                                <button class="btn btn-link text-success p-0 me-2" @onclick="() => CommitTransferEdit(transfer)" aria-label="Commit transfer edits for @transfer.Name"><i class="bi bi-check-circle"></i></button>
-                                <button class="btn btn-link text-secondary p-0" @onclick="() => CancelTransferEdit(transfer)" aria-label="Cancel transfer edits for @transfer.Name"><i class="bi bi-x-circle"></i></button>
-                            }
-                            else
-                            {
-                                <button class="btn btn-link text-danger p-0" @onclick="() => DeleteTransfer(transfer)" aria-label="Delete @transfer.Name"><i class="bi bi-trash"></i></button>
-                            }
-                        </td>
-                    </tr>
-                }
-
-                @if (activeAddType == AddItemType.Transfer)
-                {
-                    <tr class="add-mode-row" id="@GetAddRowId(AddItemType.Transfer)">
-                        <td class="item-name"><InputText id="@GetAddNameInputId(AddItemType.Transfer)" @bind-Value="newItemName" class="form-control form-control-sm" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseStartAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
-                        <td class="item-value">
-                            <InputSelect @bind-Value="newTransferFromAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
-                                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
-                                {
-                                    <option value="@account.Name">@account.Name</option>
-                                }
-                            </InputSelect>
-                        </td>
-                        <td class="item-value">
-                            <InputSelect @bind-Value="newTransferToAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
-                                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
-                                {
-                                    <option value="@account.Name">@account.Name</option>
-                                }
-                            </InputSelect>
-                        </td>
-                        <td class="item-value">
-                            <div class="expense-rate-edit">
-                                <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
-                                             class="form-control form-control-sm number-input-no-spinner"
-                                             disabled="@newExpenseUseInflationValue"
-                                             @onkeydown="OnAddInputKeyDown" />
-                                <label class="form-check-label expense-inflation-toggle">
-                                    <input type="checkbox"
-                                           class="form-check-input me-1"
-                                           checked="@newExpenseUseInflationValue"
-                                           @onchange="OnNewExpenseUseInflationChanged" />
-                                    Use inflation value
-                                </label>
-                            </div>
-                        </td>
-                        <td class="item-actions">
-                            <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new transfer"><i class="bi bi-check-circle"></i></button>
-                            <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new transfer"><i class="bi bi-x-circle"></i></button>
-                        </td>
-                    </tr>
-                }
-            </tbody>
-        </table>
+                            </td>
+                            <td class="item-actions">
+                                <button class="btn btn-link text-success p-0 me-2" @onclick="SaveNewItem" aria-label="Commit new transfer"><i class="bi bi-check-circle"></i></button>
+                                <button class="btn btn-link text-secondary p-0" @onclick="CancelAdd" aria-label="Cancel new transfer"><i class="bi bi-x-circle"></i></button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
@@ -861,13 +860,12 @@
     private string newTransferFromAccountName = string.Empty;
     private string newTransferToAccountName = string.Empty;
     private bool pendingFocusNewRow;
-    private static readonly JsonSerializerOptions scenarioJsonOptions = CreateScenarioJsonOptions();
 
     private string SaveScenarioButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
 
     protected override void OnInitialized()
     {
-        baselineSnapshot = Serializescenario();
+        baselineSnapshot = scenario.Serialize();
     }
 
     private async Task LoadFile(InputFileChangeEventArgs e)
@@ -879,13 +877,10 @@
 
         string json = await reader.ReadToEndAsync();
 
-        var data = JsonSerializer.Deserialize<Scenario>(json, scenarioJsonOptions);
+        var data = Engine.Scenario.Deserialize(json);
 
         if (data is null)
             return;
-
-        ApplyLegacyExpenseInflationDefaults(data, json);
-        ApplyLegacyTransferInflationDefaults(data, json);
 
         scenario.Accounts = data.Accounts ?? new List<Account>();
         scenario.Income = data.Income ?? new List<IncomeItem>();
@@ -921,81 +916,8 @@
         originalParameterValues.Clear();
         activeAddType = null;
 
-        baselineSnapshot = Serializescenario();
+        baselineSnapshot = scenario.Serialize();
         UpdateDirtyState();
-    }
-
-
-    private static void ApplyLegacyExpenseInflationDefaults(Scenario data, string json)
-    {
-        if (data.Expenses is null || data.Expenses.Count == 0)
-        {
-            return;
-        }
-
-        using var document = JsonDocument.Parse(json);
-
-        if (!document.RootElement.TryGetProperty(nameof(Scenario.Expenses), out var expensesElement)
-            || expensesElement.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        var index = 0;
-        foreach (var expenseElement in expensesElement.EnumerateArray())
-        {
-            if (index >= data.Expenses.Count)
-            {
-                break;
-            }
-
-            var expense = data.Expenses[index];
-            if (!expenseElement.TryGetProperty(nameof(Expense.UseInflationValue), out _))
-            {
-                expense.UseInflationValue = !HasCustomLegacyExpenseRate(expenseElement, data.AnnualInflationRate);
-            }
-
-            index++;
-        }
-    }
-
-
-    private static void ApplyLegacyTransferInflationDefaults(Scenario data, string json)
-    {
-        if (data.Transfers is null || data.Transfers.Count == 0)
-        {
-            return;
-        }
-
-        using var document = JsonDocument.Parse(json);
-
-        if (!document.RootElement.TryGetProperty(nameof(scenario.Transfers), out var transfersElement)
-            || transfersElement.ValueKind != JsonValueKind.Array)
-        {
-            return;
-        }
-
-        var index = 0;
-        foreach (var transferElement in transfersElement.EnumerateArray())
-        {
-            if (index >= data.Transfers.Count)
-            {
-                break;
-            }
-
-            var transfer = data.Transfers[index];
-            if (!transferElement.TryGetProperty(nameof(Transfer.UseInflationValue), out _))
-            {
-                transfer.UseInflationValue = !HasCustomAnnualRate(transferElement, data.AnnualInflationRate);
-            }
-
-            index++;
-        }
-    }
-
-    private static bool HasCustomLegacyExpenseRate(JsonElement expenseElement, decimal annualInflationRate)
-    {
-        return HasCustomAnnualRate(expenseElement, annualInflationRate);
     }
 
     private static bool HasCustomAnnualRate(JsonElement itemElement, decimal annualInflationRate)
@@ -1006,20 +928,14 @@
             return annualRate != annualInflationRate;
         }
 
-        if (itemElement.TryGetProperty("annualRateOfIncrease", out var legacyAnnualRateElement)
-            && legacyAnnualRateElement.TryGetDecimal(out var legacyAnnualRate))
-        {
-            return legacyAnnualRate != annualInflationRate;
-        }
-
         return false;
     }
 
     private async Task Save()
     {
-        var json = Serializescenario(pretty: true);
+        var json = scenario.Serialize();
         await SaveFileAsync("FinPlanner.json", json);
-        baselineSnapshot = Serializescenario();
+        baselineSnapshot = scenario.Serialize();
         UpdateDirtyState();
     }
 
@@ -1586,15 +1502,8 @@
 
     private void UpdateDirtyState()
     {
-        isDirty = Serializescenario() != baselineSnapshot;
+        isDirty = scenario.Serialize() != baselineSnapshot;
         scenario.NotifyStateChanged();
-    }
-
-    private string Serializescenario(bool pretty = false)
-    {
-        var options = CreateScenarioJsonOptions();
-        options.WriteIndented = pretty;
-        return JsonSerializer.Serialize(scenario, options);
     }
 
     private bool HasActiveEditOrAdd => activeAddType is not null
@@ -1615,13 +1524,6 @@
     private string FinancialScenarioPanelClass => HasActiveEditOrAdd
         ? "financial-scenario-panel edit-active"
         : "financial-scenario-panel";
-
-    private static JsonSerializerOptions CreateScenarioJsonOptions()
-    {
-        var options = new JsonSerializerOptions();
-        options.Converters.Add(new JsonStringEnumConverter());
-        return options;
-    }
 
     private bool IsSectionBusy(AddItemType itemType)
     {
