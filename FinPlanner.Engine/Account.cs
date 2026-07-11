@@ -2,7 +2,9 @@
 
 public class Account
 {
-    public string Name { get; set; } = "";
+
+    public Guid Id { get; init; } = Guid.NewGuid();
+    public string Name { get; set; } = string.Empty;
     public AccountType Type { get; set; } = AccountType.Brokerage;
     public AccountHoldings Holdings { get; set; } = AccountHoldings.Equities;
     public decimal Balance { get; set; }
