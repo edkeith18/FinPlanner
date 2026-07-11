@@ -4,6 +4,10 @@ using FinPlanner.Engine;
 
 var rootCommand = new RootCommand("FinPlanner command-line tools");
 
+//
+// load
+//
+
 var loadPathArgument = new Argument<FileInfo>("path")
 {
     Description = "Scenario JSON file to load."
@@ -45,6 +49,10 @@ loadCommand.SetAction(parseResult =>
     }
 });
 
+//
+// save
+//
+
 var savePathArgument = new Argument<FileInfo>("path")
 {
     Description = "Scenario JSON file to save."
@@ -52,7 +60,7 @@ var savePathArgument = new Argument<FileInfo>("path")
 
 var saveCommand = new Command("save")
 {
-    Description = "Save a scenario to disk."
+    Description = "Save a new scenario to disk."
 };
 
 saveCommand.Arguments.Add(savePathArgument);
@@ -78,7 +86,73 @@ saveCommand.SetAction(parseResult =>
     }
 });
 
+//
+// upgrade
+//
+
+var upgradePathArgument = new Argument<FileInfo>("path")
+{
+    Description = "Scenario JSON file to upgrade."
+};
+
+var upgradeCommand = new Command("upgrade")
+{
+    Description =
+        "Load a scenario using the current schema and write it back to the same file."
+};
+
+upgradeCommand.Arguments.Add(upgradePathArgument);
+
+upgradeCommand.SetAction(parseResult =>
+{
+    var file = parseResult.GetValue(upgradePathArgument)!;
+
+    try
+    {
+        var json = File.ReadAllText(file.FullName);
+        var scenario = Scenario.Deserialize(json);
+
+        var backupPath = file.FullName + ".bak";
+        var temporaryPath = file.FullName + ".tmp";
+
+        File.Copy(
+            sourceFileName: file.FullName,
+            destFileName: backupPath,
+            overwrite: true);
+
+        File.WriteAllText(
+            temporaryPath,
+            scenario.Serialize());
+
+        File.Move(
+            sourceFileName: temporaryPath,
+            destFileName: file.FullName,
+            overwrite: true);
+
+        Console.WriteLine($"Upgraded '{file.FullName}'");
+        Console.WriteLine($"Backup  : '{backupPath}'");
+
+        return 0;
+    }
+    catch (FileNotFoundException)
+    {
+        Console.Error.WriteLine($"File not found: {file.FullName}");
+        return 1;
+    }
+    catch (JsonException ex)
+    {
+        Console.Error.WriteLine($"Invalid scenario file: {ex.Message}");
+        return 2;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Unable to upgrade scenario: {ex.Message}");
+        return 3;
+    }
+});
+
 rootCommand.Subcommands.Add(loadCommand);
 rootCommand.Subcommands.Add(saveCommand);
+rootCommand.Subcommands.Add(upgradeCommand);
 
 return rootCommand.Parse(args).Invoke();
