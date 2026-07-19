@@ -1,6 +1,7 @@
 ﻿@using FinPlanner.Engine
 @implements IDisposable
 @inject Scenario scenario
+@inject MaximumExpenseCalculator maximumExpenseCalculator
 
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
@@ -47,7 +48,7 @@
 
     private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
 
-    private string MaximumAnnualExpensesDisplay => FinancialPlanCalculator.CalculateMaximumAnnualExpenses(scenario, out var maximumAnnualExpenses)
+    private string MaximumAnnualExpensesDisplay => maximumExpenseCalculator.TryCalculate(scenario, out var maximumAnnualExpenses)
         ? maximumAnnualExpenses.ToString("C")
         : "Plan fails";
 

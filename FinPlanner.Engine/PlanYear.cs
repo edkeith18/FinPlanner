@@ -32,6 +32,20 @@ public sealed class PlanYear
     public required TaxYearResult Taxes { get; init; }
 
     /// <summary>
+    /// Named expenses incurred during this year.
+    /// </summary>
+    public required IReadOnlyList<ExpenseYearResult> Expenses { get; init; }
+
+    /// <summary>
+    /// Expenses not represented by a named scenario expense.
+    /// </summary>
+    public decimal DiscretionaryExpenses { get; init; }
+
+    public decimal TotalExpenses =>
+        Expenses.Sum(expense => expense.Amount)
+        + DiscretionaryExpenses;
+
+    /// <summary>
     /// Total balance across all accounts at the beginning of the year.
     /// </summary>
     public decimal BeginningBalance =>

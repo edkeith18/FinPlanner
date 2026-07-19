@@ -19,7 +19,7 @@ public class Scenario
     public List<IncomeItem> Income { get; set; } = new();
     public List<Expense> Expenses { get; set; } = new();
     public List<Transfer> Transfers { get; set; } = new();
-    [JsonIgnore]
+    [JsonPropertyName("Year")]
     public int StartYear { get; set; } = DateTime.Now.Year;
     [JsonIgnore]
     public int EndYear => StartYear + Math.Max(0, LifeExpectancy - CurrentAge);

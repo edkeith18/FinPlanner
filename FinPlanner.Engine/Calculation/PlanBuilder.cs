@@ -22,15 +22,27 @@ public sealed class PlanBuilder
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="scenario"/> is null.
     /// </exception>
-    public Plan Build(Scenario scenario)
+    public Plan Build(
+        Scenario scenario,
+        PlanBuildOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(scenario);
 
         var planYears = new List<PlanYear>();
 
+        if (scenario.CurrentAge > scenario.LifeExpectancy)
+        {
+            return new Plan(DateTimeOffset.UtcNow, planYears);
+        }
+
+        var annualExpenses = options?.AnnualExpenses
+            ?? scenario.AnnualExpenses;
+
         // PlanCalculationState contains the mutable financial state used while
         // calculating the plan. The original Scenario is not modified.
-        var state = PlanCalculationState.FromScenario(scenario);
+        var state = PlanCalculationState.FromScenario(
+            scenario,
+            annualExpenses);
 
         // Years must be calculated in chronological order because each year's
         // ending balances and carryforward values are inputs to the next year.
@@ -111,8 +123,8 @@ public sealed class PlanBuilder
         ApplyExpenses(context);
         ApplyTransfers(context);
         CalculateTaxes(context);
-        PayExpensesAndTaxes(context);
         ApplyInvestmentReturns(context);
+        PayExpensesAndTaxes(context);
 
         // Complete creates the immutable PlanYear result and updates the
         // shared PlanCalculationState to represent the end of this calendar year.
@@ -126,8 +138,18 @@ public sealed class PlanBuilder
     private static void InitializeAccounts(
         YearCalculationContext context)
     {
-        // TODO: Create a working yearly result for each account and copy
-        // its beginning balance from PlanCalculationState.
+        foreach (var accountState in context.PlanState.Accounts)
+        {
+            var account = context.Scenario.Accounts.SingleOrDefault(
+                account => account.Id == accountState.AccountId);
+
+            context.Accounts.Add(new AccountYearCalculation
+            {
+                AccountId = accountState.AccountId,
+                AccountName = account?.Name ?? "Unfunded balance",
+                BeginningBalance = accountState.Balance
+            });
+        }
     }
 
     /// <summary>
@@ -151,8 +173,28 @@ public sealed class PlanBuilder
     private static void ApplyExpenses(
         YearCalculationContext context)
     {
-        // TODO: Determine which expenses apply during this year and calculate
-        // their inflation-adjusted or otherwise modified amounts.
+        var age = context.Scenario.CurrentAge
+            + context.CalendarYear
+            - context.Scenario.StartYear;
+
+        foreach (var expense in context.Scenario.Expenses)
+        {
+            context.Expenses.Add(new ExpenseYearResult(
+                expense.Name,
+                CalculateExpenseAmount(expense, age)));
+        }
+
+        if (context.CalendarYear > context.Scenario.StartYear)
+        {
+            var inflationRate =
+                context.Scenario.AnnualInflationRate / 100m;
+
+            context.PlanState.DiscretionaryExpenses *=
+                1m + inflationRate;
+        }
+
+        context.DiscretionaryExpenses =
+            context.PlanState.DiscretionaryExpenses;
     }
 
     /// <summary>
@@ -184,8 +226,21 @@ public sealed class PlanBuilder
     private static void PayExpensesAndTaxes(
         YearCalculationContext context)
     {
-        // TODO: Determine which accounts fund expenses and taxes, then record
-        // the resulting account withdrawals or payments.
+        var totalWithdrawals = context.Expenses.Sum(
+            expense => expense.Amount)
+            + context.DiscretionaryExpenses
+            + context.Taxes.TotalTax;
+
+        if (context.Accounts.Count > 0)
+        {
+            // The legacy calculation modeled one combined portfolio. Charging
+            // the aggregate withdrawal to one account preserves its total-balance
+            // behavior until an explicit account funding strategy is introduced.
+            context.Accounts[0].ExpenseWithdrawals =
+                totalWithdrawals - context.Taxes.TotalTax;
+            context.Accounts[0].TaxWithdrawals =
+                context.Taxes.TotalTax;
+        }
     }
 
     /// <summary>
@@ -195,7 +250,40 @@ public sealed class PlanBuilder
     private static void ApplyInvestmentReturns(
         YearCalculationContext context)
     {
-        // TODO: Calculate each type of investment return separately so its
-        // effect on account balances and taxable income remains visible.
+        // Preserve the legacy model: every account earns the securities rate,
+        // and the first plan year does not receive an investment return.
+        if (context.CalendarYear == context.Scenario.StartYear)
+        {
+            return;
+        }
+
+        var rate =
+            context.Scenario.SecuritiesAnnualInterestRate / 100m;
+
+        foreach (var account in context.Accounts)
+        {
+            account.CapitalAppreciation =
+                account.BeginningBalance * rate;
+        }
+    }
+
+    private static decimal CalculateExpenseAmount(
+        Expense expense,
+        int age)
+    {
+        if (age < expense.AgeStart || age > expense.AgeEnd)
+        {
+            return 0m;
+        }
+
+        var amount = expense.Amount;
+        var rate = expense.AnnualRateOfIncrease / 100m;
+
+        for (var year = expense.AgeStart; year < age; year++)
+        {
+            amount *= 1m + rate;
+        }
+
+        return amount;
     }
 }

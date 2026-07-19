@@ -11,5 +11,7 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 // Register the Accounts service as Scoped.  Scoped will create a new instance for each user session.
 builder.Services.AddScoped<Scenario>();
+builder.Services.AddScoped<PlanBuilder>();
+builder.Services.AddScoped<MaximumExpenseCalculator>();
 
 await builder.Build().RunAsync();
