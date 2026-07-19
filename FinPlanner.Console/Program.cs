@@ -1,39 +1,41 @@
 ﻿using System.CommandLine;
+using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using FinPlanner.Engine;
 
 var rootCommand = new RootCommand("FinPlanner command-line tools");
 
-//
-// load
-//
-
-var loadPathArgument = new Argument<FileInfo>("path")
+var scenarioPathArgument = new Argument<FileInfo>("path")
 {
-    Description = "Scenario JSON file to load."
+    Description = "Scenario JSON file."
 };
 
-var loadCommand = new Command("load")
+// Build a plan and write its yearly account balances beside the scenario file.
+
+var buildCommand = new Command("build")
 {
-    Description = "Load a scenario from disk."
+    Description = "Build a financial plan from a scenario file."
 };
 
-loadCommand.Arguments.Add(loadPathArgument);
+buildCommand.Arguments.Add(scenarioPathArgument);
 
-loadCommand.SetAction(parseResult =>
+buildCommand.SetAction(parseResult =>
 {
-    var file = parseResult.GetValue(loadPathArgument)!;
+    var file = parseResult.GetValue(scenarioPathArgument)!;
 
     try
     {
         var json = File.ReadAllText(file.FullName);
         var scenario = Scenario.Deserialize(json);
+        var plan = new PlanBuilder().Build(scenario);
 
-        Console.WriteLine($"Loaded '{file.FullName}'");
-        Console.WriteLine($"Accounts : {scenario.Accounts.Count}");
-        Console.WriteLine($"Income   : {scenario.Income.Count}");
-        Console.WriteLine($"Expenses : {scenario.Expenses.Count}");
-        Console.WriteLine($"Transfers: {scenario.Transfers.Count}");
+        var outputPath = WritePlanCsv(
+            plan,
+            scenario.Accounts,
+            file);
+
+        Console.WriteLine($"Plan written to '{outputPath}'");
 
         return 0;
     }
@@ -47,53 +49,14 @@ loadCommand.SetAction(parseResult =>
         Console.Error.WriteLine($"Invalid scenario file: {ex.Message}");
         return 2;
     }
-});
-
-//
-// save
-//
-
-var savePathArgument = new Argument<FileInfo>("path")
-{
-    Description = "Scenario JSON file to save."
-};
-
-var saveCommand = new Command("save")
-{
-    Description = "Save a new scenario to disk."
-};
-
-saveCommand.Arguments.Add(savePathArgument);
-
-saveCommand.SetAction(parseResult =>
-{
-    var file = parseResult.GetValue(savePathArgument)!;
-
-    try
-    {
-        var scenario = new Scenario();
-
-        File.WriteAllText(file.FullName, scenario.Serialize());
-
-        Console.WriteLine($"Saved '{file.FullName}'");
-
-        return 0;
-    }
     catch (Exception ex)
     {
-        Console.Error.WriteLine(ex.Message);
-        return 1;
+        Console.Error.WriteLine($"Unable to build plan: {ex.Message}");
+        return 3;
     }
 });
 
-//
-// upgrade
-//
-
-var upgradePathArgument = new Argument<FileInfo>("path")
-{
-    Description = "Scenario JSON file to upgrade."
-};
+// Rewrite a scenario using the current JSON schema while retaining a backup.
 
 var upgradeCommand = new Command("upgrade")
 {
@@ -101,11 +64,11 @@ var upgradeCommand = new Command("upgrade")
         "Load a scenario using the current schema and write it back to the same file."
 };
 
-upgradeCommand.Arguments.Add(upgradePathArgument);
+upgradeCommand.Arguments.Add(scenarioPathArgument);
 
 upgradeCommand.SetAction(parseResult =>
 {
-    var file = parseResult.GetValue(upgradePathArgument)!;
+    var file = parseResult.GetValue(scenarioPathArgument)!;
 
     try
     {
@@ -115,6 +78,8 @@ upgradeCommand.SetAction(parseResult =>
         var backupPath = file.FullName + ".bak";
         var temporaryPath = file.FullName + ".tmp";
 
+        // Write through a temporary file so the original remains intact until
+        // the upgraded scenario has been serialized successfully.
         File.Copy(
             sourceFileName: file.FullName,
             destFileName: backupPath,
@@ -151,8 +116,62 @@ upgradeCommand.SetAction(parseResult =>
     }
 });
 
-rootCommand.Subcommands.Add(loadCommand);
-rootCommand.Subcommands.Add(saveCommand);
+rootCommand.Subcommands.Add(buildCommand);
 rootCommand.Subcommands.Add(upgradeCommand);
 
 return rootCommand.Parse(args).Invoke();
+
+static string WritePlanCsv(
+    Plan plan,
+    IReadOnlyList<Account> accounts,
+    FileInfo scenarioFile)
+{
+    var timestamp = DateTime.Now.ToString(
+        "yyyyMMdd_HHmmss",
+        CultureInfo.InvariantCulture);
+    var outputFileName =
+        $"{Path.GetFileNameWithoutExtension(scenarioFile.Name)}_{timestamp}.csv";
+    var outputPath = Path.Combine(
+        scenarioFile.DirectoryName
+            ?? Directory.GetCurrentDirectory(),
+        outputFileName);
+
+    var csv = new StringBuilder();
+    var headers = new[] { "CalendarYear" }
+        .Concat(accounts.Select(
+            account => $"{account.Name} EndingBalance"));
+    csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
+
+    foreach (var year in plan.Years)
+    {
+        var values = new List<string>
+        {
+            year.CalendarYear.ToString(CultureInfo.InvariantCulture)
+        };
+        // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
+        values.AddRange(accounts.Select(account =>
+            $"${year.Accounts
+                .Single(result => result.AccountId == account.Id)
+                .EndingBalance
+                .ToString("0.00", CultureInfo.InvariantCulture)}"));
+
+        csv.AppendLine(string.Join(",", values.Select(EscapeCsvField)));
+    }
+
+    File.WriteAllText(outputPath, csv.ToString());
+
+    return outputPath;
+}
+
+static string EscapeCsvField(string value)
+{
+    if (!value.Contains(',')
+        && !value.Contains('"')
+        && !value.Contains('\r')
+        && !value.Contains('\n'))
+    {
+        return value;
+    }
+
+    return $"\"{value.Replace("\"", "\"\"")}\"";
+}
