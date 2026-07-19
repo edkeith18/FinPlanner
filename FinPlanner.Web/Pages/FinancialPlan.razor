@@ -3,6 +3,7 @@
 @using FinPlanner.Engine
 
 @inject Scenario scenario
+@inject PlanBuilder planBuilder
 
 <PageTitle>Financial Plan</PageTitle>
 
@@ -14,8 +15,8 @@
 }
 else
 {
-    var planRows = FinancialPlanCalculator.BuildPlanRows(scenario);
-    var expenseNames = planRows
+    var plan = planBuilder.Build(scenario);
+    var expenseNames = plan.Years
         .SelectMany(row => row.Expenses)
         .Select(expense => expense.Name)
         .Distinct(StringComparer.CurrentCultureIgnoreCase)
@@ -35,7 +36,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var row in planRows)
+            @foreach (var row in plan.Years)
             {
                 <tr>
                     <td>@row.Age</td>
@@ -46,7 +47,7 @@ else
                         <td>@expenseAmount.ToString("C")</td>
                     }
                     <td>@row.DiscretionaryExpenses.ToString("C")</td>
-                    <td>@row.Balance.ToString("C")</td>
+                    <td>@row.EndingBalance.ToString("C")</td>
                 </tr>
             }
         </tbody>

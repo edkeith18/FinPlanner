@@ -33,6 +33,7 @@ internal sealed class YearCalculationContext
         PlanCalculationState planningState,
         int calendarYear)
     {
+        Scenario = scenario;
         PlanState = planningState;
         CalendarYear = calendarYear;
     }
@@ -41,6 +42,11 @@ internal sealed class YearCalculationContext
     /// The calendar year currently being calculated.
     /// </summary>
     public int CalendarYear { get; }
+
+    /// <summary>
+    /// The original, unmodified inputs and assumptions for the plan.
+    /// </summary>
+    public Scenario Scenario { get; }
 
     /// <summary>
     /// The mutable financial state shared between all years of the plan.
@@ -53,7 +59,11 @@ internal sealed class YearCalculationContext
     /// The calculated account results for this year.
     /// One result exists for each account in the scenario.
     /// </summary>
-    public List<AccountYearResult> Accounts { get; } = [];
+    public List<AccountYearCalculation> Accounts { get; } = [];
+
+    public List<ExpenseYearResult> Expenses { get; } = [];
+
+    public decimal DiscretionaryExpenses { get; set; }
 
     /// <summary>
     /// The calculated taxable income for this year.
@@ -79,11 +89,26 @@ internal sealed class YearCalculationContext
     /// </summary>
     public PlanYear Complete()
     {
-        // TODO:
-        // 1. Update PlanCalculationState from the ending account balances.
-        // 2. Copy any carryforward tax information.
-        // 3. Create and return a PlanYear.
+        var accountResults = Accounts
+            .Select(account => account.ToResult())
+            .ToList();
 
-        throw new NotImplementedException();
+        foreach (var accountState in PlanState.Accounts)
+        {
+            var result = accountResults.Single(
+                account => account.AccountId == accountState.AccountId);
+
+            accountState.Balance = result.EndingBalance;
+        }
+
+        return new PlanYear
+        {
+            CalendarYear = CalendarYear,
+            Age = Scenario.CurrentAge + CalendarYear - Scenario.StartYear,
+            Accounts = accountResults,
+            Expenses = Expenses.ToList(),
+            DiscretionaryExpenses = DiscretionaryExpenses,
+            Taxes = Taxes
+        };
     }
 }

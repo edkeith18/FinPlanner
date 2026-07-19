@@ -18,7 +18,9 @@ internal sealed class PlanCalculationState
     /// <param name="scenario">
     /// The scenario used to initialize the planning state.
     /// </param>
-    public static PlanCalculationState FromScenario(Scenario scenario)
+    public static PlanCalculationState FromScenario(
+        Scenario scenario,
+        decimal annualExpenses)
     {
         ArgumentNullException.ThrowIfNull(scenario);
 
@@ -33,6 +35,25 @@ internal sealed class PlanCalculationState
             });
         }
 
+        if (state.Accounts.Count == 0)
+        {
+            state.Accounts.Add(new AccountCalculationState
+            {
+                AccountId = Guid.Empty,
+                Balance = 0m
+            });
+        }
+
+        var activeNamedExpenses = scenario.Expenses
+            .Where(expense =>
+                expense.AgeStart <= scenario.CurrentAge
+                && expense.AgeEnd >= scenario.CurrentAge)
+            .Sum(expense => expense.Amount);
+
+        state.DiscretionaryExpenses = Math.Max(
+            0m,
+            annualExpenses - activeNamedExpenses);
+
         return state;
     }
 
@@ -41,6 +62,11 @@ internal sealed class PlanCalculationState
     /// These balances are updated as each calendar year is calculated.
     /// </summary>
     public List<AccountCalculationState> Accounts { get; } = [];
+
+    /// <summary>
+    /// The inflation-adjusted discretionary expense amount for the current year.
+    /// </summary>
+    public decimal DiscretionaryExpenses { get; set; }
 
     /// <summary>
     /// Capital loss carryforward available for future tax years.
