@@ -43,14 +43,31 @@
     min-width: 18rem;
 }
 
+.parameter-table {
+    table-layout: fixed;
+    width: min(100%, 32rem);
+}
+
 .parameter-table .item-name {
-    width: 18rem;
+    width: 56.25%;
+}
+
+.parameter-table td.item-value {
+    width: 31.25%;
+}
+
+.parameter-table td.item-actions {
+    width: 12.5%;
+}
+
+.parameter-table .form-control {
+    width: 5rem;
 }
 
 .item-type,
 .item-holdings,
 .item-value {
-    width: 10%;
+    width: 5%;
 }
 
 .item-actions {
@@ -61,6 +78,19 @@
 
 .item-actions .btn {
     white-space: nowrap;
+}
+
+.account-row[draggable="true"] {
+    cursor: grab;
+}
+
+.account-row-dragging {
+    opacity: 0.45;
+}
+
+.account-row-drop-target > td {
+    background-color: rgba(var(--bs-primary-rgb), 0.12);
+    box-shadow: inset 0 2px 0 var(--bs-primary);
 }
 
 .clickable-value,

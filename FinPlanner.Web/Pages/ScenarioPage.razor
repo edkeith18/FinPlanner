@@ -247,9 +247,16 @@
                 </thead>
             }
             <tbody>
-                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                @foreach (var account in scenario.Accounts)
                 {
-                    <tr class="@(IsAccountRowEditing(account) ? "edit-mode-row" : null)">
+                    <tr @key="account"
+                        class="@GetAccountRowClass(account)"
+                        draggable="@CanDragAccount(account)"
+                        @ondragstart="() => OnAccountDragStart(account)"
+                        @ondragenter="() => OnAccountDragEnter(account)"
+                        @ondragover:preventDefault="true"
+                        @ondrop="() => OnAccountDrop(account)"
+                        @ondragend="EndAccountDrag">
                         <td class="item-name">
                             @if (IsEditingName(account))
                             {
@@ -845,6 +852,8 @@
     private readonly HashSet<Transfer> editingTransferToAccountRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
+    private Account? draggedAccount;
+    private Account? accountDropTarget;
     private bool isDirty;
     private string baselineSnapshot = string.Empty;
 
@@ -1248,6 +1257,81 @@
             originalAccountHoldings.Remove(account);
             UpdateDirtyState();
         }
+    }
+
+    private bool CanDragAccount(Account account)
+    {
+        return scenario.Accounts.Count > 1 && !HasActiveEditOrAdd && !IsAccountRowEditing(account);
+    }
+
+    private string GetAccountRowClass(Account account)
+    {
+        var classes = new List<string> { "account-row" };
+
+        if (IsAccountRowEditing(account))
+        {
+            classes.Add("edit-mode-row");
+        }
+
+        if (ReferenceEquals(account, draggedAccount))
+        {
+            classes.Add("account-row-dragging");
+        }
+
+        if (ReferenceEquals(account, accountDropTarget))
+        {
+            classes.Add("account-row-drop-target");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private void OnAccountDragStart(Account account)
+    {
+        if (!CanDragAccount(account))
+        {
+            return;
+        }
+
+        draggedAccount = account;
+        accountDropTarget = null;
+    }
+
+    private void OnAccountDragEnter(Account account)
+    {
+        if (draggedAccount is null)
+        {
+            return;
+        }
+
+        accountDropTarget = ReferenceEquals(account, draggedAccount) ? null : account;
+    }
+
+    private void OnAccountDrop(Account account)
+    {
+        if (draggedAccount is null || ReferenceEquals(account, draggedAccount))
+        {
+            EndAccountDrag();
+            return;
+        }
+
+        var sourceIndex = scenario.Accounts.IndexOf(draggedAccount);
+        var targetIndex = scenario.Accounts.IndexOf(account);
+
+        if (sourceIndex >= 0 && targetIndex >= 0)
+        {
+            scenario.Accounts.RemoveAt(sourceIndex);
+            scenario.Accounts.Insert(targetIndex, draggedAccount);
+            UpdateDirtyState();
+        }
+
+        EndAccountDrag();
+    }
+
+    private void EndAccountDrag()
+    {
+        draggedAccount = null;
+        accountDropTarget = null;
     }
 
     private async Task DeleteIncome(IncomeItem income)
