@@ -104,6 +104,32 @@
     min-width: 8rem;
 }
 
+.account-name-cell {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.account-drag-handle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--bs-secondary-color);
+    cursor: grab;
+    opacity: 0.55;
+    user-select: none;
+    line-height: 1;
+    padding-right: 0.1rem;
+}
+
+.account-row[draggable="true"] .account-drag-handle {
+    opacity: 0.9;
+}
+
+.account-row-dragging .account-drag-handle {
+    cursor: grabbing;
+}
+
 .section-heading {
     display: flex;
     align-items: center;

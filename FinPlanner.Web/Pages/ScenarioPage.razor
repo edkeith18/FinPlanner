@@ -258,16 +258,21 @@
                         @ondrop="() => OnAccountDrop(account)"
                         @ondragend="EndAccountDrag">
                         <td class="item-name">
-                            @if (IsEditingName(account))
-                            {
-                                <InputText @bind-Value="account.Name"
-                                           class="form-control form-control-sm"
-                                           @onkeydown="(e) => OnItemNameKeyDown(account, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
-                            }
+                            <div class="account-name-cell">
+                                <span class="account-drag-handle" aria-hidden="true">
+                                    <i class="bi bi-grip-vertical"></i>
+                                </span>
+                                @if (IsEditingName(account))
+                                {
+                                    <InputText @bind-Value="account.Name"
+                                               class="form-control form-control-sm"
+                                               @onkeydown="(e) => OnItemNameKeyDown(account, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
+                                }
+                            </div>
                         </td>
                         <td class="item-type">
                             @if (IsEditingType(account))
