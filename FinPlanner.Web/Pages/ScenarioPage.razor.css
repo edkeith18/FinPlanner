@@ -40,7 +40,11 @@
 }
 
 .item-name {
-    min-width: 12rem;
+    min-width: 18rem;
+}
+
+.parameter-table .item-name {
+    width: 18rem;
 }
 
 .item-type,
