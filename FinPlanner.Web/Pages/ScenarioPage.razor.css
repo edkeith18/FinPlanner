@@ -35,7 +35,7 @@
 }
 
 .compact-table td:not(.item-name) {
-    width: 5%;
+    width: 10%;
     white-space: nowrap;
 }
 
@@ -46,7 +46,7 @@
 .item-type,
 .item-holdings,
 .item-value {
-    width: 5%;
+    width: 10%;
 }
 
 .item-actions {
