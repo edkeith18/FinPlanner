@@ -23,7 +23,7 @@
     <div class="@FinancialScenarioPanelClass">
         <h5>Parameters</h5>
         <h6 class="parameter-subgroup-heading">Personal</h6>
-        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+        <table class="table table-borderless align-middle table-sm compact-table parameter-table mb-0">
             <tbody>
                 <tr class="@(IsEditingParameter(ParameterField.CurrentAge) ? "edit-mode-row" : null)">
                     <td class="item-name">Current age</td>
@@ -124,7 +124,7 @@
         </table>
 
         <h6 class="parameter-subgroup-heading mt-2">Economic</h6>
-        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+        <table class="table table-borderless align-middle table-sm compact-table parameter-table mb-0">
             <tbody>
                 <tr class="@(IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate) ? "edit-mode-row" : null)">
                     <td class="item-name">Securities annual interest rate</td>
@@ -247,20 +247,32 @@
                 </thead>
             }
             <tbody>
-                @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
+                @foreach (var account in scenario.Accounts)
                 {
-                    <tr class="@(IsAccountRowEditing(account) ? "edit-mode-row" : null)">
+                    <tr @key="account"
+                        class="@GetAccountRowClass(account)"
+                        draggable="@CanDragAccount(account)"
+                        @ondragstart="() => OnAccountDragStart(account)"
+                        @ondragenter="() => OnAccountDragEnter(account)"
+                        @ondragover:preventDefault="true"
+                        @ondrop="() => OnAccountDrop(account)"
+                        @ondragend="EndAccountDrag">
                         <td class="item-name">
-                            @if (IsEditingName(account))
-                            {
-                                <InputText @bind-Value="account.Name"
-                                           class="form-control form-control-sm"
-                                           @onkeydown="(e) => OnItemNameKeyDown(account, e)" />
-                            }
-                            else
-                            {
-                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
-                            }
+                            <div class="account-name-cell">
+                                <span class="account-drag-handle" aria-hidden="true">
+                                    <i class="bi bi-grip-vertical"></i>
+                                </span>
+                                @if (IsEditingName(account))
+                                {
+                                    <InputText @bind-Value="account.Name"
+                                               class="form-control form-control-sm"
+                                               @onkeydown="(e) => OnItemNameKeyDown(account, e)" />
+                                }
+                                else
+                                {
+                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
+                                }
+                            </div>
                         </td>
                         <td class="item-type">
                             @if (IsEditingType(account))
@@ -845,6 +857,8 @@
     private readonly HashSet<Transfer> editingTransferToAccountRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
+    private Account? draggedAccount;
+    private Account? accountDropTarget;
     private bool isDirty;
     private string baselineSnapshot = string.Empty;
 
@@ -1248,6 +1262,81 @@
             originalAccountHoldings.Remove(account);
             UpdateDirtyState();
         }
+    }
+
+    private bool CanDragAccount(Account account)
+    {
+        return scenario.Accounts.Count > 1 && !HasActiveEditOrAdd && !IsAccountRowEditing(account);
+    }
+
+    private string GetAccountRowClass(Account account)
+    {
+        var classes = new List<string> { "account-row" };
+
+        if (IsAccountRowEditing(account))
+        {
+            classes.Add("edit-mode-row");
+        }
+
+        if (ReferenceEquals(account, draggedAccount))
+        {
+            classes.Add("account-row-dragging");
+        }
+
+        if (ReferenceEquals(account, accountDropTarget))
+        {
+            classes.Add("account-row-drop-target");
+        }
+
+        return string.Join(" ", classes);
+    }
+
+    private void OnAccountDragStart(Account account)
+    {
+        if (!CanDragAccount(account))
+        {
+            return;
+        }
+
+        draggedAccount = account;
+        accountDropTarget = null;
+    }
+
+    private void OnAccountDragEnter(Account account)
+    {
+        if (draggedAccount is null)
+        {
+            return;
+        }
+
+        accountDropTarget = ReferenceEquals(account, draggedAccount) ? null : account;
+    }
+
+    private void OnAccountDrop(Account account)
+    {
+        if (draggedAccount is null || ReferenceEquals(account, draggedAccount))
+        {
+            EndAccountDrag();
+            return;
+        }
+
+        var sourceIndex = scenario.Accounts.IndexOf(draggedAccount);
+        var targetIndex = scenario.Accounts.IndexOf(account);
+
+        if (sourceIndex >= 0 && targetIndex >= 0)
+        {
+            scenario.Accounts.RemoveAt(sourceIndex);
+            scenario.Accounts.Insert(targetIndex, draggedAccount);
+            UpdateDirtyState();
+        }
+
+        EndAccountDrag();
+    }
+
+    private void EndAccountDrag()
+    {
+        draggedAccount = null;
+        accountDropTarget = null;
     }
 
     private async Task DeleteIncome(IncomeItem income)
