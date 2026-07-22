@@ -6,6 +6,11 @@ Run("Legacy projection values", LegacyProjectionValues);
 Run("Scenario remains unchanged", ScenarioRemainsUnchanged);
 Run("Invalid age range returns no years", InvalidAgeRangeReturnsNoYears);
 Run("Maximum expense excludes zero ending balance", MaximumExpenseExcludesZeroBalance);
+Run("Withdrawal priorities follow account order", WithdrawalPrioritiesFollowAccountOrder);
+Run("Account membership keeps priorities contiguous", AccountMembershipKeepsPrioritiesContiguous);
+Run("Withdrawal priority JSON round trip", WithdrawalPriorityJsonRoundTrip);
+Run("Legacy JSON normalizes withdrawal priorities", LegacyJsonNormalizesWithdrawalPriorities);
+Run("Plan withdrawals use priority order", PlanWithdrawalsUsePriorityOrder);
 
 if (failures.Count > 0)
 {
@@ -73,6 +78,90 @@ void MaximumExpenseExcludesZeroBalance()
 
     Equal(true, succeeded, "calculation success");
     Equal(9_000m, maximum, "maximum expenses");
+}
+
+void WithdrawalPrioritiesFollowAccountOrder()
+{
+    var scenario = CreateAccountScenario();
+
+    Equal(1, scenario.Accounts[0].WithdrawalPriority, "first priority");
+    Equal(2, scenario.Accounts[1].WithdrawalPriority, "second priority");
+    Equal(3, scenario.Accounts[2].WithdrawalPriority, "third priority");
+
+    var movedAccount = scenario.Accounts[2];
+    scenario.Accounts.RemoveAt(2);
+    scenario.Accounts.Insert(0, movedAccount);
+    scenario.NormalizeWithdrawalPriorities();
+
+    Equal("Third", scenario.Accounts[0].Name, "reordered first account");
+    Equal(1, scenario.Accounts[0].WithdrawalPriority, "reordered first priority");
+    Equal(2, scenario.Accounts[1].WithdrawalPriority, "reordered second priority");
+    Equal(3, scenario.Accounts[2].WithdrawalPriority, "reordered third priority");
+}
+
+void AccountMembershipKeepsPrioritiesContiguous()
+{
+    var scenario = CreateAccountScenario();
+    scenario.AddAccount("Fourth", 4_000m);
+    Equal(4, scenario.Accounts[3].WithdrawalPriority, "added account priority");
+
+    scenario.Accounts.RemoveAt(1);
+    scenario.NormalizeWithdrawalPriorities();
+
+    Equal(1, scenario.Accounts[0].WithdrawalPriority, "priority after deletion 1");
+    Equal(2, scenario.Accounts[1].WithdrawalPriority, "priority after deletion 2");
+    Equal(3, scenario.Accounts[2].WithdrawalPriority, "priority after deletion 3");
+}
+
+void WithdrawalPriorityJsonRoundTrip()
+{
+    var scenario = CreateAccountScenario();
+    var json = scenario.Serialize();
+    var roundTrip = Scenario.Deserialize(json);
+
+    Equal(true, json.Contains("\"WithdrawalPriority\": 1"), "serialized priority");
+    Equal(1, roundTrip.Accounts[0].WithdrawalPriority, "round-trip first priority");
+    Equal(3, roundTrip.Accounts[2].WithdrawalPriority, "round-trip last priority");
+}
+
+void LegacyJsonNormalizesWithdrawalPriorities()
+{
+    const string json = """
+        { "Accounts": [ { "Name": "First" }, { "Name": "Second" } ] }
+        """;
+
+    var scenario = Scenario.Deserialize(json);
+
+    Equal(1, scenario.Accounts[0].WithdrawalPriority, "legacy first priority");
+    Equal(2, scenario.Accounts[1].WithdrawalPriority, "legacy second priority");
+}
+
+void PlanWithdrawalsUsePriorityOrder()
+{
+    var scenario = CreateAccountScenario();
+    scenario.StartYear = 2026;
+    scenario.CurrentAge = 40;
+    scenario.LifeExpectancy = 40;
+    scenario.AnnualExpenses = 100m;
+    var priorityAccountId = scenario.Accounts[1].Id;
+    var priorityAccount = scenario.Accounts[1];
+    scenario.Accounts.RemoveAt(1);
+    scenario.Accounts.Insert(0, priorityAccount);
+    scenario.NormalizeWithdrawalPriorities();
+
+    var year = new PlanBuilder().Build(scenario).Years.Single();
+    var priorityAccountResult = year.Accounts.Single(account => account.AccountId == priorityAccountId);
+
+    Equal(100m, priorityAccountResult.ExpenseWithdrawals, "priority account withdrawal");
+}
+
+Scenario CreateAccountScenario()
+{
+    var scenario = new Scenario();
+    scenario.AddAccount("First", 1_000m);
+    scenario.AddAccount("Second", 2_000m);
+    scenario.AddAccount("Third", 3_000m);
+    return scenario;
 }
 
 Scenario CreateProjectionScenario()
