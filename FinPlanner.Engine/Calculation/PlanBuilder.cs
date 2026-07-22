@@ -138,15 +138,30 @@ public sealed class PlanBuilder
     private static void InitializeAccounts(
         YearCalculationContext context)
     {
-        foreach (var accountState in context.PlanState.Accounts)
+        var accountsByWithdrawalPriority = context.Scenario.Accounts
+            .OrderBy(account => account.WithdrawalPriority)
+            .ToList();
+
+        foreach (var account in accountsByWithdrawalPriority)
         {
-            var account = context.Scenario.Accounts.SingleOrDefault(
-                account => account.Id == accountState.AccountId);
+            var accountState = context.PlanState.Accounts.Single(
+                state => state.AccountId == account.Id);
 
             context.Accounts.Add(new AccountYearCalculation
             {
                 AccountId = accountState.AccountId,
-                AccountName = account?.Name ?? "Unfunded balance",
+                AccountName = account.Name,
+                BeginningBalance = accountState.Balance
+            });
+        }
+
+        if (accountsByWithdrawalPriority.Count == 0)
+        {
+            var accountState = context.PlanState.Accounts.Single();
+            context.Accounts.Add(new AccountYearCalculation
+            {
+                AccountId = accountState.AccountId,
+                AccountName = "Unfunded balance",
                 BeginningBalance = accountState.Balance
             });
         }

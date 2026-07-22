@@ -5,73 +5,27 @@
 
 .financial-scenario-panel {
     width: min(100%, 76rem);
-}
-
-.compact-table {
-    table-layout: auto;
-    width: auto;
-    max-width: 100%;
-}
-
-.compact-table td {
-    padding: 0.2rem 0.3rem;
-    vertical-align: middle;
-}
-
-.compact-table thead th {
-    padding: 0.2rem 0.3rem;
-    font-size: 0.85rem;
-    font-weight: 600;
-    color: var(--bs-secondary-color);
-    line-height: 1.15;
-    vertical-align: bottom;
-}
-
-.compact-table th:not(.item-name) {
-    width: 1%;
-    max-width: 7rem;
-    white-space: normal;
-    overflow-wrap: normal;
-}
-
-.compact-table td:not(.item-name) {
-    width: 10%;
-    white-space: nowrap;
+    margin-right: 1rem;
 }
 
 .item-name {
-    min-width: 18rem;
+    width: 20rem;
 }
 
-.parameter-table {
+.scenario-table {
     table-layout: fixed;
-    width: min(100%, 32rem);
-}
-
-.parameter-table .item-name {
-    width: 56.25%;
-}
-
-.parameter-table td.item-value {
-    width: 31.25%;
-}
-
-.parameter-table td.item-actions {
-    width: 12.5%;
-}
-
-.parameter-table .form-control {
-    width: 5rem;
+    white-space: nowrap;
+    width: max-content;
 }
 
 .item-type,
 .item-holdings,
 .item-value {
-    width: 5%;
+    width: 10rem;
 }
 
 .item-actions {
-    width: 1%;
+    width: 10rem;
     text-align: right;
     white-space: nowrap;
 }

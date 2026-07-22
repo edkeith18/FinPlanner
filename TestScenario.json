@@ -1,0 +1,57 @@
+{
+  "Accounts": [
+    {
+      "Id": "1dfa5160-cead-4840-8467-f6a0e1a4638a",
+      "Name": "Brokerage account",
+      "Type": "Brokerage",
+      "Holdings": "Equities",
+      "Balance": 500000,
+      "LastUpdated": "2026-07-21T19:18:57.423-07:00"
+    },
+    {
+      "Id": "5d725623-4cc8-4d63-a23f-310483b78f80",
+      "Name": "IRA account",
+      "Type": "Retirement",
+      "Holdings": "Equities",
+      "Balance": 200000,
+      "LastUpdated": "2026-07-21T19:19:16.582-07:00"
+    }
+  ],
+  "Income": [
+    {
+      "Name": "income 1",
+      "Amount": 100000,
+      "LastUpdated": "2026-07-21T21:22:14.889-07:00"
+    }
+  ],
+  "Expenses": [
+    {
+      "Name": "expense 1",
+      "Amount": 0,
+      "AgeStart": 57,
+      "AgeEnd": 100,
+      "AnnualRateOfIncrease": 4,
+      "UseInflationValue": true,
+      "LastUpdated": "2026-07-21T21:22:21.215-07:00"
+    }
+  ],
+  "Transfers": [
+    {
+      "Name": "transfer 1",
+      "FromAccountName": "Brokerage account",
+      "ToAccountName": "IRA account",
+      "AgeStart": 57,
+      "AgeEnd": 100,
+      "Amount": 0,
+      "AnnualRateOfIncrease": 4,
+      "UseInflationValue": true
+    }
+  ],
+  "Year": 2026,
+  "SecuritiesAnnualInterestRate": 7,
+  "AnnualInflationRate": 4,
+  "CurrentAge": 57,
+  "LifeExpectancy": 100,
+  "AnnualExpenses": 300000,
+  "BondsAnnualRateOfReturn": 4.4
+}

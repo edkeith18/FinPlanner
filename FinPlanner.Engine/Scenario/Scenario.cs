@@ -34,6 +34,7 @@ public class Scenario
 
     public string Serialize()
     {
+        NormalizeWithdrawalPriorities();
         return JsonSerializer.Serialize(this, SerializerOptions);
     }
 
@@ -42,6 +43,8 @@ public class Scenario
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
+
+        NormalizeWithdrawalPriorities();
 
         await JsonSerializer.SerializeAsync(
             stream,
@@ -58,9 +61,12 @@ public class Scenario
             json,
             SerializerOptions);
 
-        return scenario
+        scenario = scenario
             ?? throw new JsonException(
                 "The JSON did not contain a valid scenario.");
+
+        scenario.NormalizeWithdrawalPriorities();
+        return scenario;
     }
 
     public static async Task<Scenario> DeserializeAsync(
@@ -74,14 +80,29 @@ public class Scenario
             SerializerOptions,
             cancellationToken);
 
-        return scenario
+        scenario = scenario
             ?? throw new JsonException(
                 "The JSON did not contain a valid scenario.");
+
+        scenario.NormalizeWithdrawalPriorities();
+        return scenario;
     }
 
     public void NotifyStateChanged()
     {
         Changed?.Invoke();
+    }
+
+    /// <summary>
+    /// Synchronizes each account's persisted withdrawal priority with its
+    /// position in <see cref="Accounts"/>. Account-list order is authoritative.
+    /// </summary>
+    public void NormalizeWithdrawalPriorities()
+    {
+        for (var index = 0; index < Accounts.Count; index++)
+        {
+            Accounts[index].WithdrawalPriority = index + 1;
+        }
     }
 
     public void AddAccount(string name, decimal balance, AccountType type = AccountType.Brokerage, AccountHoldings holdings = AccountHoldings.Equities)
@@ -95,6 +116,7 @@ public class Scenario
             LastUpdated = DateTime.Now
         });
 
+        NormalizeWithdrawalPriorities();
         NotifyStateChanged();
     }
 

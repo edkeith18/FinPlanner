@@ -23,7 +23,7 @@
     <div class="@FinancialScenarioPanelClass">
         <h5>Parameters</h5>
         <h6 class="parameter-subgroup-heading">Personal</h6>
-        <table class="table table-borderless align-middle table-sm compact-table parameter-table mb-0">
+        <table class="@ScenarioTableClasses">
             <tbody>
                 <tr class="@(IsEditingParameter(ParameterField.CurrentAge) ? "edit-mode-row" : null)">
                     <td class="item-name">Current age</td>
@@ -124,7 +124,7 @@
         </table>
 
         <h6 class="parameter-subgroup-heading mt-2">Economic</h6>
-        <table class="table table-borderless align-middle table-sm compact-table parameter-table mb-0">
+        <table class="@ScenarioTableClasses">
             <tbody>
                 <tr class="@(IsEditingParameter(ParameterField.SecuritiesAnnualInterestRate) ? "edit-mode-row" : null)">
                     <td class="item-name">Securities annual interest rate</td>
@@ -233,7 +233,7 @@
                 <i class="bi bi-plus-square"></i>
             </button>
         </div>
-        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+        <table class="@ScenarioTableClasses">
             @if (scenario.Accounts.Count > 0)
             {
                 <thead>
@@ -251,7 +251,7 @@
                 {
                     <tr @key="account"
                         class="@GetAccountRowClass(account)"
-                        draggable="@CanDragAccount(account)"
+                        draggable="@(CanDragAccount(account) ? "true" : "false")"
                         @ondragstart="() => OnAccountDragStart(account)"
                         @ondragenter="() => OnAccountDragEnter(account)"
                         @ondragover:preventDefault="true"
@@ -406,7 +406,7 @@
                 <i class="bi bi-plus-square"></i>
             </button>
         </div>
-        <table class="table table-borderless align-middle table-sm compact-table mb-0">
+        <table class="@ScenarioTableClasses">
             <tbody>
                 @foreach (var income in scenario.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
@@ -502,7 +502,7 @@
             </button>
         </div>
         <div class="expenses-table-wrapper">
-            <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
+            <table class="@ScenarioTableClasses">
                 @if (scenario.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
                 {
                     <thead>
@@ -644,7 +644,7 @@
             <p class="text-muted mb-2">Add an account before creating transfers.</p>
         }
         <div class="expenses-table-wrapper">
-            <table class="table table-borderless align-middle table-sm compact-table expenses-table mb-0">
+            <table class="@ScenarioTableClasses">
                 @if (scenario.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
                 {
                     <thead>
@@ -861,7 +861,6 @@
     private Account? accountDropTarget;
     private bool isDirty;
     private string baselineSnapshot = string.Empty;
-
     private AddItemType? activeAddType;
     private string newItemName = string.Empty;
     private decimal newItemValue;
@@ -874,7 +873,8 @@
     private string newTransferFromAccountName = string.Empty;
     private string newTransferToAccountName = string.Empty;
     private bool pendingFocusNewRow;
-
+    private const string ScenarioTableClasses =
+        "table table-bordered align-middle table-sm scenario-table mb-0";
     private string SaveScenarioButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
 
     protected override void OnInitialized()
@@ -907,6 +907,7 @@
         scenario.LifeExpectancy = data.LifeExpectancy;
         scenario.AnnualExpenses = data.AnnualExpenses;
         scenario.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
+        scenario.NormalizeWithdrawalPriorities();
         NormalizeLoadedExpenses(scenario.Expenses);
         NormalizeLoadedTransfers(scenario.Transfers);
 
@@ -1252,6 +1253,7 @@
         if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
         {
             scenario.Accounts.Remove(account);
+            scenario.NormalizeWithdrawalPriorities();
             editingRows.Remove(account);
             editingNameRows.Remove(account);
             editingTypeRows.Remove(account);
@@ -1327,6 +1329,7 @@
         {
             scenario.Accounts.RemoveAt(sourceIndex);
             scenario.Accounts.Insert(targetIndex, draggedAccount);
+            scenario.NormalizeWithdrawalPriorities();
             UpdateDirtyState();
         }
 

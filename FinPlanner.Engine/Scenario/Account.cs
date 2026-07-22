@@ -9,6 +9,12 @@ public class Account
     public AccountHoldings Holdings { get; set; } = AccountHoldings.Equities;
     public decimal Balance { get; set; }
     public DateTime LastUpdated { get; set; }
+
+    /// <summary>
+    /// Determines the order in which funds are withdrawn from this account.
+    /// Lower values have higher priority; priority 1 is used first.
+    /// </summary>
+    public int WithdrawalPriority { get; set; }
 }
 
 public enum AccountType
