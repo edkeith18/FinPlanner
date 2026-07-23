@@ -11,6 +11,9 @@ Run("Account membership keeps priorities contiguous", AccountMembershipKeepsPrio
 Run("Withdrawal priority JSON round trip", WithdrawalPriorityJsonRoundTrip);
 Run("Legacy JSON normalizes withdrawal priorities", LegacyJsonNormalizesWithdrawalPriorities);
 Run("Plan withdrawals use priority order", PlanWithdrawalsUsePriorityOrder);
+Run("Withdrawals move to next account", WithdrawalsMoveToNextAccount);
+Run("Exhausted balances fail and stop plan", ExhaustedBalancesFailAndStopPlan);
+Run("Single account withdrawals remain intact", SingleAccountWithdrawalsRemainIntact);
 
 if (failures.Count > 0)
 {
@@ -153,6 +156,69 @@ void PlanWithdrawalsUsePriorityOrder()
     var priorityAccountResult = year.Accounts.Single(account => account.AccountId == priorityAccountId);
 
     Equal(100m, priorityAccountResult.ExpenseWithdrawals, "priority account withdrawal");
+    Equal(0m, year.Accounts.Single(account => account.AccountName == "First").ExpenseWithdrawals, "lower-priority first account withdrawal");
+    Equal(0m, year.Accounts.Single(account => account.AccountName == "Third").ExpenseWithdrawals, "lower-priority third account withdrawal");
+}
+
+void WithdrawalsMoveToNextAccount()
+{
+    var scenario = new Scenario
+    {
+        StartYear = 2026,
+        CurrentAge = 40,
+        LifeExpectancy = 40,
+        AnnualExpenses = 150m
+    };
+    scenario.AddAccount("First", 100m);
+    scenario.AddAccount("Second", 100m);
+
+    var plan = new PlanBuilder().Build(scenario);
+    var year = plan.Years.Single();
+
+    Equal(100m, year.Accounts[0].ExpenseWithdrawals, "first account withdrawal");
+    Equal(0m, year.Accounts[0].EndingBalance, "first account ending balance");
+    Equal(50m, year.Accounts[1].ExpenseWithdrawals, "second account withdrawal");
+    Equal(50m, year.Accounts[1].EndingBalance, "second account ending balance");
+    Equal(true, plan.IsSuccessful, "plan success");
+}
+
+void ExhaustedBalancesFailAndStopPlan()
+{
+    var scenario = new Scenario
+    {
+        StartYear = 2026,
+        CurrentAge = 40,
+        LifeExpectancy = 42,
+        AnnualExpenses = 100m
+    };
+    scenario.AddAccount("Brokerage", 100m);
+
+    var plan = new PlanBuilder().Build(scenario);
+
+    Equal(false, plan.IsSuccessful, "plan success");
+    Equal(true, plan.FailureReason is not null, "failure reason");
+    Equal(1, plan.Years.Count, "calculated year count");
+    Equal(2026, plan.LastYear!.CalendarYear, "last calculated year");
+    Equal(0m, plan.LastYear.EndingBalance, "last ending balance");
+}
+
+void SingleAccountWithdrawalsRemainIntact()
+{
+    var scenario = new Scenario
+    {
+        StartYear = 2026,
+        CurrentAge = 40,
+        LifeExpectancy = 40,
+        AnnualExpenses = 100m
+    };
+    scenario.AddAccount("Brokerage", 1_000m);
+
+    var plan = new PlanBuilder().Build(scenario);
+    var account = plan.Years.Single().Accounts.Single();
+
+    Equal(100m, account.ExpenseWithdrawals, "expense withdrawal");
+    Equal(900m, account.EndingBalance, "ending balance");
+    Equal(true, plan.IsSuccessful, "plan success");
 }
 
 Scenario CreateAccountScenario()
