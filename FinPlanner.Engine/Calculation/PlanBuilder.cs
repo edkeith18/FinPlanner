@@ -43,6 +43,7 @@ public sealed class PlanBuilder
         var state = PlanCalculationState.FromScenario(
             scenario,
             annualExpenses);
+        string? failureReason = null;
 
         // Years must be calculated in chronological order because each year's
         // ending balances and carryforward values are inputs to the next year.
@@ -53,17 +54,34 @@ public sealed class PlanBuilder
             var planYear = CalculateYear(
                 scenario,
                 state,
-                calendarYear);
+                calendarYear,
+                out var unfundedWithdrawals);
 
             planYears.Add(planYear);
 
             // CalculateYear updates state in place. At this point, state
             // represents the beginning financial state of the next year.
+            if (unfundedWithdrawals > 0m)
+            {
+                failureReason =
+                    $"Account balances were insufficient to fund all required withdrawals in {calendarYear}.";
+                break;
+            }
+
+            if (calendarYear < scenario.EndYear
+                && state.Accounts.All(account => account.Balance <= 0m))
+            {
+                failureReason =
+                    $"All account balances were exhausted in {calendarYear} before the plan's final year.";
+                break;
+            }
         }
 
         return new Plan(
             DateTimeOffset.UtcNow,
-            planYears);
+            planYears,
+            failureReason is null,
+            failureReason);
     }
 
     /// <summary>
@@ -90,7 +108,8 @@ public sealed class PlanBuilder
     private static PlanYear CalculateYear(
         Scenario scenario,
         PlanCalculationState state,
-        int calendarYear)
+        int calendarYear,
+        out decimal unfundedWithdrawals)
     {
         // The calculation context contains the working data and detailed
         // results accumulated while calculating this year.
@@ -124,7 +143,7 @@ public sealed class PlanBuilder
         ApplyTransfers(context);
         CalculateTaxes(context);
         ApplyInvestmentReturns(context);
-        PayExpensesAndTaxes(context);
+        unfundedWithdrawals = PayExpensesAndTaxes(context);
 
         // Complete creates the immutable PlanYear result and updates the
         // shared PlanCalculationState to represent the end of this calendar year.
@@ -238,24 +257,50 @@ public sealed class PlanBuilder
     /// Removes the money needed to pay expenses and taxes from the
     /// appropriate accounts.
     /// </summary>
-    private static void PayExpensesAndTaxes(
+    private static decimal PayExpensesAndTaxes(
         YearCalculationContext context)
     {
-        var totalWithdrawals = context.Expenses.Sum(
+        var expenseWithdrawals = context.Expenses.Sum(
             expense => expense.Amount)
-            + context.DiscretionaryExpenses
-            + context.Taxes.TotalTax;
+            + context.DiscretionaryExpenses;
 
-        if (context.Accounts.Count > 0)
+        var unfundedExpenses = ApplyWithdrawals(
+            context.Accounts,
+            expenseWithdrawals,
+            static (account, amount) =>
+                account.ExpenseWithdrawals += amount);
+
+        var unfundedTaxes = ApplyWithdrawals(
+            context.Accounts,
+            context.Taxes.TotalTax,
+            static (account, amount) =>
+                account.TaxWithdrawals += amount);
+
+        return unfundedExpenses + unfundedTaxes;
+    }
+
+    private static decimal ApplyWithdrawals(
+        IEnumerable<AccountYearCalculation> accounts,
+        decimal amount,
+        Action<AccountYearCalculation, decimal> apply)
+    {
+        var remaining = amount;
+
+        foreach (var account in accounts)
         {
-            // The legacy calculation modeled one combined portfolio. Charging
-            // the aggregate withdrawal to one account preserves its total-balance
-            // behavior until an explicit account funding strategy is introduced.
-            context.Accounts[0].ExpenseWithdrawals =
-                totalWithdrawals - context.Taxes.TotalTax;
-            context.Accounts[0].TaxWithdrawals =
-                context.Taxes.TotalTax;
+            if (remaining <= 0m)
+            {
+                break;
+            }
+
+            var availableBalance = Math.Max(0m, account.EndingBalance);
+            var withdrawal = Math.Min(remaining, availableBalance);
+
+            apply(account, withdrawal);
+            remaining -= withdrawal;
         }
+
+        return remaining;
     }
 
     /// <summary>

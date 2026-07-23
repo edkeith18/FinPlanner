@@ -5,16 +5,18 @@
       "Name": "Brokerage account",
       "Type": "Brokerage",
       "Holdings": "Equities",
-      "Balance": 500000,
-      "LastUpdated": "2026-07-21T19:18:57.423-07:00"
+      "Balance": 5000001,
+      "LastUpdated": "2026-07-21T19:18:57.423-07:00",
+      "WithdrawalPriority": 1
     },
     {
       "Id": "5d725623-4cc8-4d63-a23f-310483b78f80",
       "Name": "IRA account",
       "Type": "Retirement",
       "Holdings": "Equities",
-      "Balance": 200000,
-      "LastUpdated": "2026-07-21T19:19:16.582-07:00"
+      "Balance": 2000000,
+      "LastUpdated": "2026-07-21T19:19:16.582-07:00",
+      "WithdrawalPriority": 2
     }
   ],
   "Income": [
