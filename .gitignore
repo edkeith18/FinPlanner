@@ -364,3 +364,5 @@ MigrationBackup/
 FodyWeavers.xsd
 /.dotnet/.dotnet
 /FinPlanner.Console/Properties/launchSettings.json
+/FinPlanner.Console/TestScenario.json
+/FinPlanner.Console/FinPlanner.json

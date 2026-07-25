@@ -43,7 +43,8 @@ public sealed class MaximumExpenseCalculator
                 annualExpenses);
 
             // A plan ending at exactly zero is considered unsuccessful.
-            if (finalBalance > 0m)
+            // We use decimal.Truncate to avoid floating-point precision issues.
+            if (decimal.Truncate(finalBalance) > 0m)
             {
                 potentialMaximum = midpoint;
                 lowerBound = midpoint + 1;
