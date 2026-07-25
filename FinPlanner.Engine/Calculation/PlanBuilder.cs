@@ -123,26 +123,26 @@ public sealed class PlanBuilder
          * Keeping the yearly calculation pipeline explicit makes it easier
          * to understand, test, and adjust.
          *
-         * Initial proposed order:
+         * Order of events:
          *
          * 1. Establish beginning account balances.
-         * 2. Generate income.
-         * 3. Generate expenses.
-         * 4. Execute transfers and retirement distributions.
-         * 5. Calculate taxable income and deductions.
-         * 6. Calculate taxes.
-         * 7. Pay expenses and taxes.
-         * 8. Apply investment income and capital appreciation.
+         * 2. Apply investment income and capital appreciation.
+         * 3. Apply income.
+         * 4. Apply expenses.
+         * 5. Execute transfers and retirement distributions.
+         * 6. Calculate taxable income and deductions.
+         * 7. Calculate taxes.
+         * 8. Pay expenses and taxes.
          * 9. Produce ending account balances.
          * 10. Advance PlanCalculationState for the following year.
          */
 
         InitializeAccounts(context);
+        ApplyInvestmentReturns(context);
         ApplyIncome(context);
         ApplyExpenses(context);
-        ApplyTransfers(context);
+        ExecuteTransfers(context);
         CalculateTaxes(context);
-        ApplyInvestmentReturns(context);
         unfundedWithdrawals = PayExpensesAndTaxes(context);
 
         // Complete creates the immutable PlanYear result and updates the
@@ -170,7 +170,19 @@ public sealed class PlanBuilder
             {
                 AccountId = accountState.AccountId,
                 AccountName = account.Name,
-                BeginningBalance = accountState.Balance
+                BeginningBalance = accountState.Balance,
+
+                RateOfReturn = account.Holdings switch
+                {
+                    AccountHoldings.Equities =>
+                        context.Scenario.SecuritiesAnnualRateOfReturn / 100m,
+
+                    AccountHoldings.Bonds =>
+                        context.Scenario.BondsAnnualRateOfReturn / 100m,
+
+                    _ => throw new InvalidOperationException(
+                        $"Unsupported holdings type: {account.Holdings}")
+                }
             });
         }
 
@@ -183,6 +195,23 @@ public sealed class PlanBuilder
                 AccountName = "Unfunded balance",
                 BeginningBalance = accountState.Balance
             });
+        }
+    }
+
+    /// <summary>
+    /// Applies qualified dividends, nonqualified dividends, interest,
+    /// and capital appreciation to the applicable accounts.
+    /// </summary>
+    private static void ApplyInvestmentReturns(
+        YearCalculationContext context)
+    {
+        foreach (var account in context.Accounts)
+        {
+            var rate =
+                context.Scenario.SecuritiesAnnualRateOfReturn / 100m;
+
+            account.CapitalAppreciation =
+                account.BeginningBalance * account.RateOfReturn;
         }
     }
 
@@ -235,7 +264,7 @@ public sealed class PlanBuilder
     /// Executes scheduled transfers, retirement distributions, Roth
     /// conversions, and other movements of money between accounts.
     /// </summary>
-    private static void ApplyTransfers(
+    private static void ExecuteTransfers(
         YearCalculationContext context)
     {
         // TODO: Apply transfers while preserving the source account,
@@ -301,30 +330,6 @@ public sealed class PlanBuilder
         }
 
         return remaining;
-    }
-
-    /// <summary>
-    /// Applies qualified dividends, nonqualified dividends, interest,
-    /// and capital appreciation to the applicable accounts.
-    /// </summary>
-    private static void ApplyInvestmentReturns(
-        YearCalculationContext context)
-    {
-        // Preserve the legacy model: every account earns the securities rate,
-        // and the first plan year does not receive an investment return.
-        if (context.CalendarYear == context.Scenario.StartYear)
-        {
-            return;
-        }
-
-        var rate =
-            context.Scenario.SecuritiesAnnualInterestRate / 100m;
-
-        foreach (var account in context.Accounts)
-        {
-            account.CapitalAppreciation =
-                account.BeginningBalance * rate;
-        }
     }
 
     private static decimal CalculateExpenseAmount(
