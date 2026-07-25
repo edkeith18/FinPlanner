@@ -137,7 +137,7 @@ static string WritePlanCsv(
         outputFileName);
 
     var csv = new StringBuilder();
-    var headers = new[] { "CalendarYear" }
+    var headers = new[] { "CalendarYear", "Age" }
         .Concat(accounts.Select(
             account => $"{account.Name} EndingBalance"));
     csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
@@ -146,7 +146,8 @@ static string WritePlanCsv(
     {
         var values = new List<string>
         {
-            year.CalendarYear.ToString(CultureInfo.InvariantCulture)
+            year.CalendarYear.ToString(CultureInfo.InvariantCulture),
+            year.Age.ToString(CultureInfo.InvariantCulture)
         };
         // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
         values.AddRange(accounts.Select(account =>

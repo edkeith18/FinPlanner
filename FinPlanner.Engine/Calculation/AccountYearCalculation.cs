@@ -8,6 +8,7 @@ internal sealed class AccountYearCalculation
     public required Guid AccountId { get; init; }
     public required string AccountName { get; init; }
     public decimal BeginningBalance { get; init; }
+    public decimal RateOfReturn { get; init; }
     public decimal IncomeDeposits { get; set; }
     public decimal TransfersIn { get; set; }
     public decimal TransfersOut { get; set; }
