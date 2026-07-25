@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Globalization;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 
 namespace FinPlanner.Engine;
@@ -11,7 +12,8 @@ public class Scenario
         WriteIndented = true,
         Converters =
         {
-            new JsonStringEnumConverter()
+            new JsonStringEnumConverter(),
+            new DateOfBirthJsonConverter()
         }
     };
 
@@ -25,7 +27,29 @@ public class Scenario
     public int EndYear => StartYear + Math.Max(0, LifeExpectancy - CurrentAge);
     public decimal SecuritiesAnnualRateOfReturn { get; set; }
     public decimal AnnualInflationRate { get; set; }
-    public int CurrentAge { get; set; }
+    private DateOnly dateOfBirth = DateOnly.FromDateTime(DateTime.Now);
+
+    [JsonConverter(typeof(DateOfBirthJsonConverter))]
+    public DateOnly DateOfBirth
+    {
+        get => dateOfBirth;
+        set
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            if (value > today)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(value),
+                    "Date of birth cannot be in the future.");
+            }
+
+            dateOfBirth = value;
+            UpdateCurrentAge();
+        }
+    }
+
+    [JsonIgnore]
+    public int CurrentAge { get; private set; }
     public int LifeExpectancy { get; set; }
     public decimal AnnualExpenses { get; set; }
     public decimal BondsAnnualRateOfReturn { get; set; }
@@ -66,6 +90,7 @@ public class Scenario
                 "The JSON did not contain a valid scenario.");
 
         scenario.NormalizeWithdrawalPriorities();
+        scenario.UpdateCurrentAge();
         return scenario;
     }
 
@@ -85,7 +110,118 @@ public class Scenario
                 "The JSON did not contain a valid scenario.");
 
         scenario.NormalizeWithdrawalPriorities();
+        scenario.UpdateCurrentAge();
         return scenario;
+    }
+
+    /// <summary>
+    /// Recalculates <see cref="CurrentAge"/> from <see cref="DateOfBirth"/>
+    /// using the current local date.
+    /// </summary>
+    public void UpdateCurrentAge()
+    {
+        CurrentAge = CalculateAge(DateOfBirth, DateOnly.FromDateTime(DateTime.Now));
+    }
+
+    internal static int CalculateAge(DateOnly dateOfBirth, DateOnly asOfDate)
+    {
+        if (dateOfBirth > asOfDate)
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(dateOfBirth),
+                "Date of birth cannot be after the as-of date.");
+        }
+
+        var age = asOfDate.Year - dateOfBirth.Year;
+        if (dateOfBirth.AddYears(age) > asOfDate)
+        {
+            age--;
+        }
+
+        return age;
+    }
+
+    /// <summary>
+    /// Parses a date of birth in MM/dd/yy or MM/dd/yyyy format. Two-digit
+    /// years start in the current century. A later two-digit year moves back
+    /// 100 years; a later month or day in the current year remains future and
+    /// is rejected.
+    /// </summary>
+    public static bool TryParseDateOfBirth(
+        string? value,
+        DateOnly today,
+        out DateOnly dateOfBirth,
+        out string validationMessage)
+    {
+        dateOfBirth = default;
+        validationMessage = "Enter a valid date in MM/dd/yy or MM/dd/yyyy format.";
+
+        if (string.IsNullOrEmpty(value))
+        {
+            return false;
+        }
+
+        if (DateOnly.TryParseExact(
+                value,
+                "MM/dd/yyyy",
+                CultureInfo.GetCultureInfo("en-US"),
+                DateTimeStyles.None,
+                out dateOfBirth))
+        {
+            return ValidateParsedDate(dateOfBirth, today, out validationMessage);
+        }
+
+        if (value.Length != 8
+            || value[2] != '/'
+            || value[5] != '/'
+            || !int.TryParse(value.AsSpan(0, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var month)
+            || !int.TryParse(value.AsSpan(3, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var day)
+            || !int.TryParse(value.AsSpan(6, 2), NumberStyles.None, CultureInfo.InvariantCulture, out var shortYear))
+        {
+            return false;
+        }
+
+        var year = (today.Year / 100 * 100) + shortYear;
+        if (shortYear > today.Year % 100)
+        {
+            year -= 100;
+        }
+
+        if (!TryCreateDate(year, month, day, out dateOfBirth))
+        {
+            return false;
+        }
+
+        return ValidateParsedDate(dateOfBirth, today, out validationMessage);
+    }
+
+    private static bool ValidateParsedDate(
+        DateOnly dateOfBirth,
+        DateOnly today,
+        out string validationMessage)
+    {
+        if (dateOfBirth > today)
+        {
+            validationMessage = "Date of birth cannot be in the future.";
+            return false;
+        }
+
+        validationMessage = string.Empty;
+        return true;
+    }
+
+    private static bool TryCreateDate(int year, int month, int day, out DateOnly date)
+    {
+        try
+        {
+            date = new DateOnly(year, month, day);
+            return true;
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            date = default;
+            return false;
+        }
     }
 
     public void NotifyStateChanged()

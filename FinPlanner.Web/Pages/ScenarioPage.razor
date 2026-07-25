@@ -25,33 +25,37 @@
         <h6 class="parameter-subgroup-heading">Personal</h6>
         <table class="@ScenarioTableClasses">
             <tbody>
-                <tr class="@(IsEditingParameter(ParameterField.CurrentAge) ? "edit-mode-row" : null)">
-                    <td class="item-name">Current age</td>
+                <tr class="@(IsEditingParameter(ParameterField.DateOfBirth) ? "edit-mode-row" : null)">
+                    <td class="item-name">Date of birth</td>
                     <td class="item-value">
-                        @if (IsEditingParameter(ParameterField.CurrentAge))
+                        @if (IsEditingParameter(ParameterField.DateOfBirth))
                         {
-                            <InputNumber @bind-Value="scenario.CurrentAge"
-                                         class="form-control form-control-sm"
-                                         tabindex="1"
-                                         @attributes="wholeNumberInputAttributes"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.CurrentAge, e)" />
+                            <InputText @bind-Value="dateOfBirthInput"
+                                       class="form-control form-control-sm"
+                                       tabindex="1"
+                                       aria-label="Date of birth"
+                                       @onkeydown="(e) => OnParameterKeyDown(ParameterField.DateOfBirth, e)" />
+                            @if (!string.IsNullOrEmpty(dateOfBirthValidationMessage))
+                            {
+                                <div class="text-danger small mt-1">@dateOfBirthValidationMessage</div>
+                            }
                         }
                         else
                         {
-                            <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.CurrentAge)">@scenario.CurrentAge</span>
+                            <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.DateOfBirth)">@scenario.DateOfBirth.ToString("MM/dd/yyyy")</span>
                         }
                     </td>
                     <td class="item-actions">
-                        @if (IsEditingParameter(ParameterField.CurrentAge))
+                        @if (IsEditingParameter(ParameterField.DateOfBirth))
                         {
                             <button class="btn btn-link text-success p-0 me-2"
-                                    @onclick="() => CommitParameterEdit(ParameterField.CurrentAge)"
-                                    aria-label="Commit current age edit">
+                                    @onclick="() => CommitParameterEdit(ParameterField.DateOfBirth)"
+                                    aria-label="Commit date of birth edit">
                                 <i class="bi bi-check-circle"></i>
                             </button>
                             <button class="btn btn-link text-secondary p-0"
-                                    @onclick="() => CancelParameterEdit(ParameterField.CurrentAge)"
-                                    aria-label="Cancel current age edit">
+                                    @onclick="() => CancelParameterEdit(ParameterField.DateOfBirth)"
+                                    aria-label="Cancel date of birth edit">
                                 <i class="bi bi-x-circle"></i>
                             </button>
                         }
@@ -857,6 +861,8 @@
     private readonly HashSet<Transfer> editingTransferToAccountRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
+    private string dateOfBirthInput = string.Empty;
+    private string dateOfBirthValidationMessage = string.Empty;
     private Account? draggedAccount;
     private Account? accountDropTarget;
     private bool isDirty;
@@ -903,7 +909,7 @@
         scenario.StartYear = data.StartYear;
         scenario.SecuritiesAnnualRateOfReturn = data.SecuritiesAnnualRateOfReturn;
         scenario.AnnualInflationRate = data.AnnualInflationRate;
-        scenario.CurrentAge = data.CurrentAge;
+        scenario.DateOfBirth = data.DateOfBirth;
         scenario.LifeExpectancy = data.LifeExpectancy;
         scenario.AnnualExpenses = data.AnnualExpenses;
         scenario.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
@@ -929,6 +935,7 @@
         ClearTransferEditState();
         editingParameters.Clear();
         originalParameterValues.Clear();
+        dateOfBirthValidationMessage = string.Empty;
         activeAddType = null;
 
         baselineSnapshot = scenario.Serialize();
@@ -1084,17 +1091,47 @@
             return;
         }
 
-        originalParameterValues[parameter] = GetParameterValue(parameter);
+        if (parameter == ParameterField.DateOfBirth)
+        {
+            dateOfBirthInput = scenario.DateOfBirth.ToString("MM/dd/yyyy");
+            dateOfBirthValidationMessage = string.Empty;
+        }
+        else
+        {
+            originalParameterValues[parameter] = GetParameterValue(parameter);
+        }
+
         editingParameters.Add(parameter);
     }
 
     private void CommitParameterEdit(ParameterField parameter)
     {
+        if (parameter == ParameterField.DateOfBirth)
+        {
+            var today = DateOnly.FromDateTime(DateTime.Now);
+            if (!Engine.Scenario.TryParseDateOfBirth(
+                    dateOfBirthInput,
+                    today,
+                    out var dateOfBirth,
+                    out dateOfBirthValidationMessage))
+            {
+                return;
+            }
+
+            scenario.DateOfBirth = dateOfBirth;
+            scenario.UpdateCurrentAge();
+        }
+
         StopEditingParameter(parameter, commitChanges: true);
     }
 
     private void CancelParameterEdit(ParameterField parameter)
     {
+        if (parameter == ParameterField.DateOfBirth)
+        {
+            dateOfBirthValidationMessage = string.Empty;
+        }
+
         StopEditingParameter(parameter, commitChanges: false);
     }
 
@@ -1113,6 +1150,11 @@
         }
 
         originalParameterValues.Remove(parameter);
+
+        if (parameter == ParameterField.DateOfBirth)
+        {
+            dateOfBirthValidationMessage = string.Empty;
+        }
 
         if (commitChanges && parameter == ParameterField.AnnualInflationRate)
         {
@@ -1557,7 +1599,6 @@
     {
         return parameter switch
         {
-            ParameterField.CurrentAge => scenario.CurrentAge,
             ParameterField.LifeExpectancy => scenario.LifeExpectancy,
             ParameterField.AnnualExpenses => scenario.AnnualExpenses,
             ParameterField.SecuritiesAnnualRateOfReturn => scenario.SecuritiesAnnualRateOfReturn,
@@ -1571,9 +1612,6 @@
     {
         switch (parameter)
         {
-            case ParameterField.CurrentAge:
-                scenario.CurrentAge = decimal.ToInt32(decimal.Truncate(value));
-                break;
             case ParameterField.LifeExpectancy:
                 scenario.LifeExpectancy = decimal.ToInt32(decimal.Truncate(value));
                 break;
@@ -2133,7 +2171,7 @@
 
     private enum ParameterField
     {
-        CurrentAge,
+        DateOfBirth,
         LifeExpectancy,
         AnnualExpenses,
         SecuritiesAnnualRateOfReturn,

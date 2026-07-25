@@ -52,7 +52,7 @@
   "Year": 2026,
   "SecuritiesAnnualInterestRate": 7,
   "AnnualInflationRate": 4,
-  "CurrentAge": 57,
+  "DateOfBirth": "07/24/1969",
   "LifeExpectancy": 100,
   "AnnualExpenses": 300000,
   "BondsAnnualRateOfReturn": 4.4
