@@ -184,7 +184,7 @@ static string WritePlanCsv(
             account => $"{account.Name} EndingBalance"));
     csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
 
-    foreach (var year in plan.Years)
+    foreach (var year in plan.PlanYears)
     {
         var values = new List<string>
         {

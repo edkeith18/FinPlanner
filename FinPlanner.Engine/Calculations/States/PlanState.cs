@@ -3,32 +3,32 @@ namespace FinPlanner.Engine;
 /// <summary>
 /// Represents the mutable financial state used while calculating a Plan.
 ///
-/// The PlanCalculationState contains only information that persists from one
+/// The PlanState contains only information that persists from one
 /// calendar year to the next. It is updated as each PlanYear is calculated
 /// and serves as the starting point for the following year.
 ///
 /// The original Scenario is never modified during plan calculation.
 /// </summary>
-internal sealed class PlanCalculationState
+internal sealed class PlanState
 {
     /// <summary>
-    /// Creates a PlanCalculationState from the starting values contained in a
+    /// Creates a PlanState from the starting values contained in a
     /// Scenario.
     /// </summary>
     /// <param name="scenario">
     /// The scenario used to initialize the planning state.
     /// </param>
-    public static PlanCalculationState FromScenario(
+    public static PlanState Initialize(
         Scenario scenario,
         decimal annualExpenses)
     {
         ArgumentNullException.ThrowIfNull(scenario);
 
-        var state = new PlanCalculationState();
+        var state = new PlanState();
 
         foreach (var account in scenario.Accounts)
         {
-            state.Accounts.Add(new AccountCalculationState
+            state.Accounts.Add(new AccountState
             {
                 AccountId = account.Id,
                 Balance = account.Balance
@@ -37,7 +37,7 @@ internal sealed class PlanCalculationState
 
         if (state.Accounts.Count == 0)
         {
-            state.Accounts.Add(new AccountCalculationState
+            state.Accounts.Add(new AccountState
             {
                 AccountId = Guid.Empty,
                 Balance = 0m
@@ -61,7 +61,7 @@ internal sealed class PlanCalculationState
     /// The current state of every account participating in the plan.
     /// These balances are updated as each calendar year is calculated.
     /// </summary>
-    public List<AccountCalculationState> Accounts { get; } = [];
+    public List<AccountState> Accounts { get; } = [];
 
     /// <summary>
     /// The inflation-adjusted discretionary expense amount for the current year.

@@ -16,7 +16,7 @@
 else
 {
     var plan = planBuilder.Build(scenario);
-    var expenseNames = plan.Years
+    var expenseNames = plan.PlanYears
         .SelectMany(row => row.Expenses)
         .Select(expense => expense.Name)
         .Distinct(StringComparer.CurrentCultureIgnoreCase)
@@ -36,7 +36,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var row in plan.Years)
+            @foreach (var row in plan.PlanYears)
             {
                 <tr>
                     <td>@row.Age</td>

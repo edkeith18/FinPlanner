@@ -3,7 +3,7 @@ namespace FinPlanner.Engine;
 /// <summary>
 /// Mutable working values for one account during one calculated year.
 /// </summary>
-internal sealed class AccountYearCalculation
+internal sealed class AccountCalculationWorkspace
 {
     public required Guid AccountId { get; init; }
     public required string AccountName { get; init; }
