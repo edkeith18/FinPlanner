@@ -4,16 +4,16 @@ namespace FinPlanner.Engine;
 /// Represents the mutable working data used while calculating a single
 /// PlanYear.
 ///
-/// The YearCalculationContext exists only for the duration of a single
+/// The YearCalculationWorkspace exists only for the duration of a single
 /// year's calculation. It contains the evolving financial state, the
 /// calculated results being accumulated, and any temporary values needed
 /// by the calculation pipeline.
 ///
 /// When calculation is complete, Complete() converts the working data into
-/// an immutable PlanYear and advances the supplied PlanCalculationState so it is
+/// an immutable PlanYear and advances the supplied PlanState so it is
 /// ready for the following calendar year.
 /// </summary>
-internal sealed class YearCalculationContext
+internal sealed class YearCalculationWorkspace
 {
     /// <summary>
     /// Creates a new calculation context for a single calendar year.
@@ -21,20 +21,20 @@ internal sealed class YearCalculationContext
     /// <param name="scenario">
     /// The scenario for which to calculate.
     /// </param>
-    /// <param name="planningState">
+    /// <param name="planState">
     /// The mutable planning state at the beginning of the year.
     /// This object is updated during the calculation.
     /// </param>
     /// <param name="calendarYear">
     /// The calendar year being calculated.
     /// </param>
-    public YearCalculationContext(
+    public YearCalculationWorkspace(
         Scenario scenario,
-        PlanCalculationState planningState,
+        PlanState planState,
         int calendarYear)
     {
         Scenario = scenario;
-        PlanState = planningState;
+        PlanState = planState;
         CalendarYear = calendarYear;
     }
 
@@ -53,13 +53,13 @@ internal sealed class YearCalculationContext
     /// When this year's calculation is complete, this state will represent
     /// the beginning of the next calendar year.
     /// </summary>
-    public PlanCalculationState PlanState { get; }
+    public PlanState PlanState { get; }
 
     /// <summary>
     /// The calculated account results for this year.
     /// One result exists for each account in the scenario.
     /// </summary>
-    public List<AccountYearCalculation> Accounts { get; } = [];
+    public List<AccountCalculationWorkspace> Accounts { get; } = [];
 
     public List<ExpenseYearResult> Expenses { get; } = [];
 
@@ -83,7 +83,7 @@ internal sealed class YearCalculationContext
     /// <summary>
     /// Creates the immutable PlanYear representing the completed year.
     ///
-    /// This method also updates the PlanCalculationState so it contains the
+    /// This method also updates the PlanState so it contains the
     /// beginning balances and carryforward values required to calculate
     /// the following calendar year.
     /// </summary>

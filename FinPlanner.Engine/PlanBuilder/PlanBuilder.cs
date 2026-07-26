@@ -4,8 +4,8 @@ namespace FinPlanner.Engine;
 /// Creates a financial Plan from a Scenario.
 ///
 /// A Plan is calculated one year at a time, in chronological order.
-/// Each year's calculations update the PlanCalculationState so that the ending
-/// state of one year becomes the beginning state of the following year.
+/// Each year's calculations update the PlanState so that the ending
+/// planState of one year becomes the beginning planState of the following year.
 /// </summary>
 public sealed class PlanBuilder
 {
@@ -30,37 +30,39 @@ public sealed class PlanBuilder
 
         var planYears = new List<PlanYear>();
 
+        // This is the stop condition for the plan calculation loop. If the current age is already
+        // greater than the life expectancy, no more plan years are calculated.
         if (scenario.CurrentAge > scenario.LifeExpectancy)
         {
-            return new Plan(DateTimeOffset.UtcNow, planYears);
+            return new Plan(planYears);
         }
 
         var annualExpenses = options?.AnnualExpenses
             ?? scenario.AnnualExpenses;
 
-        // PlanCalculationState contains the mutable financial state used while
+        // PlanState contains the mutable financial planState used while
         // calculating the plan. The original Scenario is not modified.
-        var state = PlanCalculationState.FromScenario(
+        var planState = PlanState.Initialize(
             scenario,
             annualExpenses);
         string? failureReason = null;
 
-        // Years must be calculated in chronological order because each year's
+        // PlanYears must be calculated in chronological order because each year's
         // ending balances and carryforward values are inputs to the next year.
         for (var calendarYear = scenario.StartYear;
              calendarYear <= scenario.EndYear;
              calendarYear++)
         {
-            var planYear = CalculateYear(
+            var planYear = Calculate(
                 scenario,
-                state,
+                planState,
                 calendarYear,
                 out var unfundedWithdrawals);
 
             planYears.Add(planYear);
 
-            // CalculateYear updates state in place. At this point, state
-            // represents the beginning financial state of the next year.
+            // Calculate updates to planState in place. At this point, planState
+            // represents the beginning financial planState of the next year.
             if (unfundedWithdrawals > 0m)
             {
                 failureReason =
@@ -69,7 +71,7 @@ public sealed class PlanBuilder
             }
 
             if (calendarYear < scenario.EndYear
-                && state.Accounts.All(account => account.Balance <= 0m))
+                && planState.Accounts.All(account => account.Balance <= 0m))
             {
                 failureReason =
                     $"All account balances were exhausted in {calendarYear} before the plan's final year.";
@@ -78,7 +80,6 @@ public sealed class PlanBuilder
         }
 
         return new Plan(
-            DateTimeOffset.UtcNow,
             planYears,
             failureReason is null,
             failureReason);
@@ -87,16 +88,16 @@ public sealed class PlanBuilder
     /// <summary>
     /// Calculates the financial results for one calendar year.
     ///
-    /// This method updates <paramref name="state"/> in place so that, when
-    /// the method returns, the state contains the ending account balances
+    /// This method updates <paramref name="planState"/> in place so that, when
+    /// the method returns, the planState contains the ending account balances
     /// and carryforward values needed to calculate the following year.
     /// </summary>
     /// <param name="scenario">
     /// The original scenario and its planning assumptions.
     /// </param>
-    /// <param name="state">
-    /// The mutable financial state at the beginning of the year.
-    /// This state is advanced to the end of the year by this method.
+    /// <param name="planState">
+    /// The mutable financial planState at the beginning of the year.
+    /// This planState is advanced to the end of the year by this method.
     /// </param>
     /// <param name="calendarYear">
     /// The calendar year being calculated.
@@ -105,17 +106,17 @@ public sealed class PlanBuilder
     /// A completed PlanYear describing the financial activity and results
     /// for the specified calendar year.
     /// </returns>
-    private static PlanYear CalculateYear(
+    private static PlanYear Calculate(
         Scenario scenario,
-        PlanCalculationState state,
+        PlanState planState,
         int calendarYear,
         out decimal unfundedWithdrawals)
     {
-        // The calculation context contains the working data and detailed
+        // The calculation workspace contains the working data and detailed
         // results accumulated while calculating this year.
-        var context = new YearCalculationContext(
+        var workspace = new YearCalculationWorkspace(
             scenario,
-            state,
+            planState,
             calendarYear);
 
         /*
@@ -134,39 +135,39 @@ public sealed class PlanBuilder
          * 7. Calculate taxes.
          * 8. Pay expenses and taxes.
          * 9. Produce ending account balances.
-         * 10. Advance PlanCalculationState for the following year.
+         * 10. Advance PlanState for the following year.
          */
 
-        InitializeAccounts(context);
-        ApplyInvestmentReturns(context);
-        ApplyIncome(context);
-        ApplyExpenses(context);
-        ExecuteTransfers(context);
-        CalculateTaxes(context);
-        unfundedWithdrawals = PayExpensesAndTaxes(context);
+        InitializeAccounts(workspace);
+        ApplyInvestmentReturns(workspace);
+        ApplyIncome(workspace);
+        ApplyExpenses(workspace);
+        ExecuteTransfers(workspace);
+        CalculateTaxes(workspace);
+        unfundedWithdrawals = PayExpensesAndTaxes(workspace);
 
         // Complete creates the immutable PlanYear result and updates the
-        // shared PlanCalculationState to represent the end of this calendar year.
-        return context.Complete();
+        // shared PlanState to represent the end of this calendar year.
+        return workspace.Complete();
     }
 
     /// <summary>
     /// Initializes the working account results using the account balances
-    /// contained in the beginning PlanCalculationState.
+    /// contained in the beginning PlanState.
     /// </summary>
     private static void InitializeAccounts(
-        YearCalculationContext context)
+        YearCalculationWorkspace workspace)
     {
-        var accountsByWithdrawalPriority = context.Scenario.Accounts
+        var accountsByWithdrawalPriority = workspace.Scenario.Accounts
             .OrderBy(account => account.WithdrawalPriority)
             .ToList();
 
         foreach (var account in accountsByWithdrawalPriority)
         {
-            var accountState = context.PlanState.Accounts.Single(
+            var accountState = workspace.PlanState.Accounts.Single(
                 state => state.AccountId == account.Id);
 
-            context.Accounts.Add(new AccountYearCalculation
+            workspace.Accounts.Add(new AccountCalculationWorkspace
             {
                 AccountId = accountState.AccountId,
                 AccountName = account.Name,
@@ -175,10 +176,10 @@ public sealed class PlanBuilder
                 RateOfReturn = account.Holdings switch
                 {
                     AccountHoldings.Equities =>
-                        context.Scenario.SecuritiesAnnualRateOfReturn / 100m,
+                        workspace.Scenario.SecuritiesAnnualRateOfReturn / 100m,
 
                     AccountHoldings.Bonds =>
-                        context.Scenario.BondsAnnualRateOfReturn / 100m,
+                        workspace.Scenario.BondsAnnualRateOfReturn / 100m,
 
                     _ => throw new InvalidOperationException(
                         $"Unsupported holdings type: {account.Holdings}")
@@ -188,8 +189,8 @@ public sealed class PlanBuilder
 
         if (accountsByWithdrawalPriority.Count == 0)
         {
-            var accountState = context.PlanState.Accounts.Single();
-            context.Accounts.Add(new AccountYearCalculation
+            var accountState = workspace.PlanState.Accounts.Single();
+            workspace.Accounts.Add(new AccountCalculationWorkspace
             {
                 AccountId = accountState.AccountId,
                 AccountName = "Unfunded balance",
@@ -203,7 +204,7 @@ public sealed class PlanBuilder
     /// and capital appreciation to the applicable accounts.
     /// </summary>
     private static void ApplyInvestmentReturns(
-        YearCalculationContext context)
+        YearCalculationWorkspace context)
     {
         foreach (var account in context.Accounts)
         {
@@ -220,7 +221,7 @@ public sealed class PlanBuilder
     /// and deposits the proceeds into the appropriate accounts.
     /// </summary>
     private static void ApplyIncome(
-        YearCalculationContext context)
+        YearCalculationWorkspace context)
     {
         // TODO: Determine which income sources apply during this year,
         // calculate their amounts, and record their destinations.
@@ -234,7 +235,7 @@ public sealed class PlanBuilder
     /// calculation pipeline.
     /// </summary>
     private static void ApplyExpenses(
-        YearCalculationContext context)
+        YearCalculationWorkspace context)
     {
         var age = context.Scenario.CurrentAge
             + context.CalendarYear
@@ -265,7 +266,7 @@ public sealed class PlanBuilder
     /// conversions, and other movements of money between accounts.
     /// </summary>
     private static void ExecuteTransfers(
-        YearCalculationContext context)
+        YearCalculationWorkspace context)
     {
         // TODO: Apply transfers while preserving the source account,
         // destination account, amount, and tax consequences.
@@ -273,10 +274,10 @@ public sealed class PlanBuilder
 
     /// <summary>
     /// Calculates taxable income, deductions, credits, and the resulting
-    /// federal and state tax liability for the current year.
+    /// federal and planState tax liability for the current year.
     /// </summary>
     private static void CalculateTaxes(
-        YearCalculationContext context)
+        YearCalculationWorkspace context)
     {
         // TODO: Populate TaxableIncomeBreakdown, DeductionBreakdown,
         // TaxYearResult, NIIT, AMT, and other modeled tax values.
@@ -287,7 +288,7 @@ public sealed class PlanBuilder
     /// appropriate accounts.
     /// </summary>
     private static decimal PayExpensesAndTaxes(
-        YearCalculationContext context)
+        YearCalculationWorkspace context)
     {
         var expenseWithdrawals = context.Expenses.Sum(
             expense => expense.Amount)
@@ -309,9 +310,9 @@ public sealed class PlanBuilder
     }
 
     private static decimal ApplyWithdrawals(
-        IEnumerable<AccountYearCalculation> accounts,
+        IEnumerable<AccountCalculationWorkspace> accounts,
         decimal amount,
-        Action<AccountYearCalculation, decimal> apply)
+        Action<AccountCalculationWorkspace, decimal> apply)
     {
         var remaining = amount;
 

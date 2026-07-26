@@ -48,10 +48,10 @@ void LegacyProjectionValues()
 {
     var plan = new PlanBuilder().Build(CreateProjectionScenario());
 
-    Equal(3, plan.Years.Count, "year count");
-    AssertYear(plan.Years[0], 40, 20_000m, 80_000m);
-    AssertYear(plan.Years[1], 41, 21_250m, 66_750m);
-    AssertYear(plan.Years[2], 42, 22_587.50m, 50_837.50m);
+    Equal(3, plan.PlanYears.Count, "year count");
+    AssertYear(plan.PlanYears[0], 40, 20_000m, 80_000m);
+    AssertYear(plan.PlanYears[1], 41, 21_250m, 66_750m);
+    AssertYear(plan.PlanYears[2], 42, 22_587.50m, 50_837.50m);
 }
 
 void ScenarioRemainsUnchanged()
@@ -71,7 +71,7 @@ void InvalidAgeRangeReturnsNoYears()
 
     var plan = new PlanBuilder().Build(scenario);
 
-    Equal(0, plan.Years.Count, "year count");
+    Equal(0, plan.PlanYears.Count, "year count");
 }
 
 void MaximumExpenseExcludesZeroBalance()
@@ -160,7 +160,7 @@ void PlanWithdrawalsUsePriorityOrder()
     scenario.Accounts.Insert(0, priorityAccount);
     scenario.NormalizeWithdrawalPriorities();
 
-    var year = new PlanBuilder().Build(scenario).Years.Single();
+    var year = new PlanBuilder().Build(scenario).PlanYears.Single();
     var priorityAccountResult = year.Accounts.Single(account => account.AccountId == priorityAccountId);
 
     Equal(100m, priorityAccountResult.ExpenseWithdrawals, "priority account withdrawal");
@@ -181,7 +181,7 @@ void WithdrawalsMoveToNextAccount()
     scenario.AddAccount("Second", 100m);
 
     var plan = new PlanBuilder().Build(scenario);
-    var year = plan.Years.Single();
+    var year = plan.PlanYears.Single();
 
     Equal(100m, year.Accounts[0].ExpenseWithdrawals, "first account withdrawal");
     Equal(0m, year.Accounts[0].EndingBalance, "first account ending balance");
@@ -205,7 +205,7 @@ void ExhaustedBalancesFailAndStopPlan()
 
     Equal(false, plan.IsSuccessful, "plan success");
     Equal(true, plan.FailureReason is not null, "failure reason");
-    Equal(1, plan.Years.Count, "calculated year count");
+    Equal(1, plan.PlanYears.Count, "calculated year count");
     Equal(2026, plan.LastYear!.CalendarYear, "last calculated year");
     Equal(0m, plan.LastYear.EndingBalance, "last ending balance");
 }
@@ -222,7 +222,7 @@ void SingleAccountWithdrawalsRemainIntact()
     scenario.AddAccount("Brokerage", 1_000m);
 
     var plan = new PlanBuilder().Build(scenario);
-    var account = plan.Years.Single().Accounts.Single();
+    var account = plan.PlanYears.Single().Accounts.Single();
 
     Equal(100m, account.ExpenseWithdrawals, "expense withdrawal");
     Equal(900m, account.EndingBalance, "ending balance");
@@ -304,9 +304,9 @@ void DerivedAgeDrivesPlanCalculations()
 
     var plan = new PlanBuilder().Build(scenario);
 
-    Equal(3, plan.Years.Count, "derived-age year count");
-    Equal(40, plan.Years[0].Age, "derived starting age");
-    Equal(42, plan.Years[^1].Age, "life-expectancy ending age");
+    Equal(3, plan.PlanYears.Count, "derived-age year count");
+    Equal(40, plan.PlanYears[0].Age, "derived starting age");
+    Equal(42, plan.PlanYears[^1].Age, "life-expectancy ending age");
 }
 
 void AgeRangesRemainUnchanged()

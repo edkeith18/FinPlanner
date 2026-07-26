@@ -1,5 +1,5 @@
 namespace FinPlanner.Engine;
-internal sealed class AccountCalculationState
+internal sealed class AccountState
 {
     /// <summary>
     /// The Id of the account represented by this state.

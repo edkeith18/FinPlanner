@@ -16,8 +16,8 @@ public sealed class Plan
     /// <param name="generatedAt">
     /// The date and time when the plan was generated.
     /// </param>
-    /// <param name="years">
-    /// The ordered collection of calculated plan years.
+    /// <param name="planYears">
+    /// The ordered collection of calculated plan planYears.
     /// </param>
     /// <param name="isSuccessful">
     /// Whether every scheduled plan year was successfully funded.
@@ -26,28 +26,21 @@ public sealed class Plan
     /// The reason an unsuccessful plan stopped early.
     /// </param>
     public Plan(
-        DateTimeOffset generatedAt,
-        IReadOnlyList<PlanYear> years,
+        IReadOnlyList<PlanYear> planYears,
         bool isSuccessful = true,
         string? failureReason = null)
     {
-        ArgumentNullException.ThrowIfNull(years);
+        ArgumentNullException.ThrowIfNull(planYears);
 
-        GeneratedAt = generatedAt;
-        Years = years;
+        PlanYears = planYears;
         IsSuccessful = isSuccessful;
         FailureReason = failureReason;
     }
-
+    
     /// <summary>
-    /// The date and time when this plan was generated.
+    /// The ordered collection of calculated plan planYears.
     /// </summary>
-    public DateTimeOffset GeneratedAt { get; }
-
-    /// <summary>
-    /// The ordered collection of calculated plan years.
-    /// </summary>
-    public IReadOnlyList<PlanYear> Years { get; }
+    public IReadOnlyList<PlanYear> PlanYears { get; }
 
     /// <summary>
     /// Indicates whether every scheduled year could be funded and calculated.
@@ -60,16 +53,10 @@ public sealed class Plan
     public string? FailureReason { get; }
 
     /// <summary>
-    /// The first year of the plan, or null if the plan contains no years.
-    /// </summary>
-    public PlanYear? FirstYear =>
-        Years.FirstOrDefault();
-
-    /// <summary>
-    /// The final year of the plan, or null if the plan contains no years.
+    /// The final year of the plan, or null if the plan contains no planYears.
     /// </summary>
     public PlanYear? LastYear =>
-        Years.LastOrDefault();
+        PlanYears.LastOrDefault();
 
     /// <summary>
     /// Returns the PlanYear for the specified calendar year,
@@ -80,7 +67,7 @@ public sealed class Plan
     /// </param>
     public PlanYear? GetYear(int calendarYear)
     {
-        return Years.FirstOrDefault(
+        return PlanYears.FirstOrDefault(
             year => year.CalendarYear == calendarYear);
     }
 }
