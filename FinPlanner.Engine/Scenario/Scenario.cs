@@ -91,6 +91,22 @@ public class Scenario
 
         scenario.NormalizeWithdrawalPriorities();
         scenario.UpdateCurrentAge();
+
+        // If current age is greater than life expectancy, the scenario is invalid. This can happen if the user changes their date of birth or life expectancy in the UI.
+        if (scenario.CurrentAge > scenario.LifeExpectancy)
+        {
+            throw new ArgumentException(
+                "Current age cannot be greater than life expectancy.",
+                nameof(scenario));
+        }
+
+        if (scenario.Accounts.Count == 0)
+        {
+            throw new ArgumentException(
+                "Scenario must contain at least one account.",
+                nameof(scenario));
+        }
+
         return scenario;
     }
 

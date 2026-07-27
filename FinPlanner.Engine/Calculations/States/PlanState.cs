@@ -1,7 +1,7 @@
 namespace FinPlanner.Engine;
 
 /// <summary>
-/// Represents the mutable financial state used while calculating a Plan.
+/// Represents the mutable financial planState used while calculating a Plan.
 ///
 /// The PlanState contains only information that persists from one
 /// calendar year to the next. It is updated as each PlanYear is calculated
@@ -16,7 +16,7 @@ internal sealed class PlanState
     /// Scenario.
     /// </summary>
     /// <param name="scenario">
-    /// The scenario used to initialize the planning state.
+    /// The scenario used to initialize the planning planState.
     /// </param>
     public static PlanState Initialize(
         Scenario scenario,
@@ -24,23 +24,15 @@ internal sealed class PlanState
     {
         ArgumentNullException.ThrowIfNull(scenario);
 
-        var state = new PlanState();
+        var planState = new PlanState();
 
+        // Add the accounts in the scenario to the planState
         foreach (var account in scenario.Accounts)
         {
-            state.Accounts.Add(new AccountState
+            planState.Accounts.Add(new AccountState
             {
                 AccountId = account.Id,
                 Balance = account.Balance
-            });
-        }
-
-        if (state.Accounts.Count == 0)
-        {
-            state.Accounts.Add(new AccountState
-            {
-                AccountId = Guid.Empty,
-                Balance = 0m
             });
         }
 
@@ -50,15 +42,15 @@ internal sealed class PlanState
                 && expense.AgeEnd >= scenario.CurrentAge)
             .Sum(expense => expense.Amount);
 
-        state.DiscretionaryExpenses = Math.Max(
+        planState.DiscretionaryExpenses = Math.Max(
             0m,
             annualExpenses - activeNamedExpenses);
 
-        return state;
+        return planState;
     }
 
     /// <summary>
-    /// The current state of every account participating in the plan.
+    /// The current planState of every account participating in the plan.
     /// These balances are updated as each calendar year is calculated.
     /// </summary>
     public List<AccountState> Accounts { get; } = [];
@@ -79,7 +71,7 @@ internal sealed class PlanState
     public decimal CharitableContributionCarryforward { get; set; }
 
     /// <summary>
-    /// Any additional state that must persist from one year to the next
+    /// Any additional planState that must persist from one year to the next
     /// should be stored here.
     ///
     /// Examples include:
