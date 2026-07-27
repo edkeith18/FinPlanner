@@ -21,12 +21,6 @@ public sealed class MaximumExpenseCalculator
 
         maximumAnnualExpenses = 0m;
 
-        if (scenario.Accounts.Count == 0
-            || scenario.CurrentAge > scenario.LifeExpectancy)
-        {
-            return false;
-        }
-
         var lowerBound = 0;
         var upperBound = Math.Max(
             1,

@@ -30,21 +30,18 @@ public sealed class PlanBuilder
 
         var planYears = new List<PlanYear>();
 
-        // This is the stop condition for the plan calculation loop. If the current age is already
-        // greater than the life expectancy, no more plan years are calculated.
-        if (scenario.CurrentAge > scenario.LifeExpectancy)
-        {
-            return new Plan(planYears);
-        }
-
+        // If annual expenses are provided in the options, use them. Otherwise, use the
+        // annual expenses from the scenario.
         var annualExpenses = options?.AnnualExpenses
             ?? scenario.AnnualExpenses;
 
-        // PlanState contains the mutable financial planState used while
+        // PlanState contains the mutable financial state used while
         // calculating the plan. The original Scenario is not modified.
         var planState = PlanState.Initialize(
             scenario,
             annualExpenses);
+
+        // Initialize a failureReason, in case the plan fails financially while calculating it
         string? failureReason = null;
 
         // PlanYears must be calculated in chronological order because each year's
@@ -53,28 +50,20 @@ public sealed class PlanBuilder
              calendarYear <= scenario.EndYear;
              calendarYear++)
         {
+            // planState is updated in place by the Calculate method, so that it contains the
+            // ending balances and carryforward values needed to calculate the following year.
             var planYear = Calculate(
                 scenario,
                 planState,
-                calendarYear,
-                out var unfundedWithdrawals);
+                calendarYear);
 
             planYears.Add(planYear);
-
-            // Calculate updates to planState in place. At this point, planState
-            // represents the beginning financial planState of the next year.
-            if (unfundedWithdrawals > 0m)
-            {
-                failureReason =
-                    $"Account balances were insufficient to fund all required withdrawals in {calendarYear}.";
-                break;
-            }
 
             if (calendarYear < scenario.EndYear
                 && planState.Accounts.All(account => account.Balance <= 0m))
             {
                 failureReason =
-                    $"All account balances were exhausted in {calendarYear} before the plan's final year.";
+                    $"All account balances were exhausted in {calendarYear}, before the plan's final year ({scenario.EndYear}).";
                 break;
             }
         }
@@ -109,8 +98,7 @@ public sealed class PlanBuilder
     private static PlanYear Calculate(
         Scenario scenario,
         PlanState planState,
-        int calendarYear,
-        out decimal unfundedWithdrawals)
+        int calendarYear)
     {
         // The calculation workspace contains the working data and detailed
         // results accumulated while calculating this year.
@@ -144,7 +132,7 @@ public sealed class PlanBuilder
         ApplyExpenses(workspace);
         ExecuteTransfers(workspace);
         CalculateTaxes(workspace);
-        unfundedWithdrawals = PayExpensesAndTaxes(workspace);
+        PayExpensesAndTaxes(workspace);
 
         // Complete creates the immutable PlanYear result and updates the
         // shared PlanState to represent the end of this calendar year.
@@ -187,16 +175,6 @@ public sealed class PlanBuilder
             });
         }
 
-        if (accountsByWithdrawalPriority.Count == 0)
-        {
-            var accountState = workspace.PlanState.Accounts.Single();
-            workspace.Accounts.Add(new AccountCalculationWorkspace
-            {
-                AccountId = accountState.AccountId,
-                AccountName = "Unfunded balance",
-                BeginningBalance = accountState.Balance
-            });
-        }
     }
 
     /// <summary>
