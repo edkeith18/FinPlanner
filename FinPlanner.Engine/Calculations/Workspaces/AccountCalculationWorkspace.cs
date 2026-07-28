@@ -35,8 +35,8 @@ internal sealed class AccountCalculationWorkspace
     {
         return new AccountYearResult
         {
-            AccountId = AccountId,
-            AccountName = AccountName,
+            Id = AccountId,
+            Name = AccountName,
             BeginningBalance = BeginningBalance,
             IncomeDeposits = IncomeDeposits,
             TransfersIn = TransfersIn,

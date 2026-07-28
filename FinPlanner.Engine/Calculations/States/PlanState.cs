@@ -36,15 +36,32 @@ internal sealed class PlanState
             });
         }
 
-        var activeNamedExpenses = scenario.Expenses
-            .Where(expense =>
-                expense.AgeStart <= scenario.CurrentAge
-                && expense.AgeEnd >= scenario.CurrentAge)
-            .Sum(expense => expense.Amount);
+        // Add the expenses in the scenario to the planState
+        
+        // First, all the named expenses
+        foreach (var expense in scenario.Expenses)
+        {
+            planState.Expenses.Add(new Expense
+            {
+                Name = expense.Name,
+                Amount = expense.Amount,
+                AgeStart = expense.AgeStart,
+                AgeEnd = expense.AgeEnd,
+                AnnualRateOfIncrease = expense.AnnualRateOfIncrease
+            });
+        }
+        // Then "all other expenses" as a single unnamed expense
+        // Calculate "all other expenses" by subtracting the sum of all named expenses
+        var namedExpenses = planState.Expenses.Sum(expense => expense.Amount);
 
-        planState.DiscretionaryExpenses = Math.Max(
-            0m,
-            annualExpenses - activeNamedExpenses);
+        planState.Expenses.Add(new Expense
+        {
+            Name = "All other expenses",
+            Amount = Math.Max(0m, annualExpenses - namedExpenses),
+            AgeStart = scenario.CurrentAge,
+            AgeEnd = scenario.LifeExpectancy,
+            AnnualRateOfIncrease = scenario.AnnualInflationRate
+        });
 
         return planState;
     }
@@ -56,9 +73,9 @@ internal sealed class PlanState
     public List<AccountState> Accounts { get; } = [];
 
     /// <summary>
-    /// The inflation-adjusted discretionary expense amount for the current year.
+    /// The current expenses that are active in the plan. These expenses are updated as each calendar year is calculated.
     /// </summary>
-    public decimal DiscretionaryExpenses { get; set; }
+    public List<Expense> Expenses { get; } = [];
 
     /// <summary>
     /// Capital loss carryforward available for future tax years.

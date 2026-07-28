@@ -36,15 +36,8 @@ public sealed class PlanYear
     /// </summary>
     public required IReadOnlyList<ExpenseYearResult> Expenses { get; init; }
 
-    /// <summary>
-    /// Expenses not represented by a named scenario expense.
-    /// </summary>
-    public decimal DiscretionaryExpenses { get; init; }
-
     public decimal TotalExpenses =>
-        Expenses.Sum(expense => expense.Amount)
-        + DiscretionaryExpenses;
-
+        Expenses.Sum(expense => expense.Amount);
     /// <summary>
     /// Total balance across all accounts at the beginning of the year.
     /// </summary>

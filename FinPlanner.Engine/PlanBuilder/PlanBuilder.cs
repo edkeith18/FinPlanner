@@ -213,30 +213,19 @@ public sealed class PlanBuilder
     /// calculation pipeline.
     /// </summary>
     private static void ApplyExpenses(
-        YearCalculationWorkspace context)
+        YearCalculationWorkspace workspace)
     {
-        var age = context.Scenario.CurrentAge
-            + context.CalendarYear
-            - context.Scenario.StartYear;
+        var age = workspace.Scenario.CurrentAge
+            + workspace.CalendarYear
+            - workspace.Scenario.StartYear;
 
-        foreach (var expense in context.Scenario.Expenses)
+        foreach (var expense in workspace.PlanState.Expenses)
         {
-            context.Expenses.Add(new ExpenseYearResult(
+            workspace.Expenses.Add(new ExpenseYearResult(
                 expense.Name,
-                CalculateExpenseAmount(expense, age)));
+                (age >= expense.AgeStart &&
+                age <= expense.AgeEnd) ? expense.Amount : 0m));
         }
-
-        if (context.CalendarYear > context.Scenario.StartYear)
-        {
-            var inflationRate =
-                context.Scenario.AnnualInflationRate / 100m;
-
-            context.PlanState.DiscretionaryExpenses *=
-                1m + inflationRate;
-        }
-
-        context.DiscretionaryExpenses =
-            context.PlanState.DiscretionaryExpenses;
     }
 
     /// <summary>
@@ -269,8 +258,7 @@ public sealed class PlanBuilder
         YearCalculationWorkspace context)
     {
         var expenseWithdrawals = context.Expenses.Sum(
-            expense => expense.Amount)
-            + context.DiscretionaryExpenses;
+            expense => expense.Amount);
 
         var unfundedExpenses = ApplyWithdrawals(
             context.Accounts,
@@ -309,25 +297,5 @@ public sealed class PlanBuilder
         }
 
         return remaining;
-    }
-
-    private static decimal CalculateExpenseAmount(
-        Expense expense,
-        int age)
-    {
-        if (age < expense.AgeStart || age > expense.AgeEnd)
-        {
-            return 0m;
-        }
-
-        var amount = expense.Amount;
-        var rate = expense.AnnualRateOfIncrease / 100m;
-
-        for (var year = expense.AgeStart; year < age; year++)
-        {
-            amount *= 1m + rate;
-        }
-
-        return amount;
     }
 }

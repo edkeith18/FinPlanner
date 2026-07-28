@@ -161,11 +161,11 @@ void PlanWithdrawalsUsePriorityOrder()
     scenario.NormalizeWithdrawalPriorities();
 
     var year = new PlanBuilder().Build(scenario).PlanYears.Single();
-    var priorityAccountResult = year.Accounts.Single(account => account.AccountId == priorityAccountId);
+    var priorityAccountResult = year.Accounts.Single(account => account.Id == priorityAccountId);
 
     Equal(100m, priorityAccountResult.ExpenseWithdrawals, "priority account withdrawal");
-    Equal(0m, year.Accounts.Single(account => account.AccountName == "First").ExpenseWithdrawals, "lower-priority first account withdrawal");
-    Equal(0m, year.Accounts.Single(account => account.AccountName == "Third").ExpenseWithdrawals, "lower-priority third account withdrawal");
+    Equal(0m, year.Accounts.Single(account => account.Name == "First").ExpenseWithdrawals, "lower-priority first account withdrawal");
+    Equal(0m, year.Accounts.Single(account => account.Name == "Third").ExpenseWithdrawals, "lower-priority third account withdrawal");
 }
 
 void WithdrawalsMoveToNextAccount()

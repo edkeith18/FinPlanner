@@ -63,8 +63,6 @@ internal sealed class YearCalculationWorkspace
 
     public List<ExpenseYearResult> Expenses { get; } = [];
 
-    public decimal DiscretionaryExpenses { get; set; }
-
     /// <summary>
     /// The calculated taxable income for this year.
     /// </summary>
@@ -84,7 +82,7 @@ internal sealed class YearCalculationWorkspace
     /// Creates the immutable PlanYear representing the completed year.
     ///
     /// This method also updates the PlanState so it contains the
-    /// beginning balances and carryforward values required to calculate
+    /// beginning balances and expense values required to calculate
     /// the following calendar year.
     /// </summary>
     public PlanYear Complete()
@@ -96,9 +94,14 @@ internal sealed class YearCalculationWorkspace
         foreach (var accountState in PlanState.Accounts)
         {
             var result = accountResults.Single(
-                account => account.AccountId == accountState.AccountId);
+                account => account.Id == accountState.AccountId);
 
             accountState.Balance = result.EndingBalance;
+        }
+
+        foreach (var expense in PlanState.Expenses)
+        {
+            expense.Amount *= 1m + expense.AnnualRateOfIncrease / 100m;
         }
 
         return new PlanYear
@@ -107,7 +110,6 @@ internal sealed class YearCalculationWorkspace
             Age = Scenario.CurrentAge + CalendarYear - Scenario.StartYear,
             Accounts = accountResults,
             Expenses = Expenses.ToList(),
-            DiscretionaryExpenses = DiscretionaryExpenses,
             Taxes = Taxes
         };
     }

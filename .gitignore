@@ -364,5 +364,7 @@ MigrationBackup/
 FodyWeavers.xsd
 /.dotnet/.dotnet
 /FinPlanner.Console/Properties/launchSettings.json
-/FinPlanner.Console/TestScenario.json
-/FinPlanner.Console/FinPlanner.json
+
+# Ignore user input and program output files
+/FinPlanner.Console/*.json
+/FinPlanner.Console/*.csv
