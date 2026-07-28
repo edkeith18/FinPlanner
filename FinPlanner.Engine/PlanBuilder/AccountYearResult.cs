@@ -6,9 +6,9 @@ namespace FinPlanner.Engine;
 
 public sealed class AccountYearResult
 {
-    public required Guid AccountId { get; init; }
+    public required Guid Id { get; init; }
 
-    public required string AccountName { get; init; }
+    public required string Name { get; init; }
 
     public decimal BeginningBalance { get; init; }
 

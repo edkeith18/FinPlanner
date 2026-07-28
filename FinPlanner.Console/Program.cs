@@ -31,7 +31,6 @@ buildCommand.SetAction(parseResult =>
 
         var outputPath = WritePlanCsv(
             plan,
-            scenario.Accounts,
             file);
 
         Console.WriteLine($"Plan written to '{outputPath}'");
@@ -165,7 +164,6 @@ static Scenario GetScenario(FileInfo file)
 
 static string WritePlanCsv(
     Plan plan,
-    IReadOnlyList<Account> accounts,
     FileInfo scenarioFile)
 {
     var timestamp = DateTime.Now.ToString(
@@ -180,8 +178,8 @@ static string WritePlanCsv(
 
     var csv = new StringBuilder();
     var headers = new[] { "CalendarYear", "Age" }
-        .Concat(accounts.Select(
-            account => $"{account.Name} EndingBalance"));
+        .Concat(plan.PlanYears.First().Accounts.Select(account => $"{account.Name} EndingBalance"))
+        .Concat(plan.PlanYears.First().Expenses.Select(expense => $"{expense.Name} Amount"));
     csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
 
     foreach (var year in plan.PlanYears)
@@ -191,16 +189,18 @@ static string WritePlanCsv(
             year.CalendarYear.ToString(CultureInfo.InvariantCulture),
             year.Age.ToString(CultureInfo.InvariantCulture)
         };
+        // Output account balances
         // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
-        values.AddRange(accounts.Select(account =>
-            $"${year.Accounts
-                .Single(result => result.AccountId == account.Id)
-                .EndingBalance
-                .ToString("0.00", CultureInfo.InvariantCulture)}"));
+        values.AddRange(year.Accounts.Select(account =>
+            $"${account.EndingBalance.ToString("0.00", CultureInfo.InvariantCulture)}"));
+
+        // Output expense amounts
+        // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
+        values.AddRange(year.Expenses.Select(expense =>
+            $"${expense.Amount.ToString("0.00", CultureInfo.InvariantCulture)}"));
 
         csv.AppendLine(string.Join(",", values.Select(EscapeCsvField)));
     }
-
     File.WriteAllText(outputPath, csv.ToString());
 
     return outputPath;
