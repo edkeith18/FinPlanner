@@ -1,40 +1,45 @@
 namespace FinPlanner.Engine;
 
 /// <summary>
-/// Represents the financial results for a single calendar year.
-///
-/// A PlanYear is immutable once created and contains the calculated
-/// state of the user's finances at the end of that year.
-///
-/// The sequence of PlanYears forms a Plan, where each year's ending
-/// state becomes the starting point for the following year.
+/// Represents the financial results for a single 12-month period.
 /// </summary>
-public sealed class PlanYear
+public class PlanYear
 {
-    /// <summary>
-    /// The calendar year represented by this PlanYear.
-    /// </summary>
-    public required int CalendarYear { get; init; }
+    public static PlanYear AddFirst(Scenario scenario)
+    {
+        PlanYear planYear = new PlanYear();
+
+        planYear.AgeAtStart = scenario.CurrentAge;
+        planYear.YearAtStart = scenario.StartYear;
+        planYear.AccountsForYear = scenario.Accounts.Select(account => new Account(account)).ToList();
+
+        return planYear;
+    }
 
     /// <summary>
-    /// The user's age on December 31 of this calendar year.
+    /// The calendar year represented by this PlanYear at the start of the 12-month period.
     /// </summary>
-    public required int Age { get; init; }
+    public int YearAtStart { get; private set; }
+
+    /// <summary>
+    /// The user's age at the start of the 12-month period.
+    /// </summary>
+    public int AgeAtStart { get; private set; }
 
     /// <summary>
     /// The calculated results for every account during this year.
     /// </summary>
-    public required IReadOnlyList<AccountYearResult> Accounts { get; init; }
+    public  List<Account> AccountsForYear { get; set; }
 
     /// <summary>
     /// The calculated federal and state taxes for this year.
     /// </summary>
-    public required TaxYearResult Taxes { get; init; }
+    public  TaxYearResult Taxes { get; init; }
 
     /// <summary>
     /// Named expenses incurred during this year.
     /// </summary>
-    public required IReadOnlyList<ExpenseYearResult> Expenses { get; init; }
+    public  IReadOnlyList<ExpenseYearResult> Expenses { get; init; }
 
     public decimal TotalExpenses =>
         Expenses.Sum(expense => expense.Amount);
@@ -42,11 +47,11 @@ public sealed class PlanYear
     /// Total balance across all accounts at the beginning of the year.
     /// </summary>
     public decimal BeginningBalance =>
-        Accounts.Sum(account => account.BeginningBalance);
+        AccountsForYear.Sum(account => account.Balance);  // BUG$: Gotta fix this
 
     /// <summary>
     /// Total balance across all accounts at the end of the year.
     /// </summary>
     public decimal EndingBalance =>
-        Accounts.Sum(account => account.EndingBalance);
+        AccountsForYear.Sum(account => account.Balance); //BUG$: Gotta fix this
 }

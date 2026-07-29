@@ -10,7 +10,7 @@ Run("Withdrawal priorities follow account order", WithdrawalPrioritiesFollowAcco
 Run("Account membership keeps priorities contiguous", AccountMembershipKeepsPrioritiesContiguous);
 Run("Withdrawal priority JSON round trip", WithdrawalPriorityJsonRoundTrip);
 Run("Legacy JSON normalizes withdrawal priorities", LegacyJsonNormalizesWithdrawalPriorities);
-Run("Plan withdrawals use priority order", PlanWithdrawalsUsePriorityOrder);
+Run("PlanLegacy withdrawals use priority order", PlanWithdrawalsUsePriorityOrder);
 Run("Withdrawals move to next account", WithdrawalsMoveToNextAccount);
 Run("Exhausted balances fail and stop plan", ExhaustedBalancesFailAndStopPlan);
 Run("Single account withdrawals remain intact", SingleAccountWithdrawalsRemainIntact);
@@ -366,7 +366,7 @@ void AssertThrowsJson(string json, string description)
 }
 
 void AssertYear(
-    PlanYear year,
+    PlanYearLegacy year,
     int age,
     decimal totalExpenses,
     decimal endingBalance)

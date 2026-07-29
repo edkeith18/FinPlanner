@@ -1,9 +1,9 @@
 namespace FinPlanner.Engine;
 
 /// <summary>
-/// Creates a financial Plan from a Scenario.
+/// Creates a financial PlanLegacy from a Scenario.
 ///
-/// A Plan is calculated one year at a time, in chronological order.
+/// A PlanLegacy is calculated one year at a time, in chronological order.
 /// Each year's calculations update the PlanState so that the ending
 /// planState of one year becomes the beginning planState of the following year.
 /// </summary>
@@ -17,18 +17,18 @@ public sealed class PlanBuilder
     /// tax assumptions, and planning period used to calculate the plan.
     /// </param>
     /// <returns>
-    /// A completed Plan containing an ordered collection of PlanYear results.
+    /// A completed PlanLegacy containing an ordered collection of PlanYearLegacy results.
     /// </returns>
     /// <exception cref="ArgumentNullException">
     /// Thrown when <paramref name="scenario"/> is null.
     /// </exception>
-    public Plan Build(
+    public PlanLegacy Build(
         Scenario scenario,
         PlanBuildOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(scenario);
 
-        var planYears = new List<PlanYear>();
+        var planYears = new List<PlanYearLegacy>();
 
         // If annual expenses are provided in the options, use them. Otherwise, use the
         // annual expenses from the scenario.
@@ -68,7 +68,7 @@ public sealed class PlanBuilder
             }
         }
 
-        return new Plan(
+        return new PlanLegacy(
             planYears,
             failureReason is null,
             failureReason);
@@ -92,10 +92,10 @@ public sealed class PlanBuilder
     /// The calendar year being calculated.
     /// </param>
     /// <returns>
-    /// A completed PlanYear describing the financial activity and results
+    /// A completed PlanYearLegacy describing the financial activity and results
     /// for the specified calendar year.
     /// </returns>
-    private static PlanYear Calculate(
+    private static PlanYearLegacy Calculate(
         Scenario scenario,
         PlanState planState,
         int calendarYear)
@@ -134,7 +134,7 @@ public sealed class PlanBuilder
         CalculateTaxes(workspace);
         PayExpensesAndTaxes(workspace);
 
-        // Complete creates the immutable PlanYear result and updates the
+        // Complete creates the immutable PlanYearLegacy result and updates the
         // shared PlanState to represent the end of this calendar year.
         return workspace.Complete();
     }
