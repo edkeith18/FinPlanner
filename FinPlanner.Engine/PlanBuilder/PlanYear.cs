@@ -11,7 +11,7 @@ public class PlanYear
 
         planYear.AgeAtStart = scenario.CurrentAge;
         planYear.YearAtStart = scenario.StartYear;
-        planYear.AccountsForYear = scenario.Accounts.Select(account => new Account(account)).ToList();
+        planYear.Accounts = scenario.Accounts.Select(account => new Account(account)).ToList();
 
         return planYear;
     }
@@ -29,29 +29,31 @@ public class PlanYear
     /// <summary>
     /// The calculated results for every account during this year.
     /// </summary>
-    public  List<Account> AccountsForYear { get; set; }
+    // Ensure non-nullable property is initialized
+    public List<Account> Accounts { get; set; } = new List<Account>();
 
     /// <summary>
     /// The calculated federal and state taxes for this year.
     /// </summary>
-    public  TaxYearResult Taxes { get; init; }
+    public TaxYearResult Taxes { get; init; } = new TaxYearResult();
 
     /// <summary>
     /// Named expenses incurred during this year.
     /// </summary>
-    public  IReadOnlyList<ExpenseYearResult> Expenses { get; init; }
+    public IReadOnlyList<ExpenseYearResult> Expenses { get; init; } = new List<ExpenseYearResult>();
 
     public decimal TotalExpenses =>
         Expenses.Sum(expense => expense.Amount);
+
     /// <summary>
     /// Total balance across all accounts at the beginning of the year.
     /// </summary>
     public decimal BeginningBalance =>
-        AccountsForYear.Sum(account => account.Balance);  // BUG$: Gotta fix this
+        Accounts.Sum(account => account.Balance);
 
     /// <summary>
     /// Total balance across all accounts at the end of the year.
     /// </summary>
     public decimal EndingBalance =>
-        AccountsForYear.Sum(account => account.Balance); //BUG$: Gotta fix this
+        Accounts.Sum(account => account.Balance);
 }

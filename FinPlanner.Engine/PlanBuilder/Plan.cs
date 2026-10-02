@@ -49,7 +49,7 @@ public class Plan
         Plan plan = new Plan(scenario);
 
         // Calculate and add PlanYears
-        plan.PlanYears.Add(new PlanYear);
+        plan.PlanYears.Add(new PlanYear());
 
         return plan;
     }
