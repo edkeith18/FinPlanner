@@ -14,11 +14,24 @@ public class Plan
     public int StartAge { get; private set; }
 
     /// <summary>
+    /// The user's age at the end of the plan.
+    /// </summary>
+    public int EndAge { get; private set; }
+
+    /// <summary>
     /// The calendar year at the start of the plan.
     /// </summary>
     public int StartYear { get; private set; }
 
+    /// <summary>
+    /// The calendar year at the end of the plan.
+    /// </summary>
     public int EndYear {  get; private set; }
+
+    /// <summary>
+    /// The accounts in the plan. Each account represents a financial account that is part of the user's financial plan.
+    /// </summary>
+    public List<Account> Accounts { get; private set; } = new List<Account>();
 
     /// <summary>
     /// Indicates whether or not plan was built successfully
@@ -35,21 +48,37 @@ public class Plan
     private Plan(Scenario scenario)
     {
 
+        // Store plan settings from the scenario
         StartAge = scenario.CurrentAge;
+        EndAge = scenario.LifeExpectancy;
 
         StartYear = scenario.StartYear;
+        EndYear = StartYear + (EndAge - scenario.CurrentAge);
+
+        Accounts = scenario.Accounts.Select(account => new Account(account)).ToList();
 
     }
 
     public static Plan Build(Scenario scenario)
     {
-        ArgumentNullException.ThrowIfNull(scenario);
-
         // Create the plan
         Plan plan = new Plan(scenario);
 
-        // Calculate and add PlanYears
-        plan.PlanYears.Add(new PlanYear());
+        // Calculate the first year of the plan
+        var firstYear = PlanYear.CalculateFirst(
+            plan.StartAge,
+            plan.StartYear,
+            scenario.Accounts);
+
+        // Calculate the remaining years of the plan
+        for (int year = plan.StartYear + 1; year <= plan.EndYear; year++)
+        {
+            var previousYear = plan.PlanYears[^1];
+
+            var nextYear = PlanYear.CalculateNext(previousYear);
+
+            plan.PlanYears.Add(nextYear);
+        }
 
         return plan;
     }

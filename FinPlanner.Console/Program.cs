@@ -27,8 +27,10 @@ buildCommand.SetAction(parseResult =>
 
     try
     {
-        var plan = new PlanBuilder().Build(scenario);
+        // Build the plan
+        var plan = Plan.Build(scenario);
 
+        // Write the plan to a CSV file
         var outputPath = WritePlanCsv(
             plan,
             file);
@@ -163,7 +165,7 @@ static Scenario GetScenario(FileInfo file)
 }
 
 static string WritePlanCsv(
-    PlanLegacy plan,
+    Plan plan,
     FileInfo scenarioFile)
 {
     var timestamp = DateTime.Now.ToString(
@@ -182,17 +184,18 @@ static string WritePlanCsv(
         .Concat(plan.PlanYears.First().Expenses.Select(expense => $"{expense.Name} Amount"));
     csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
 
-    foreach (var year in plan.PlanYears)
+    foreach (var planYear in plan.PlanYears)
     {
         var values = new List<string>
         {
-            year.CalendarYear.ToString(CultureInfo.InvariantCulture),
-            year.Age.ToString(CultureInfo.InvariantCulture)
+            planYear.YearAtStart.ToString(CultureInfo.InvariantCulture),
+            planYear.AgeAtStart.ToString(CultureInfo.InvariantCulture)
         };
+
         // Output account balances
         // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
-        values.AddRange(year.Accounts.Select(account =>
-            $"${account.EndingBalance.ToString("0.00", CultureInfo.InvariantCulture)}"));
+        values.AddRange(planYear.Accounts.Select(account =>
+            $"${account.ToString("0.00", CultureInfo.InvariantCulture)}"));
 
         // Output expense amounts
         // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.

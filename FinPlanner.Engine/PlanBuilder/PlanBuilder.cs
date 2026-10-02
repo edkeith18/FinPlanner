@@ -1,11 +1,11 @@
 namespace FinPlanner.Engine;
 
 /// <summary>
-/// Creates a financial PlanLegacy from a Scenario.
+/// Creates a financial Plan from a Scenario.
 ///
-/// A PlanLegacy is calculated one year at a time, in chronological order.
-/// Each year's calculations update the PlanState so that the ending
-/// planState of one year becomes the beginning planState of the following year.
+/// A Plan is built one year at a time, in chronological order.
+/// It consists of PlanYears, each of which contains the financial results for a single calendar year.
+/// Each PlanYear is calculated using the ending balances and carryforward values from the previous PlayYear.
 /// </summary>
 public sealed class PlanBuilder
 {
@@ -17,33 +17,25 @@ public sealed class PlanBuilder
     /// tax assumptions, and planning period used to calculate the plan.
     /// </param>
     /// <returns>
-    /// A completed PlanLegacy containing an ordered collection of PlanYearLegacy results.
+    /// A completed Plan containing an ordered collection of PlanYears.
     /// </returns>
-    /// <exception cref="ArgumentNullException">
-    /// Thrown when <paramref name="scenario"/> is null.
-    /// </exception>
-    public PlanLegacy Build(
+    public Plan Build(
         Scenario scenario,
         PlanBuildOptions? options = null)
     {
-        ArgumentNullException.ThrowIfNull(scenario);
-
-        var planYears = new List<PlanYearLegacy>();
+        var planYears = new List<PlanYear>();
 
         // If annual expenses are provided in the options, use them. Otherwise, use the
         // annual expenses from the scenario.
         var annualExpenses = options?.AnnualExpenses
             ?? scenario.AnnualExpenses;
 
-        // PlanState contains the mutable financial state used while
-        // calculating the plan. The original Scenario is not modified.
-        var planState = PlanState.Initialize(
-            scenario,
-            annualExpenses);
-
         // Initialize a failureReason, in case the plan fails financially while calculating it
         string? failureReason = null;
 
+        // Initialize Plan with first PlanYear
+        planYears.Add(PlanYear.AddFirst(scenario));
+        
         // PlanYears must be calculated in chronological order because each year's
         // ending balances and carryforward values are inputs to the next year.
         for (var calendarYear = scenario.StartYear;
