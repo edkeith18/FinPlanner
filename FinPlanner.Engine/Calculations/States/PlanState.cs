@@ -1,10 +1,10 @@
 namespace FinPlanner.Engine;
 
 /// <summary>
-/// Represents the mutable financial planState used while calculating a Plan.
+/// Represents the mutable financial planState used while calculating a PlanLegacy.
 ///
 /// The PlanState contains only information that persists from one
-/// calendar year to the next. It is updated as each PlanYear is calculated
+/// calendar year to the next. It is updated as each PlanYearLegacy is calculated
 /// and serves as the starting point for the following year.
 ///
 /// The original Scenario is never modified during plan calculation.

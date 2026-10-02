@@ -33,7 +33,7 @@ buildCommand.SetAction(parseResult =>
             plan,
             file);
 
-        Console.WriteLine($"Plan written to '{outputPath}'");
+        Console.WriteLine($"PlanLegacy written to '{outputPath}'");
 
         return 0;
     }
@@ -163,7 +163,7 @@ static Scenario GetScenario(FileInfo file)
 }
 
 static string WritePlanCsv(
-    Plan plan,
+    PlanLegacy plan,
     FileInfo scenarioFile)
 {
     var timestamp = DateTime.Now.ToString(

@@ -2,7 +2,7 @@ namespace FinPlanner.Engine;
 
 /// <summary>
 /// Represents the mutable working data used while calculating a single
-/// PlanYear.
+/// PlanYearLegacy.
 ///
 /// The YearCalculationWorkspace exists only for the duration of a single
 /// year's calculation. It contains the evolving financial state, the
@@ -10,7 +10,7 @@ namespace FinPlanner.Engine;
 /// by the calculation pipeline.
 ///
 /// When calculation is complete, Complete() converts the working data into
-/// an immutable PlanYear and advances the supplied PlanState so it is
+/// an immutable PlanYearLegacy and advances the supplied PlanState so it is
 /// ready for the following calendar year.
 /// </summary>
 internal sealed class YearCalculationWorkspace
@@ -79,13 +79,13 @@ internal sealed class YearCalculationWorkspace
     public TaxYearResult Taxes { get; set; } = new();
 
     /// <summary>
-    /// Creates the immutable PlanYear representing the completed year.
+    /// Creates the immutable PlanYearLegacy representing the completed year.
     ///
     /// This method also updates the PlanState so it contains the
     /// beginning balances and expense values required to calculate
     /// the following calendar year.
     /// </summary>
-    public PlanYear Complete()
+    public PlanYearLegacy Complete()
     {
         var accountResults = Accounts
             .Select(account => account.ToResult())
@@ -104,7 +104,7 @@ internal sealed class YearCalculationWorkspace
             expense.Amount *= 1m + expense.AnnualRateOfIncrease / 100m;
         }
 
-        return new PlanYear
+        return new PlanYearLegacy
         {
             CalendarYear = CalendarYear,
             Age = Scenario.CurrentAge + CalendarYear - Scenario.StartYear,

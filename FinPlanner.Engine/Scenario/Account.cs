@@ -15,6 +15,20 @@ public class Account
     /// Lower values have higher priority; priority 1 is used first.
     /// </summary>
     public int WithdrawalPriority { get; set; }
+
+    public Account() { }
+
+    // Copy constructor to create a new Account instance from an existing one
+    public Account(Account sourceAccount)
+    {
+        Id = sourceAccount.Id;
+        Name = sourceAccount.Name;
+        Type = sourceAccount.Type;
+        Holdings = sourceAccount.Holdings;
+        Balance = sourceAccount.Balance;
+        LastUpdated = sourceAccount.LastUpdated;
+        WithdrawalPriority = sourceAccount.WithdrawalPriority;
+    }
 }
 
 public enum AccountType
