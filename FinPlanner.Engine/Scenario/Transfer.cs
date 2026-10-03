@@ -19,15 +19,15 @@ public class Transfer
         var fromAccount = FindAccount(accountList, FromAccountName, nameof(FromAccountName));
         var toAccount = FindAccount(accountList, ToAccountName, nameof(ToAccountName));
 
-        if (Amount <= 0m || fromAccount.Balance <= 0m)
+        if (Amount <= 0m || fromAccount.BeginningBalance <= 0m)
         {
             return 0m;
         }
 
-        var transferAmount = Math.Min(Amount, fromAccount.Balance);
+        var transferAmount = Math.Min(Amount, fromAccount.BeginningBalance);
 
-        fromAccount.Balance -= transferAmount;
-        toAccount.Balance += transferAmount;
+        fromAccount.BeginningBalance -= transferAmount;
+        toAccount.BeginningBalance += transferAmount;
 
         return transferAmount;
     }

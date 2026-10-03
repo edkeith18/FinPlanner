@@ -27,15 +27,18 @@ buildCommand.SetAction(parseResult =>
 
     try
     {
-        // Build the plan
-        var plan = Plan.Build(scenario);
+        // Create a plan from the scenario.
+        var plan = new Plan(scenario);
+
+        plan.Build();
 
         // Write the plan to a CSV file
         var outputPath = WritePlanCsv(
             plan,
             file);
 
-        Console.WriteLine($"PlanLegacy written to '{outputPath}'");
+        Console.WriteLine($"Maximum sustainable annual expenses: {plan.GetMaximumAnnualExpenses():C}");
+        Console.WriteLine($"Plan written to '{outputPath}'");
 
         return 0;
     }
@@ -45,43 +48,6 @@ buildCommand.SetAction(parseResult =>
         return 4;
     }
 
-});
-
-// Calculate the maximum sustainable annual expenses for a scenario and write the result to the console.
-
-var getMaxExpensesCommand = new Command("get-max-expenses")
-{
-    Description =
-        "Calculate the maximum sustainable annual expenses for a scenario."
-};
-
-getMaxExpensesCommand.Arguments.Add(scenarioPathArgument);
-
-getMaxExpensesCommand.SetAction(parseResult =>
-{
-    var file = parseResult.GetValue(scenarioPathArgument)!;
-    var scenario = GetScenario(file);
-    try
-    {
-        if (new MaximumExpenseCalculator(new PlanBuilder())
-            .TryCalculate(scenario, out var maximumAnnualExpenses))
-        {
-            Console.WriteLine(
-                $"Maximum sustainable annual expenses: {maximumAnnualExpenses:C}");
-            return 0;
-        }
-        else
-        {
-            Console.WriteLine(
-                "Unable to calculate maximum sustainable annual expenses.");
-            return 6;
-        }
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"Unable to calculate maximum expenses: {ex.Message}");
-        return 7;
-    }
 });
 
 // Rewrite a scenario using the current JSON schema while retaining a backup.
@@ -133,7 +99,6 @@ upgradeCommand.SetAction(parseResult =>
 });
 
 rootCommand.Subcommands.Add(buildCommand);
-rootCommand.Subcommands.Add(getMaxExpensesCommand);
 rootCommand.Subcommands.Add(upgradeCommand);
 
 return rootCommand.Parse(args).Invoke();
@@ -180,27 +145,21 @@ static string WritePlanCsv(
 
     var csv = new StringBuilder();
     var headers = new[] { "CalendarYear", "Age" }
-        .Concat(plan.PlanYears.First().Accounts.Select(account => $"{account.Name} EndingBalance"))
-        .Concat(plan.PlanYears.First().Expenses.Select(expense => $"{expense.Name} Amount"));
+        .Concat(plan.PlanYears.First().Accounts.Select(account => $"{account.Name} EndingBalance"));
     csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
 
     foreach (var planYear in plan.PlanYears)
     {
         var values = new List<string>
         {
-            planYear.YearAtStart.ToString(CultureInfo.InvariantCulture),
-            planYear.AgeAtStart.ToString(CultureInfo.InvariantCulture)
+            planYear.EndingYear.ToString(CultureInfo.InvariantCulture),
+            planYear.EndingAge.ToString(CultureInfo.InvariantCulture)
         };
 
         // Output account balances
         // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
         values.AddRange(planYear.Accounts.Select(account =>
-            $"${account.ToString("0.00", CultureInfo.InvariantCulture)}"));
-
-        // Output expense amounts
-        // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
-        values.AddRange(year.Expenses.Select(expense =>
-            $"${expense.Amount.ToString("0.00", CultureInfo.InvariantCulture)}"));
+            $"${account.EndingBalance.ToString("0.00", CultureInfo.InvariantCulture)}"));
 
         csv.AppendLine(string.Join(",", values.Select(EscapeCsvField)));
     }
