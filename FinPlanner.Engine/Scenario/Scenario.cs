@@ -264,7 +264,7 @@ public class Scenario
             Name = name,
             Type = type,
             Holdings = holdings,
-            Balance = balance,
+            BeginningBalance = balance,
             LastUpdated = DateTime.Now
         });
 

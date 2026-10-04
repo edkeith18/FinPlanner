@@ -7,7 +7,8 @@ public class Account
     public string Name { get; set; } = string.Empty;
     public AccountType Type { get; set; } = AccountType.Brokerage;
     public AccountHoldings Holdings { get; set; } = AccountHoldings.Equities;
-    public decimal Balance { get; set; }
+    public decimal BeginningBalance { get; set; }
+    public decimal EndingBalance { get; set; }
     public DateTime LastUpdated { get; set; }
 
     /// <summary>
@@ -25,7 +26,8 @@ public class Account
         Name = sourceAccount.Name;
         Type = sourceAccount.Type;
         Holdings = sourceAccount.Holdings;
-        Balance = sourceAccount.Balance;
+        BeginningBalance = sourceAccount.BeginningBalance;
+        // Do not copy EndingBalance here, as it will be calculated later in the plan year.
         LastUpdated = sourceAccount.LastUpdated;
         WithdrawalPriority = sourceAccount.WithdrawalPriority;
     }
