@@ -56,6 +56,8 @@ public class Plan
     /// </summary>
     public void Build()
     {
+        // Remove any existing plan years beyond the first year, as we will rebuild the plan from scratch
+        // The first year is already created in the constructor, so we only need to remove any additional years if they exist
         if (PlanYears.Count > 1)
         {
             PlanYears.RemoveRange(1, PlanYears.Count - 1);
