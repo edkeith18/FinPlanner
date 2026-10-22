@@ -12,6 +12,8 @@ public class Account
     [JsonPropertyName("Balance")]
     public decimal BeginningBalance { get; set; }
     public decimal EndingBalance { get; set; }
+    [JsonIgnore]
+    public decimal AppreciationRate { get; set; }
     public DateTime LastUpdated { get; set; }
 
     /// <summary>
@@ -31,15 +33,14 @@ public class Account
         Holdings = sourceAccount.Holdings;
         BeginningBalance = sourceAccount.BeginningBalance;
         // Do not copy EndingBalance here, as it will be calculated later in the plan year.
+        AppreciationRate = sourceAccount.AppreciationRate;
         LastUpdated = sourceAccount.LastUpdated;
         WithdrawalPriority = sourceAccount.WithdrawalPriority;
     }
+
     public void Appreciate()
     {
-        var appreciationRate = (Holdings == AccountHoldings.Equities) ?  : 0.03m;
-
-        EndingBalance = BeginningBalance * (1 + appreciationRate);
-
+        EndingBalance = BeginningBalance * (1 + AppreciationRate);
     }
 }
 
