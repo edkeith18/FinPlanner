@@ -35,8 +35,14 @@ public class PlanYear
         {
             EndingAge = previousYear.EndingAge + 1,
             EndingYear = previousYear.EndingYear + 1,
+            AnnualExpenses = previousYear.AnnualExpenses,
             Accounts = previousYear.Accounts
-                .Select(account => new Account(account))
+                .Select(account =>
+                {
+                    var newAccount = new Account(account);
+                    newAccount.BeginningBalance = account.EndingBalance;
+                    return newAccount;
+                })
                 .ToList()
         };
     }
