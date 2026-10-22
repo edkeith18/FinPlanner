@@ -29,6 +29,29 @@ public class PlanYear
     public decimal EndingBalance =>
         Accounts.Sum(account => account.EndingBalance);
 
+    public static PlanYear FromScenario(Scenario scenario)
+    {
+        return new PlanYear
+        {
+            EndingAge = scenario.CurrentAge,
+            EndingYear = scenario.StartYear,
+            AnnualExpenses = scenario.AnnualExpenses,
+            Accounts = scenario.Accounts
+                .Select(account =>
+                {
+                    var newAccount = new Account(account);
+
+                    newAccount.AppreciationRate =
+                        account.Holdings == AccountHoldings.Bonds
+                            ? scenario.BondsAnnualRateOfReturn
+                            : scenario.SecuritiesAnnualRateOfReturn;
+
+                    return newAccount;
+                })
+                .ToList()
+        };
+    }
+
     public static PlanYear ForecastFrom(PlanYear previousYear)
     {
         return new PlanYear

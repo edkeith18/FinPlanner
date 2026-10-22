@@ -23,7 +23,7 @@ public class Plan
     /// </summary>
     public int EndingAge { get; private set; }
 
-    private PlanYear CurrentYear;
+    private readonly PlanYear FirstYear;
 
     /// <summary>
     /// Indicates whether or not plan was built successfully
@@ -39,7 +39,7 @@ public class Plan
 
     /// <summary>
     /// Constructor
-    /// Makes a "YearZero" based on the scenario.  It is used as a seed for building the plan.
+    /// Creates the first plan year from the scenario.
     /// </summary>
     /// <param name="scenario"></param>
     public Plan(Scenario scenario)
@@ -50,26 +50,7 @@ public class Plan
         BeginningAge = scenario.CurrentAge;
         EndingAge = scenario.LifeExpectancy;
 
-        // Seed CurrentYear's ending values with the scenario's starting values
-        CurrentYear = new PlanYear
-        {
-            EndingAge = this.BeginningAge,
-            EndingYear = this.BeginningYear,
-            Accounts = scenario.Accounts
-                .Select(account =>
-                {
-                    var planAccount = new Account(account);
-
-                    planAccount.AppreciationRate =
-                        account.Holdings == AccountHoldings.Bonds
-                            ? scenario.BondsAnnualRateOfReturn
-                            : scenario.SecuritiesAnnualRateOfReturn;
-
-                    return planAccount;
-                })
-                .ToList(),
-            AnnualExpenses = scenario.AnnualExpenses
-        };
+        FirstYear = PlanYear.FromScenario(scenario);
     }
 
     /// <summary>
@@ -77,16 +58,20 @@ public class Plan
     /// </summary>
     public void Build()
     {
-        for (int year = BeginningYear; year <= EndingYear; year++)
+        PlanYears.Clear();
+
+        var currentYear = FirstYear;
+
+        while (currentYear.EndingYear <= EndingYear)
         {
             // Loop through all the accounts in the current year and appreciate their balances
-            foreach (var account in CurrentYear.Accounts)
+            foreach (var account in currentYear.Accounts)
             {
                 account.Appreciate();
             }
 
-            PlanYears.Add(PlanYear.ForecastFrom(CurrentYear));
-            CurrentYear = PlanYears[^1];
+            PlanYears.Add(currentYear);
+            currentYear = PlanYear.ForecastFrom(currentYear);
         }
     }
 
@@ -102,7 +87,7 @@ public class Plan
         var lowerBound = 0;
         var upperBound = Math.Max(
             1,
-            (int)(CurrentYear.Accounts.Sum(account => account.EndingBalance)
+            (int)(FirstYear.Accounts.Sum(account => account.EndingBalance)
                 / ExpenseStep));
 
         while (lowerBound <= upperBound)
@@ -115,7 +100,7 @@ public class Plan
             {
                 EndingAge = this.BeginningAge,
                 EndingYear = this.BeginningYear,
-                Accounts = CurrentYear.Accounts.Select(account => new Account(account)).ToList(),
+                Accounts = FirstYear.Accounts.Select(account => new Account(account)).ToList(),
                 AnnualExpenses = midpoint * ExpenseStep
             };
 
