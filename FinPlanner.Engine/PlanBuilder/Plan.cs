@@ -55,7 +55,19 @@ public class Plan
         {
             EndingAge = this.BeginningAge,
             EndingYear = this.BeginningYear,
-            Accounts = scenario.Accounts.Select(account => new Account(account)).ToList(),
+            Accounts = scenario.Accounts
+                .Select(account =>
+                {
+                    var planAccount = new Account(account);
+
+                    planAccount.AppreciationRate =
+                        account.Holdings == AccountHoldings.Bonds
+                            ? scenario.BondsAnnualRateOfReturn
+                            : scenario.SecuritiesAnnualRateOfReturn;
+
+                    return planAccount;
+                })
+                .ToList(),
             AnnualExpenses = scenario.AnnualExpenses
         };
     }
