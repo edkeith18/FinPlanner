@@ -1,4 +1,6 @@
-﻿namespace FinPlanner.Engine;
+﻿using System.Text.Json.Serialization;
+
+namespace FinPlanner.Engine;
 
 public class Account
 {
@@ -7,6 +9,7 @@ public class Account
     public string Name { get; set; } = string.Empty;
     public AccountType Type { get; set; } = AccountType.Brokerage;
     public AccountHoldings Holdings { get; set; } = AccountHoldings.Equities;
+    [JsonPropertyName("Balance")]
     public decimal BeginningBalance { get; set; }
     public decimal EndingBalance { get; set; }
     public DateTime LastUpdated { get; set; }
@@ -30,6 +33,13 @@ public class Account
         // Do not copy EndingBalance here, as it will be calculated later in the plan year.
         LastUpdated = sourceAccount.LastUpdated;
         WithdrawalPriority = sourceAccount.WithdrawalPriority;
+    }
+    public void Appreciate()
+    {
+        var appreciationRate = (Holdings == AccountHoldings.Equities) ?  : 0.03m;
+
+        EndingBalance = BeginningBalance * (1 + appreciationRate);
+
     }
 }
 

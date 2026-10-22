@@ -22,7 +22,7 @@ public class Scenario
     public List<Expense> Expenses { get; set; } = new();
     public List<Transfer> Transfers { get; set; } = new();
     [JsonIgnore] 
-    public int StartYear { get; set; } = DateTime.Now.AddYears(1).Year;
+    public int StartYear { get; set; } = DateTime.Now.Year;
     [JsonIgnore]
     public int EndYear => StartYear + Math.Max(0, LifeExpectancy - CurrentAge);
     public decimal SecuritiesAnnualRateOfReturn { get; set; }
