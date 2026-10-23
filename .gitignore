@@ -368,3 +368,4 @@ FodyWeavers.xsd
 # Ignore user input and program output files
 /FinPlanner.Console/*.json
 /FinPlanner.Console/*.csv
+/FinPlanner.Console/*.xlsx
