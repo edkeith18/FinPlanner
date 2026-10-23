@@ -31,7 +31,10 @@ public class Account
         Name = sourceAccount.Name;
         Type = sourceAccount.Type;
         Holdings = sourceAccount.Holdings;
-        BeginningBalance = sourceAccount.BeginningBalance;
+        BeginningBalance = decimal.Round(
+            sourceAccount.BeginningBalance,
+            0,
+            MidpointRounding.AwayFromZero);
         // Do not copy EndingBalance here, as it will be calculated later in the plan year.
         AppreciationRate = sourceAccount.AppreciationRate;
         LastUpdated = sourceAccount.LastUpdated;
@@ -40,7 +43,10 @@ public class Account
 
     public void Appreciate()
     {
-        EndingBalance = BeginningBalance * (1 + AppreciationRate);
+        EndingBalance = decimal.Round(
+            BeginningBalance * (1 + AppreciationRate),
+            0,
+            MidpointRounding.AwayFromZero);
     }
 }
 

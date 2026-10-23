@@ -21,6 +21,11 @@ public class PlanYear
     /// </summary>
     public List<Account> Accounts { get; set; } = new List<Account>();
 
+    /// <summary>
+    /// The expenses in the plan for this year.
+    /// </summary>
+    public List<Expense> Expenses { get; set; } = new List<Expense>();
+
     public decimal AnnualExpenses { get; set; }
 
     /// <summary>
@@ -28,6 +33,16 @@ public class PlanYear
     /// </summary>
     public decimal EndingBalance =>
         Accounts.Sum(account => account.EndingBalance);
+
+    /// <summary>
+    /// Total expenses that apply at this age.
+    /// </summary>
+    public decimal TotalExpenses =>
+        Expenses
+            .Where(expense =>
+                EndingAge >= expense.AgeStart &&
+                EndingAge <= expense.AgeEnd)
+            .Sum(expense => expense.Amount);
 
     public static PlanYear FromScenario(Scenario scenario)
     {
@@ -48,6 +63,9 @@ public class PlanYear
 
                     return newAccount;
                 })
+                .ToList(),
+            Expenses = scenario.Expenses
+                .Select(expense => new Expense(expense))
                 .ToList()
         };
     }
@@ -63,11 +81,42 @@ public class PlanYear
                 .Select(account =>
                 {
                     var newAccount = new Account(account);
-                    newAccount.BeginningBalance = account.EndingBalance;
+                    newAccount.BeginningBalance = decimal.Round(
+                        account.EndingBalance,
+                        0,
+                        MidpointRounding.AwayFromZero);
                     return newAccount;
+                })
+                .ToList(),
+            Expenses = previousYear.Expenses
+                .Select(expense =>
+                {
+                    var newExpense = new Expense(expense);
+                    newExpense.Inflate();
+                    return newExpense;
                 })
                 .ToList()
         };
+    }
+
+    public decimal ApplyExpenses()
+    {
+        var remainingExpenses = TotalExpenses;
+
+        foreach (var account in Accounts.OrderBy(account => account.WithdrawalPriority))
+        {
+            if (remainingExpenses <= 0)
+            {
+                break;
+            }
+
+            var withdrawal = Math.Min(account.EndingBalance, remainingExpenses);
+
+            account.EndingBalance -= withdrawal;
+            remainingExpenses -= withdrawal;
+        }
+
+        return remainingExpenses;
     }
 
 }

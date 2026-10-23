@@ -56,6 +56,9 @@ public class Plan
     /// </summary>
     public void Build()
     {
+        IsSuccessful = false;
+        FailureReason = null;
+
         // Remove any existing plan years beyond the first year, as we will rebuild the plan from scratch
         // The first year is already created in the constructor, so we only need to remove any additional years if they exist
         if (PlanYears.Count > 1)
@@ -73,8 +76,17 @@ public class Plan
                 account.Appreciate();
             }
 
+            var remainingExpenses = currentYear.ApplyExpenses();
+
+            if (remainingExpenses > 0)
+            {
+                FailureReason = $"Plan fails at year {currentYear.EndingYear}.";
+                break;
+            }
+
             if (currentYear.EndingYear >= EndingYear)
             {
+                IsSuccessful = true;
                 break;
             }
 
