@@ -22,9 +22,10 @@ public class Scenario
     public List<Expense> Expenses { get; set; } = new();
     public List<Transfer> Transfers { get; set; } = new();
     [JsonIgnore] 
-    public int StartYear { get; set; } = DateTime.Now.AddYears(1).Year;
+    public int StartYear { get; set; } = DateTime.Now.Year;
     [JsonIgnore]
     public int EndYear => StartYear + Math.Max(0, LifeExpectancy - CurrentAge);
+    [JsonConverter(typeof(PercentageJsonConverter))]
     public decimal SecuritiesAnnualRateOfReturn { get; set; }
     public decimal AnnualInflationRate { get; set; }
     private DateOnly dateOfBirth = DateOnly.FromDateTime(DateTime.Now);
@@ -52,6 +53,7 @@ public class Scenario
     public int CurrentAge { get; private set; }
     public int LifeExpectancy { get; set; }
     public decimal AnnualExpenses { get; set; }
+    [JsonConverter(typeof(PercentageJsonConverter))]
     public decimal BondsAnnualRateOfReturn { get; set; }
 
     public event Action? Changed;

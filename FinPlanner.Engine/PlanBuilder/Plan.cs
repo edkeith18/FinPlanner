@@ -23,8 +23,6 @@ public class Plan
     /// </summary>
     public int EndingAge { get; private set; }
 
-    private PlanYear PreviousYear;
-
     /// <summary>
     /// Indicates whether or not plan was built successfully
     /// </summary>
@@ -39,7 +37,7 @@ public class Plan
 
     /// <summary>
     /// Constructor
-    /// Makes a "YearZero" based on the scenario.  It is used as a seed for building the plan.
+    /// Creates the first plan year from the scenario.
     /// </summary>
     /// <param name="scenario"></param>
     public Plan(Scenario scenario)
@@ -48,27 +46,74 @@ public class Plan
         EndingYear = scenario.EndYear;
 
         BeginningAge = scenario.CurrentAge;
-        EndingAge = scenario.CurrentAge + scenario.EndYear - scenario.StartYear;
+        EndingAge = scenario.LifeExpectancy;
 
-        // Seed PreviousYear's ending values with the scenario's starting values
-        PreviousYear = new PlanYear
+        var categorizedExpenseAmount =
+            scenario.Expenses.Sum(expense => expense.Amount);
+
+        var uncategorizedExpenseAmount =
+            scenario.AnnualExpenses - categorizedExpenseAmount;
+
+        if (uncategorizedExpenseAmount < 0)
         {
-            EndingAge = this.BeginningAge,
-            EndingYear = this.BeginningYear,
-            Accounts = scenario.Accounts.Select(account => new Account(account)).ToList(),
-            AnnualExpenses = scenario.AnnualExpenses
-        };
+            FailureReason =
+                "Known expenses exceed AnnualExpenses.";
+            return;
+        }
+
+        PlanYears.Add(
+            PlanYear.FromScenario(
+                scenario,
+                uncategorizedExpenseAmount));
     }
 
     /// <summary>
-    /// Builds the plan by forecasting each year from the previous year, starting from the beginning year to the ending year.
+    /// Builds the plan by forecasting each year from the current year, starting from the beginning year to the ending year.
     /// </summary>
     public void Build()
     {
-        for (int year = BeginningYear; year <= EndingYear; year++)
+        IsSuccessful = false;
+
+        if (PlanYears.Count == 0)
         {
-            PlanYears.Add(PlanYear.ForecastFrom(PreviousYear));
-            PreviousYear = PlanYears[^1];
+            return;
+        }
+
+        FailureReason = null;
+
+        // Remove any existing plan years beyond the first year, as we will rebuild the plan from scratch
+        // The first year is already created in the constructor, so we only need to remove any additional years if they exist
+        if (PlanYears.Count > 1)
+        {
+            PlanYears.RemoveRange(1, PlanYears.Count - 1);
+        }
+
+        var currentYear = PlanYears[0];
+
+        while (true)
+        {
+            // Loop through all the accounts in the current year and appreciate their balances
+            foreach (var account in currentYear.Accounts)
+            {
+                account.Appreciate();
+            }
+
+            var remainingExpenses = currentYear.ApplyExpenses();
+
+            if (remainingExpenses > 0)
+            {
+                FailureReason = $"Plan fails at year {currentYear.EndingYear}.";
+                break;
+            }
+
+            if (currentYear.EndingYear >= EndingYear)
+            {
+                IsSuccessful = true;
+                break;
+            }
+
+            currentYear = PlanYear.ForecastFrom(currentYear);
+            PlanYears.Add(currentYear);
         }
     }
 
@@ -84,27 +129,39 @@ public class Plan
         var lowerBound = 0;
         var upperBound = Math.Max(
             1,
-            (int)(PreviousYear.Accounts.Sum(account => account.EndingBalance)
+            (int)(PlanYears[0].Accounts.Sum(account => account.BeginningBalance)
                 / ExpenseStep));
 
         while (lowerBound <= upperBound)
         {
             var midpoint = lowerBound + (upperBound - lowerBound) / 2;
 
-            // Local variables to hold the plan years as we iterate through the binary search
             List<PlanYear> trialPlanYears = new List<PlanYear>();
-            PlanYear trialPreviousYear = new PlanYear()
+            var currentYear = new PlanYear
             {
-                EndingAge = this.BeginningAge,
-                EndingYear = this.BeginningYear,
-                Accounts = PreviousYear.Accounts.Select(account => new Account(account)).ToList(),
+                EndingAge = BeginningAge,
+                EndingYear = BeginningYear,
+                Accounts = PlanYears[0].Accounts
+                    .Select(account => new Account(account))
+                    .ToList(),
                 AnnualExpenses = midpoint * ExpenseStep
             };
 
-            for (int year = BeginningYear; year <= EndingYear; year++)
+            while (true)
             {
-                trialPlanYears.Add(PlanYear.ForecastFrom(trialPreviousYear));
-                trialPreviousYear = trialPlanYears[^1];
+                foreach (var account in currentYear.Accounts)
+                {
+                    account.Appreciate();
+                }
+
+                trialPlanYears.Add(currentYear);
+
+                if (currentYear.EndingYear >= EndingYear)
+                {
+                    break;
+                }
+
+                currentYear = PlanYear.ForecastFrom(currentYear);
             }
 
             var finalBalance = trialPlanYears[^1].EndingBalance;
