@@ -1,6 +1,5 @@
-﻿using System.CommandLine;
-using System.Globalization;
-using System.Text;
+using System.CommandLine;
+using FinPlanner.Console;
 using System.Text.Json;
 using FinPlanner.Engine;
 
@@ -11,7 +10,7 @@ var scenarioPathArgument = new Argument<FileInfo>("path")
     Description = "Scenario JSON file."
 };
 
-// Build a plan and write its yearly account balances beside the scenario file.
+// Build a plan and write its yearly account balances and expenses beside the scenario file.
 
 var buildCommand = new Command("build")
 {
@@ -32,8 +31,8 @@ buildCommand.SetAction(parseResult =>
 
         plan.Build();
 
-        // Write the plan to a CSV file
-        var outputPath = WritePlanCsv(
+        // Write the plan to an Excel workbook
+        var outputPath = PlanXlsxExporter.Write(
             plan,
             file);
 
@@ -127,56 +126,4 @@ static Scenario GetScenario(FileInfo file)
     }
     // This line will never be reached, but the compiler requires a return statement.
     return null;
-}
-
-static string WritePlanCsv(
-    Plan plan,
-    FileInfo scenarioFile)
-{
-    var timestamp = DateTime.Now.ToString(
-        "yyyyMMdd_HHmmss",
-        CultureInfo.InvariantCulture);
-    var outputFileName =
-        $"{Path.GetFileNameWithoutExtension(scenarioFile.Name)}_{timestamp}.csv";
-    var outputPath = Path.Combine(
-        scenarioFile.DirectoryName
-            ?? Directory.GetCurrentDirectory(),
-        outputFileName);
-
-    var csv = new StringBuilder();
-    var headers = new[] { "CalendarYear", "Age" }
-        .Concat(plan.PlanYears.First().Accounts.Select(account => $"{account.Name} EndingBalance"));
-    csv.AppendLine(string.Join(",", headers.Select(EscapeCsvField)));
-
-    foreach (var planYear in plan.PlanYears)
-    {
-        var values = new List<string>
-        {
-            planYear.EndingYear.ToString(CultureInfo.InvariantCulture),
-            planYear.EndingAge.ToString(CultureInfo.InvariantCulture)
-        };
-
-        // Output account balances
-        // Precede values with a $ so that they render as currency in Excel. Use InvariantCulture to ensure that the decimal separator is a period, which Excel will interpret correctly regardless of the user's locale.
-        values.AddRange(planYear.Accounts.Select(account =>
-            $"${account.EndingBalance.ToString("0.00", CultureInfo.InvariantCulture)}"));
-
-        csv.AppendLine(string.Join(",", values.Select(EscapeCsvField)));
-    }
-    File.WriteAllText(outputPath, csv.ToString());
-
-    return outputPath;
-}
-
-static string EscapeCsvField(string value)
-{
-    if (!value.Contains(',')
-        && !value.Contains('"')
-        && !value.Contains('\r')
-        && !value.Contains('\n'))
-    {
-        return value;
-    }
-
-    return $"\"{value.Replace("\"", "\"\"")}\"";
 }
