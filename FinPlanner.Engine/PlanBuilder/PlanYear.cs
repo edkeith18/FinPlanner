@@ -44,8 +44,27 @@ public class PlanYear
                 EndingAge <= expense.AgeEnd)
             .Sum(expense => expense.Amount);
 
-    public static PlanYear FromScenario(Scenario scenario)
+    public static PlanYear FromScenario(
+        Scenario scenario,
+        decimal uncategorizedExpenseAmount)
     {
+        var expenses = scenario.Expenses
+            .Select(expense => new Expense(expense))
+            .ToList();
+
+        expenses.Add(new Expense
+        {
+            Name = "Uncategorized Expenses",
+            Amount = decimal.Round(
+                uncategorizedExpenseAmount,
+                0,
+                MidpointRounding.AwayFromZero),
+            AgeStart = scenario.CurrentAge,
+            AgeEnd = scenario.LifeExpectancy,
+            AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m,
+            UseInflationValue = true
+        });
+
         return new PlanYear
         {
             EndingAge = scenario.CurrentAge,
@@ -64,9 +83,7 @@ public class PlanYear
                     return newAccount;
                 })
                 .ToList(),
-            Expenses = scenario.Expenses
-                .Select(expense => new Expense(expense))
-                .ToList()
+            Expenses = expenses
         };
     }
 

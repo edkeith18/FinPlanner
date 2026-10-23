@@ -48,7 +48,23 @@ public class Plan
         BeginningAge = scenario.CurrentAge;
         EndingAge = scenario.LifeExpectancy;
 
-        PlanYears.Add(PlanYear.FromScenario(scenario));
+        var categorizedExpenseAmount =
+            scenario.Expenses.Sum(expense => expense.Amount);
+
+        var uncategorizedExpenseAmount =
+            scenario.AnnualExpenses - categorizedExpenseAmount;
+
+        if (uncategorizedExpenseAmount < 0)
+        {
+            FailureReason =
+                "Known expenses exceed AnnualExpenses.";
+            return;
+        }
+
+        PlanYears.Add(
+            PlanYear.FromScenario(
+                scenario,
+                uncategorizedExpenseAmount));
     }
 
     /// <summary>
@@ -57,6 +73,12 @@ public class Plan
     public void Build()
     {
         IsSuccessful = false;
+
+        if (PlanYears.Count == 0)
+        {
+            return;
+        }
+
         FailureReason = null;
 
         // Remove any existing plan years beyond the first year, as we will rebuild the plan from scratch
