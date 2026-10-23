@@ -8,7 +8,7 @@ internal static class PlanXlsxExporter
 {
     private const string AccountColor = "#008000";
     private const string ExpenseColor = "#F08080";
-    private const string CurrencyFormat = "$#,##0.00;($#,##0.00)";
+    private const string CurrencyFormat = "$#,##0;($#,##0)";
     private const double FilterClearance = 6;
     private const double HeaderVerticalPadding = 2;
 
@@ -80,8 +80,7 @@ internal static class PlanXlsxExporter
             {
                 sheet.Cell(row, column++).Value = expense.Amount;
             }
-            // Total the exported Amount values, including those outside their active age range.
-            sheet.Cell(row, expenseTotalColumn).Value = year.Expenses.Sum(expense => expense.Amount);
+            sheet.Cell(row, expenseTotalColumn).Value = year.TotalExpenses;
         }
 
     }
