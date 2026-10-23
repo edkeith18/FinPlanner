@@ -36,11 +36,11 @@ internal static class PlanXlsxExporter
         var accountTotalColumn = 3 + firstYear.Accounts.Count;
         var firstExpenseColumn = accountTotalColumn + 1;
         var expenseTotalColumn = firstExpenseColumn + firstYear.Expenses.Count;
-        var headers = new[] { "Year", "Age" }
+        var headers = new[] { "Year at start of 12 month period", "Age at start of 12 month period" }
             .Concat(firstYear.Accounts.Select(account => account.Name))
-            .Append("Total Account Balances")
+            .Append("Total Account Balances after 12 months")
             .Concat(firstYear.Expenses.Select(expense => expense.Name))
-            .Append("Total Expenses")
+            .Append("Total Expenses for past 12 months")
             .ToList();
 
         for (var column = 0; column < headers.Count; column++)
@@ -100,6 +100,7 @@ internal static class PlanXlsxExporter
         sheet.Row(1).Style.Alignment.WrapText = true;
         sheet.Row(1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
         sheet.SheetView.FreezeRows(1);
+        sheet.SheetView.FreezeColumns(2);
         sheet.Range(1, 1, lastRow, columnCount).SetAutoFilter();
     }
 
@@ -112,7 +113,9 @@ internal static class PlanXlsxExporter
         var sizingSheet = workbook.Worksheets.Add("Header sizing");
         for (var index = 0; index < headers.Count; index++)
         {
-            var words = headers[index].Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
+            // Treat this duration as one wrapping unit, including filter-clearance sizing.
+            var words = headers[index].Replace("12 months", "12\u00a0months")
+                .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             for (var wordIndex = 0; wordIndex < words.Length; wordIndex++)
             {
                 var cell = sizingSheet.Cell(wordIndex + 1, index + 1);
