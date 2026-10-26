@@ -6,7 +6,7 @@ namespace FinPlanner.Engine.Tests;
 public class ScenarioSnapshotTests
 {
     [Fact]
-    public void PlanAndMaximumSearchUseInputsFromConstruction()
+    public void CalculatedPlansRetainSnapshotsOfTheirInputs()
     {
         var scenario = new Scenario
         {
@@ -17,19 +17,19 @@ public class ScenarioSnapshotTests
             AnnualInflationRate = 4m,
             SecuritiesAnnualRateOfReturn = 0.07m,
             BondsAnnualRateOfReturn = 0.04m,
-            Accounts = [new Account { Name = "Savings", BeginningBalance = 10000m }],
+            Accounts = [new Account { Name = "Savings", BeginningBalance = 100000m }],
             Expenses = [new Expense
             {
                 Name = "Healthcare", Amount = 100m, AgeStart = 58, AgeEnd = 100,
-                AnnualRateOfIncrease = 0.1m
+                AnnualRateOfIncrease = 0.01m
             }]
         };
-        var expectedPlan = new Plan(scenario, "Expected");
-        expectedPlan.Build();
-        var expectedMaximum = expectedPlan.GetMaximumAnnualExpenses(out var expectedMaximumPlan);
-        Assert.NotNull(expectedMaximumPlan);
-
-        var plan = new Plan(scenario, "Financial Plan");
+        var snapshot = new Scenario(scenario);
+        var calculator = new PlanCalculator();
+        var plan = calculator.CalculateCurrentTrajectory(scenario);
+        var maximumPlan = calculator.CalculateMaximumSpend(scenario);
+        var perpetualPlan = calculator.CalculatePerpetualSpend(scenario);
+        Assert.True(perpetualPlan.IsSuccessful);
         scenario.Accounts[0].BeginningBalance = 1000000m;
         scenario.Accounts[0].Holdings = AccountHoldings.Bonds;
         scenario.Expenses[0].Amount = 50000m;
@@ -44,11 +44,14 @@ public class ScenarioSnapshotTests
         scenario.SecuritiesAnnualRateOfReturn = 1m;
         scenario.BondsAnnualRateOfReturn = 1m;
 
-        plan.Build();
+        var expectedPlan = calculator.CalculateCurrentTrajectory(snapshot);
+        var expectedMaximumPlan = calculator.CalculateMaximumSpend(snapshot);
+        var expectedPerpetualPlan = calculator.CalculatePerpetualSpend(snapshot);
         Assert.Equal(JsonSerializer.Serialize(expectedPlan.PlanYears), JsonSerializer.Serialize(plan.PlanYears));
-        Assert.Equal(expectedMaximum, plan.GetMaximumAnnualExpenses(out var maximumPlan));
-        Assert.NotNull(maximumPlan);
+        Assert.Equal(expectedMaximumPlan.AnnualExpenses, maximumPlan.AnnualExpenses);
         Assert.Equal(JsonSerializer.Serialize(expectedMaximumPlan.PlanYears), JsonSerializer.Serialize(maximumPlan.PlanYears));
+        Assert.Equal(expectedPerpetualPlan.AnnualExpenses, perpetualPlan.AnnualExpenses);
+        Assert.Equal(JsonSerializer.Serialize(expectedPerpetualPlan.PlanYears), JsonSerializer.Serialize(perpetualPlan.PlanYears));
     }
 
     [Fact]

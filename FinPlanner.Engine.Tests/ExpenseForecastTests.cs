@@ -6,7 +6,7 @@ namespace FinPlanner.Engine.Tests;
 public class ExpenseForecastTests
 {
     [Fact]
-    public void BuildAppreciatesBalancesBeforeExpensesAndPreservesStartingAge()
+    public void CurrentTrajectoryAppreciatesBalancesBeforeExpensesAndPreservesStartingAge()
     {
         var scenario = new Scenario
         {
@@ -16,12 +16,10 @@ public class ExpenseForecastTests
             SecuritiesAnnualRateOfReturn = 0.10m,
             Accounts = [new Account { BeginningBalance = 1000m }]
         };
-        var plan = new Plan(scenario, "Financial Plan");
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
         Assert.Equal(58, plan.PlanYears[0].StartingAge);
         Assert.Equal(1000m, plan.PlanYears[0].Accounts[0].BeginningBalance);
-        Assert.Equal(0m, plan.PlanYears[0].EndingBalance);
-        plan.Build();
         Assert.Equal(1000m, plan.PlanYears[0].EndingBalance);
         Assert.Equal(1000m, plan.PlanYears[1].EndingBalance);
         Assert.Equal(scenario.StartYear, plan.PlanYears[0].StartingYear);
@@ -44,8 +42,7 @@ public class ExpenseForecastTests
             LifeExpectancy = lifeExpectancy,
             Accounts = [new Account { BeginningBalance = 1000m }]
         };
-        var plan = new Plan(scenario, "Financial Plan");
-        plan.Build();
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
         Assert.Equal(expectedPeriods, plan.PlanYears.Count);
         if (expectedPeriods > 0)
@@ -130,8 +127,7 @@ public class ExpenseForecastTests
             ]
         };
         var originalJson = scenario.Serialize();
-        var plan = new Plan(scenario, "Financial Plan");
-        plan.Build();
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
         Assert.True(plan.IsSuccessful);
         Assert.Equal(100m, plan.PlanYears[0].Expenses[0].Amount);

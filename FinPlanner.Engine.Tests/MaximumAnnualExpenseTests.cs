@@ -30,15 +30,15 @@ public class MaximumAnnualExpenseTests
             }]
         };
         var originalJson = scenario.Serialize();
-        var plan = new Plan(scenario, "Financial Plan");
+        var calculator = new PlanCalculator();
+        var plan = calculator.CalculateCurrentTrajectory(scenario);
         Assert.Equal("Financial Plan", plan.Name);
-        plan.Build();
         var originalBalances = plan.PlanYears.Select(year => year.EndingBalance).ToArray();
 
-        Assert.Equal((decimal)expected, plan.GetMaximumAnnualExpenses(out var maximumSpendPlan));
+        var maximumSpendPlan = calculator.CalculateMaximumSpend(scenario);
+        Assert.Equal((decimal)expected, maximumSpendPlan.AnnualExpenses);
         if (expected > 0)
         {
-            Assert.NotNull(maximumSpendPlan);
             Assert.Equal("Maximum Spend Plan", maximumSpendPlan.Name);
             Assert.True(maximumSpendPlan.IsSuccessful);
             Assert.Equal((decimal)expected, maximumSpendPlan.PlanYears[0].AnnualExpenses);
@@ -46,9 +46,11 @@ public class MaximumAnnualExpenseTests
         }
         else
         {
-            Assert.Null(maximumSpendPlan);
+            Assert.False(maximumSpendPlan.IsSuccessful);
+            Assert.Empty(maximumSpendPlan.PlanYears);
+            Assert.Equal("No sustainable spending plan was found.", maximumSpendPlan.FailureReason);
         }
-        Assert.Equal((decimal)expected, plan.GetMaximumAnnualExpenses());
+        Assert.Equal((decimal)expected, calculator.CalculateMaximumSpend(scenario).AnnualExpenses);
         Assert.Equal(originalJson, scenario.Serialize());
         Assert.Equal(originalBalances, plan.PlanYears.Select(year => year.EndingBalance).ToArray());
     }

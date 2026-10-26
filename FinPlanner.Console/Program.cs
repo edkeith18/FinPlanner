@@ -26,15 +26,19 @@ buildCommand.SetAction(parseResult =>
 
     try
     {
-        // Create a plan from the scenario.
-        var plan = new Plan(scenario, "Financial Plan");
-
-        plan.Build();
-        var maximumAnnualExpenses = plan.GetMaximumAnnualExpenses(out var maximumSpendPlan);
+        var calculator = new PlanCalculator();
+        var plan = calculator.CalculateCurrentTrajectory(scenario);
+        var maximumSpendPlan = calculator.CalculateMaximumSpend(scenario);
+        var perpetualSpendPlan = calculator.CalculatePerpetualSpend(scenario);
         var plans = new List<Plan> { plan };
-        if (maximumSpendPlan is not null)
+        if (maximumSpendPlan.IsSuccessful)
         {
             plans.Add(maximumSpendPlan);
+        }
+
+        if (perpetualSpendPlan.IsSuccessful)
+        {
+            plans.Add(perpetualSpendPlan);
         }
 
         // Write the plan to an Excel workbook
