@@ -217,6 +217,7 @@ public class PlanCalculator
             .ToArray();
         var maximumReturn = year.Accounts.Max(account => account.AppreciationRate);
         var maximumExpenseGrowth = streams.Select(stream => stream.Rate).DefaultIfEmpty(0m).Max();
+        var hasSurplusDestination = year.Accounts.Any(account => account.Type == AccountType.Brokerage);
 
         // Even the fastest-growing account cannot fund a perpetual stream that
         // grows at least as fast as its return. Finite named expenses cannot help.
@@ -245,7 +246,10 @@ public class PlanCalculator
                 {
                     streams[streamIndex].Amount *= 1m + streams[streamIndex].Rate;
                 }
-                if (year.StartingAge > lastTransitionAge)
+                // Do not prove future transfers feasible without a destination.
+                if (year.StartingAge > lastTransitionAge
+                    && (hasSurplusDestination || year.Accounts.All(account =>
+                        account.Type != AccountType.Inherited || account.EndingBalance == 0m)))
                 {
                     if (streams.Length == 0)
                     {
@@ -260,9 +264,10 @@ public class PlanCalculator
                         return true;
                     }
 
-                    var activeAccounts = year.Accounts.Where(account => account.EndingBalance > 0m).ToList();
-                    var roundingAllowance = (activeAccounts.Count + streams.Length) / 2m;
-                    var fastestReturn = activeAccounts.Max(account => account.AppreciationRate);
+                    // A currently empty Brokerage account may receive future surplus,
+                    // so include every potential destination in the portfolio bounds.
+                    var roundingAllowance = (year.Accounts.Count + streams.Length) / 2m;
+                    var fastestReturn = year.Accounts.Max(account => account.AppreciationRate);
                     if (fastestReturn <= maximumExpenseGrowth)
                     {
                         return false;
@@ -277,7 +282,7 @@ public class PlanCalculator
                         return false;
                     }
 
-                    var slowestReturn = activeAccounts.Min(account => account.AppreciationRate);
+                    var slowestReturn = year.Accounts.Min(account => account.AppreciationRate);
                     if (slowestReturn > maximumExpenseGrowth)
                     {
                         var sufficientBalance = streams.Sum(stream => stream.Amount / (slowestReturn - stream.Rate))
@@ -290,18 +295,20 @@ public class PlanCalculator
 
                     foreach (var account in year.Accounts)
                     {
-                        var rate = account.AppreciationRate;
+                        var mandatoryRate = Income.GetMandatoryRate(account.Type);
+                        var rate = account.AppreciationRate - mandatoryRate;
                         if (rate <= maximumExpenseGrowth)
                         {
                             continue;
                         }
 
                         // Present value of every future withdrawal at this account's
-                        // return, allowing $0.50/year per expense stream and for
-                        // account growth rounding. This account alone can
+                        // return after mandatory withdrawals, allowing $0.50/year
+                        // per expense stream, growth, and mandatory rounding.
+                        // This account alone can
                         // cover that liability; other accounts only add protection.
                         var requiredBalance = streams.Sum(stream => stream.Amount / (rate - stream.Rate))
-                            + (streams.Length + 1m) / (2m * rate);
+                            + (streams.Length + 1m + (mandatoryRate > 0m ? 1m : 0m)) / (2m * rate);
                         if (account.EndingBalance >= requiredBalance)
                         {
                             return true;

@@ -6,8 +6,11 @@ namespace FinPlanner.Console;
 
 internal static class PlanXlsxExporter
 {
-    private const string AccountColor = "#008000";
+    private const string AccountColor = "#8064A2";
     private const string ExpenseColor = "#F08080";
+    private const string MandatoryIncomeColor = "#008080";
+    private const string VoluntaryIncomeColor = "#0070C0";
+    private const string TotalIncomeColor = "#008000";
     private const string CurrencyFormat = "$#,##0;($#,##0)";
     private const double FilterClearance = 6;
     private const double HeaderVerticalPadding = 2;
@@ -48,14 +51,23 @@ internal static class PlanXlsxExporter
         }
         var sheet = workbook.Worksheets.Add(plan.Name);
         var firstYear = plan.PlanYears[0];
-        var accountTotalColumn = 3 + firstYear.Accounts.Count;
-        var firstExpenseColumn = accountTotalColumn + 1;
+        var mandatoryTotalColumn = 3 + firstYear.Incomes.Count;
+        var voluntaryTotalColumn = mandatoryTotalColumn + 1 + firstYear.Incomes.Count;
+        var incomeTotalColumn = voluntaryTotalColumn + 1;
+        var firstExpenseColumn = incomeTotalColumn + 1;
         var expenseTotalColumn = firstExpenseColumn + firstYear.Expenses.Count;
+        var firstAccountColumn = expenseTotalColumn + 1;
+        var accountTotalColumn = firstAccountColumn + firstYear.Accounts.Count;
         var headers = new[] { "Year", "Age" }
-            .Concat(firstYear.Accounts.Select(account => account.Name))
-            .Append("Total Account Balances at end")
+            .Concat(firstYear.Incomes.Select(income => income.Account.Name))
+            .Append("Total Mandatory Income for period")
+            .Concat(firstYear.Incomes.Select(income => income.Account.Name))
+            .Append("Total Voluntary Income for period")
+            .Append("Total Income for period")
             .Concat(firstYear.Expenses.Select(expense => expense.Name))
             .Append("Total Expenses for period")
+            .Concat(firstYear.Accounts.Select(account => account.Name))
+            .Append("Total Account Balances at end")
             .ToList();
 
         for (var column = 0; column < headers.Count; column++)
@@ -63,10 +75,12 @@ internal static class PlanXlsxExporter
             sheet.Cell(1, column + 1).Value = headers[column];
         }
 
-        WritePlanRows(sheet, plan, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
+        WritePlanRows(sheet, plan, mandatoryTotalColumn, voluntaryTotalColumn, incomeTotalColumn, firstExpenseColumn, expenseTotalColumn,
+            firstAccountColumn, accountTotalColumn);
 
         var lastRow = plan.PlanYears.Count + 2;
-        FormatPlanSheet(sheet, lastRow, headers.Count, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
+        FormatPlanSheet(sheet, lastRow, headers.Count, mandatoryTotalColumn, voluntaryTotalColumn, incomeTotalColumn, firstExpenseColumn,
+            expenseTotalColumn, firstAccountColumn, accountTotalColumn);
         sheet.Range(2, 1, 2, headers.Count).Style.Font.Bold = true;
         sheet.Range(2, 1, 2, headers.Count).Style.Font.FontColor = XLColor.Black;
         sheet.Cell(2, 1).Style.Font.Bold = false;
@@ -85,16 +99,21 @@ internal static class PlanXlsxExporter
         sheet.SheetView.FreezeColumns(2);
         sheet.Range(2, 1, lastRow + 1, headers.Count).SetAutoFilter();
 
-        CollapseDetailColumns(sheet, firstYear.Accounts.Count, firstYear.Expenses.Count, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
+        CollapseDetailColumns(sheet, 3, mandatoryTotalColumn);
+        CollapseDetailColumns(sheet, mandatoryTotalColumn + 1, voluntaryTotalColumn);
+        CollapseDetailColumns(sheet, 3, incomeTotalColumn);
+        CollapseDetailColumns(sheet, firstExpenseColumn, expenseTotalColumn);
+        CollapseDetailColumns(sheet, firstAccountColumn, accountTotalColumn);
     }
 
-    private static void WritePlanRows(IXLWorksheet sheet, Plan plan, int accountTotalColumn,
-        int firstExpenseColumn, int expenseTotalColumn)
+    private static void WritePlanRows(IXLWorksheet sheet, Plan plan, int mandatoryTotalColumn,
+        int voluntaryTotalColumn, int incomeTotalColumn,
+        int firstExpenseColumn, int expenseTotalColumn, int firstAccountColumn, int accountTotalColumn)
     {
         var firstYear = plan.PlanYears[0];
         sheet.Cell(2, 1).Value = firstYear.StartingYear;
         sheet.Cell(2, 2).Value = firstYear.StartingAge;
-        var accountColumn = 3;
+        var accountColumn = firstAccountColumn;
         foreach (var account in firstYear.Accounts)
         {
             sheet.Cell(2, accountColumn++).Value = account.BeginningBalance;
@@ -109,31 +128,55 @@ internal static class PlanXlsxExporter
             sheet.Cell(row, 1).Value = $"{year.StartingYear} -> {year.EndingYear}";
             sheet.Cell(row, 2).Value = $"{year.StartingAge} -> {year.EndingAge}";
             var column = 3;
-            foreach (var account in year.Accounts)
+            foreach (var income in year.Incomes)
             {
-                sheet.Cell(row, column++).Value = account.EndingBalance;
+                sheet.Cell(row, column++).Value = income.MandatoryAmount;
             }
-            sheet.Cell(row, accountTotalColumn).Value = year.EndingBalance;
+            sheet.Cell(row, mandatoryTotalColumn).Value = year.Incomes.Sum(income => income.MandatoryAmount);
+            column = mandatoryTotalColumn + 1;
+            foreach (var income in year.Incomes)
+            {
+                sheet.Cell(row, column++).Value = income.VoluntaryAmount;
+            }
+            sheet.Cell(row, voluntaryTotalColumn).Value = year.Incomes.Sum(income => income.VoluntaryAmount);
+            sheet.Cell(row, incomeTotalColumn).Value = year.Incomes.Sum(income => income.Amount);
             column = firstExpenseColumn;
             foreach (var expense in year.Expenses)
             {
                 sheet.Cell(row, column++).Value = expense.Amount;
             }
             sheet.Cell(row, expenseTotalColumn).Value = year.TotalExpenses;
+            column = firstAccountColumn;
+            foreach (var account in year.Accounts)
+            {
+                sheet.Cell(row, column++).Value = account.EndingBalance;
+            }
+            sheet.Cell(row, accountTotalColumn).Value = year.EndingBalance;
         }
 
     }
 
     private static void FormatPlanSheet(IXLWorksheet sheet, int lastRow, int columnCount,
-        int accountTotalColumn, int firstExpenseColumn, int expenseTotalColumn)
+        int mandatoryTotalColumn, int voluntaryTotalColumn, int incomeTotalColumn,
+        int firstExpenseColumn, int expenseTotalColumn,
+        int firstAccountColumn, int accountTotalColumn)
     {
         sheet.Range(1, 1, lastRow, columnCount).Style.Fill.PatternType = XLFillPatternValues.None;
-        sheet.Range(1, 3, lastRow, accountTotalColumn).Style.Font.FontColor =
+        sheet.Range(1, 3, lastRow, mandatoryTotalColumn).Style.Font.FontColor =
+            XLColor.FromHtml(MandatoryIncomeColor);
+        sheet.Range(1, mandatoryTotalColumn + 1, lastRow, voluntaryTotalColumn).Style.Font.FontColor =
+            XLColor.FromHtml(VoluntaryIncomeColor);
+        sheet.Range(1, incomeTotalColumn, lastRow, incomeTotalColumn).Style.Font.FontColor =
+            XLColor.FromHtml(TotalIncomeColor);
+        sheet.Range(1, firstAccountColumn, lastRow, accountTotalColumn).Style.Font.FontColor =
             XLColor.FromHtml(AccountColor);
         sheet.Range(1, firstExpenseColumn, lastRow, expenseTotalColumn).Style.Font.FontColor =
             XLColor.FromHtml(ExpenseColor);
         sheet.Range(2, 3, lastRow, columnCount).Style.NumberFormat.Format = CurrencyFormat;
         sheet.Column(accountTotalColumn).Style.Font.Bold = true;
+        sheet.Column(incomeTotalColumn).Style.Font.Bold = true;
+        sheet.Column(mandatoryTotalColumn).Style.Font.Bold = true;
+        sheet.Column(voluntaryTotalColumn).Style.Font.Bold = true;
         sheet.Column(expenseTotalColumn).Style.Font.Bold = true;
         sheet.Row(1).Style.Font.Bold = true;
         sheet.Row(1).Style.Alignment.WrapText = true;
@@ -210,19 +253,13 @@ internal static class PlanXlsxExporter
         sizingSheet.Delete();
     }
 
-    private static void CollapseDetailColumns(IXLWorksheet sheet, int accountCount, int expenseCount,
-        int accountTotalColumn, int firstExpenseColumn, int expenseTotalColumn)
+    private static void CollapseDetailColumns(IXLWorksheet sheet, int firstColumn, int totalColumn)
     {
-        // Summary columns remain visible and separate the two independent outline groups.
-        if (accountCount > 0)
+        // The total stays outside its group; nested totals belong to their parent group.
+        if (totalColumn > firstColumn)
         {
-            sheet.Columns(3, accountTotalColumn - 1).Group(collapse: true);
-            sheet.Columns(3, accountTotalColumn - 1).Hide();
-        }
-        if (expenseCount > 0)
-        {
-            sheet.Columns(firstExpenseColumn, expenseTotalColumn - 1).Group(collapse: true);
-            sheet.Columns(firstExpenseColumn, expenseTotalColumn - 1).Hide();
+            sheet.Columns(firstColumn, totalColumn - 1).Group(collapse: true);
+            sheet.Columns(firstColumn, totalColumn - 1).Hide();
         }
     }
 }

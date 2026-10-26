@@ -5,6 +5,26 @@ namespace FinPlanner.Engine.Tests;
 public class PerpetualAnnualExpenseTests
 {
     [Theory]
+    [InlineData(0.02, 0)]
+    [InlineData(0.1, 1000)]
+    public void MandatorySurplusTransfersAffectPerpetualReturns(double brokerageReturn, int expected)
+    {
+        var scenario = CreateScenario(11000m, 0.1m);
+        scenario.BondsAnnualRateOfReturn = (decimal)brokerageReturn;
+        scenario.Accounts =
+        [
+            new Account { Type = AccountType.Inherited, BeginningBalance = 11000m, WithdrawalPriority = 1 },
+            new Account { Type = AccountType.Brokerage, Holdings = AccountHoldings.Bonds, WithdrawalPriority = 2 }
+        ];
+
+        var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
+
+        Assert.True(plan.IsSuccessful);
+        Assert.Equal((decimal)expected, plan.AnnualExpenses);
+        Assert.True(plan.PlanYears[0].Accounts[1].EndingBalance > 0m);
+    }
+
+    [Theory]
     [InlineData(59)]
     [InlineData(100)]
     [InlineData(58)]

@@ -32,6 +32,11 @@ public class PlanYear
     public List<Account> Accounts { get; set; } = new List<Account>();
 
     /// <summary>
+    /// Mandatory and voluntary withdrawals, with one income entry per account.
+    /// </summary>
+    public List<Income> Incomes { get; private set; } = new();
+
+    /// <summary>
     /// The expenses in the plan for this year.
     /// </summary>
     public List<Expense> Expenses { get; set; } = new List<Expense>();
@@ -68,7 +73,7 @@ public class PlanYear
             UseInflationValue = true
         });
 
-        return new PlanYear
+        var year = new PlanYear
         {
             StartingAge = scenario.CurrentAge,
             StartingYear = scenario.StartYear,
@@ -96,11 +101,13 @@ public class PlanYear
                 })
                 .ToList()
         };
+        year.Incomes = year.Accounts.Select(account => new Income(account)).ToList();
+        return year;
     }
 
     public static PlanYear ForecastFrom(PlanYear previousYear)
     {
-        return new PlanYear
+        var year = new PlanYear
         {
             StartingAge = previousYear.EndingAge,
             StartingYear = previousYear.EndingYear,
@@ -125,22 +132,48 @@ public class PlanYear
                 })
                 .ToList()
         };
+        year.Incomes = year.Accounts.Select(account => new Income(account)).ToList();
+        return year;
     }
 
     public decimal ApplyExpenses()
     {
-        var remainingExpenses = TotalExpenses;
+        var mandatoryIncome = Incomes.Sum(income =>
+            Math.Min(income.MandatoryAmount, Math.Max(0m, income.Account.EndingBalance)));
+        var surplus = Math.Max(0m, mandatoryIncome - TotalExpenses);
+        var destination = surplus > 0m
+            ? Accounts.Where(account => account.Type == AccountType.Brokerage)
+                .OrderBy(account => account.WithdrawalPriority)
+                .FirstOrDefault()
+                ?? throw new InvalidOperationException(
+                    "A Brokerage account is required to receive excess mandatory income.")
+            : null;
 
-        foreach (var account in Accounts.OrderBy(account => account.WithdrawalPriority))
+        // Withdraw from every mandatory source before following withdrawal priority.
+        foreach (var income in Incomes)
+        {
+            income.MandatoryAmount = Math.Min(
+                income.MandatoryAmount, Math.Max(0m, income.Account.EndingBalance));
+            income.Account.EndingBalance -= income.MandatoryAmount;
+        }
+
+        if (destination is not null)
+        {
+            destination.EndingBalance += surplus;
+        }
+
+        var remainingExpenses = Math.Max(0m, TotalExpenses - mandatoryIncome);
+        foreach (var income in Incomes.OrderBy(income => income.Account.WithdrawalPriority))
         {
             if (remainingExpenses <= 0)
             {
                 break;
             }
 
-            var withdrawal = Math.Min(account.EndingBalance, remainingExpenses);
+            var withdrawal = Math.Min(Math.Max(0m, income.Account.EndingBalance), remainingExpenses);
 
-            account.EndingBalance -= withdrawal;
+            income.Account.EndingBalance -= withdrawal;
+            income.VoluntaryAmount = withdrawal;
             remainingExpenses -= withdrawal;
         }
 
