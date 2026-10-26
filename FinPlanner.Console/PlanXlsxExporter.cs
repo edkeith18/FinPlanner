@@ -13,12 +13,12 @@ internal static class PlanXlsxExporter
     private const double HeaderVerticalPadding = 2;
 
     public static string Write(
-        Plan plan,
+        IReadOnlyCollection<Plan> plans,
         FileInfo scenarioFile)
     {
-        if (plan.PlanYears.Count == 0)
+        if (plans.Count == 0)
         {
-            throw new InvalidOperationException(plan.FailureReason ?? "The plan has no years to export.");
+            throw new ArgumentException("At least one plan is required to export.", nameof(plans));
         }
         var timestamp = DateTime.Now.ToString(
             "yyyyMMdd_HHmmss",
@@ -31,16 +31,31 @@ internal static class PlanXlsxExporter
             outputFileName);
 
         using var workbook = new XLWorkbook();
-        var sheet = workbook.Worksheets.Add("Financial Plan");
+        foreach (var plan in plans)
+        {
+            WritePlanSheet(workbook, plan);
+        }
+        workbook.SaveAs(outputPath);
+
+        return outputPath;
+    }
+
+    private static void WritePlanSheet(XLWorkbook workbook, Plan plan)
+    {
+        if (plan.PlanYears.Count == 0)
+        {
+            throw new InvalidOperationException(plan.FailureReason ?? $"Plan '{plan.Name}' has no years to export.");
+        }
+        var sheet = workbook.Worksheets.Add(plan.Name);
         var firstYear = plan.PlanYears[0];
         var accountTotalColumn = 3 + firstYear.Accounts.Count;
         var firstExpenseColumn = accountTotalColumn + 1;
         var expenseTotalColumn = firstExpenseColumn + firstYear.Expenses.Count;
-        var headers = new[] { "Year at start of 12 month period", "Age at start of 12 month period" }
+        var headers = new[] { "Year", "Age" }
             .Concat(firstYear.Accounts.Select(account => account.Name))
-            .Append("Total Account Balances after 12 months")
+            .Append("Total Account Balances at end")
             .Concat(firstYear.Expenses.Select(expense => expense.Name))
-            .Append("Total Expenses for past 12 months")
+            .Append("Total Expenses for period")
             .ToList();
 
         for (var column = 0; column < headers.Count; column++)
@@ -50,25 +65,49 @@ internal static class PlanXlsxExporter
 
         WritePlanRows(sheet, plan, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
 
-        var lastRow = plan.PlanYears.Count + 1;
+        var lastRow = plan.PlanYears.Count + 2;
         FormatPlanSheet(sheet, lastRow, headers.Count, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
+        sheet.Range(2, 1, 2, headers.Count).Style.Font.Bold = true;
+        sheet.Range(2, 1, 2, headers.Count).Style.Font.FontColor = XLColor.Black;
+        sheet.Cell(2, 1).Style.Font.Bold = false;
+        sheet.Cell(2, 2).Style.Font.Bold = false;
+        sheet.Range(2, 1, 2, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+        sheet.Range(3, 1, lastRow, headers.Count).Style.Font.Bold = false;
         SizeColumnsAndHeaders(workbook, sheet, headers, lastRow);
 
-        CollapseDetailColumns(sheet, firstYear.Accounts.Count, firstYear.Expenses.Count, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
-        workbook.SaveAs(outputPath);
+        sheet.Row(1).InsertRowsAbove(1);
+        sheet.Range(1, 1, 1, headers.Count).Merge().Value = "Each row covers a 12 month period";
+        sheet.Row(1).Style.Font.Bold = true;
+        sheet.Row(1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+        sheet.Row(1).Style.Alignment.WrapText = false;
+        sheet.Row(1).Height = sheet.RowHeight;
+        sheet.SheetView.FreezeRows(2);
+        sheet.SheetView.FreezeColumns(2);
+        sheet.Range(2, 1, lastRow + 1, headers.Count).SetAutoFilter();
 
-        return outputPath;
+        CollapseDetailColumns(sheet, firstYear.Accounts.Count, firstYear.Expenses.Count, accountTotalColumn, firstExpenseColumn, expenseTotalColumn);
     }
 
     private static void WritePlanRows(IXLWorksheet sheet, Plan plan, int accountTotalColumn,
         int firstExpenseColumn, int expenseTotalColumn)
     {
+        var firstYear = plan.PlanYears[0];
+        sheet.Cell(2, 1).Value = firstYear.StartingYear;
+        sheet.Cell(2, 2).Value = firstYear.StartingAge;
+        var accountColumn = 3;
+        foreach (var account in firstYear.Accounts)
+        {
+            sheet.Cell(2, accountColumn++).Value = account.BeginningBalance;
+        }
+        sheet.Cell(2, accountTotalColumn).Value =
+            firstYear.Accounts.Sum(account => account.BeginningBalance);
+
         for (var index = 0; index < plan.PlanYears.Count; index++)
         {
             var year = plan.PlanYears[index];
-            var row = index + 2;
-            sheet.Cell(row, 1).Value = year.EndingYear;
-            sheet.Cell(row, 2).Value = year.EndingAge;
+            var row = index + 3;
+            sheet.Cell(row, 1).Value = $"{year.StartingYear} -> {year.EndingYear}";
+            sheet.Cell(row, 2).Value = $"{year.StartingAge} -> {year.EndingAge}";
             var column = 3;
             foreach (var account in year.Accounts)
             {
@@ -99,9 +138,6 @@ internal static class PlanXlsxExporter
         sheet.Row(1).Style.Font.Bold = true;
         sheet.Row(1).Style.Alignment.WrapText = true;
         sheet.Row(1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-        sheet.SheetView.FreezeRows(1);
-        sheet.SheetView.FreezeColumns(2);
-        sheet.Range(1, 1, lastRow, columnCount).SetAutoFilter();
     }
 
     private static void SizeColumnsAndHeaders(XLWorkbook workbook, IXLWorksheet sheet,
@@ -115,6 +151,8 @@ internal static class PlanXlsxExporter
         {
             // Treat this duration as one wrapping unit, including filter-clearance sizing.
             var words = headers[index].Replace("12 months", "12\u00a0months")
+                .Replace("for period", "for\u00a0period")
+                .Replace("Balances at end", "Balances\u00a0at\u00a0end")
                 .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
             for (var wordIndex = 0; wordIndex < words.Length; wordIndex++)
             {

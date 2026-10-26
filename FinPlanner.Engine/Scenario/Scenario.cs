@@ -58,6 +58,50 @@ public class Scenario
 
     public event Action? Changed;
 
+    public Scenario() { }
+
+    /// <summary>
+    /// Copies scenario values and collection items without sharing mutable inputs
+    /// or event subscriptions. Preserves the age calculated for the original scenario.
+    /// </summary>
+    public Scenario(Scenario source)
+    {
+        ArgumentNullException.ThrowIfNull(source);
+
+        StartYear = source.StartYear;
+        dateOfBirth = source.dateOfBirth;
+        CurrentAge = source.CurrentAge;
+        LifeExpectancy = source.LifeExpectancy;
+        AnnualExpenses = source.AnnualExpenses;
+        SecuritiesAnnualRateOfReturn = source.SecuritiesAnnualRateOfReturn;
+        BondsAnnualRateOfReturn = source.BondsAnnualRateOfReturn;
+        AnnualInflationRate = source.AnnualInflationRate;
+        Accounts = source.Accounts.Select(account => new Account(account)
+        {
+            // A snapshot preserves exact values; rounding belongs to plan creation.
+            BeginningBalance = account.BeginningBalance,
+            EndingBalance = account.EndingBalance
+        }).ToList();
+        Expenses = source.Expenses.Select(expense => new Expense(expense)).ToList();
+        Income = source.Income.Select(income => new IncomeItem
+        {
+            Name = income.Name,
+            Amount = income.Amount,
+            LastUpdated = income.LastUpdated
+        }).ToList();
+        Transfers = source.Transfers.Select(transfer => new Transfer
+        {
+            Name = transfer.Name,
+            FromAccountName = transfer.FromAccountName,
+            ToAccountName = transfer.ToAccountName,
+            AgeStart = transfer.AgeStart,
+            AgeEnd = transfer.AgeEnd,
+            Amount = transfer.Amount,
+            AnnualRateOfIncrease = transfer.AnnualRateOfIncrease,
+            UseInflationValue = transfer.UseInflationValue
+        }).ToList();
+    }
+
     public string Serialize()
     {
         NormalizeWithdrawalPriorities();
@@ -87,6 +131,11 @@ public class Scenario
             json,
             SerializerOptions);
 
+        return ValidateDeserializedScenario(scenario);
+    }
+
+    private static Scenario ValidateDeserializedScenario(Scenario? scenario)
+    {
         scenario = scenario
             ?? throw new JsonException(
                 "The JSON did not contain a valid scenario.");
@@ -123,13 +172,7 @@ public class Scenario
             SerializerOptions,
             cancellationToken);
 
-        scenario = scenario
-            ?? throw new JsonException(
-                "The JSON did not contain a valid scenario.");
-
-        scenario.NormalizeWithdrawalPriorities();
-        scenario.UpdateCurrentAge();
-        return scenario;
+        return ValidateDeserializedScenario(scenario);
     }
 
     /// <summary>

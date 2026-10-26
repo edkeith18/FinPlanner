@@ -27,17 +27,20 @@ buildCommand.SetAction(parseResult =>
     try
     {
         // Create a plan from the scenario.
-        var plan = new Plan(scenario);
+        var plan = new Plan(scenario, "Financial Plan");
 
         plan.Build();
+        var maximumAnnualExpenses = plan.GetMaximumAnnualExpenses(out var maximumSpendPlan);
+        var plans = new List<Plan> { plan };
+        if (maximumSpendPlan is not null)
+        {
+            plans.Add(maximumSpendPlan);
+        }
 
         // Write the plan to an Excel workbook
         var outputPath = PlanXlsxExporter.Write(
-            plan,
+            plans,
             file);
-
-        Console.WriteLine($"Maximum sustainable annual expenses: {plan.GetMaximumAnnualExpenses():C}");
-        Console.WriteLine($"Plan written to '{outputPath}'");
 
         return 0;
     }

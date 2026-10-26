@@ -5,6 +5,58 @@ namespace FinPlanner.Engine.Tests;
 
 public class ExpenseForecastTests
 {
+    [Fact]
+    public void BuildAppreciatesBalancesBeforeExpensesAndPreservesStartingAge()
+    {
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
+            LifeExpectancy = 60,
+            AnnualExpenses = 100m,
+            SecuritiesAnnualRateOfReturn = 0.10m,
+            Accounts = [new Account { BeginningBalance = 1000m }]
+        };
+        var plan = new Plan(scenario, "Financial Plan");
+
+        Assert.Equal(58, plan.PlanYears[0].StartingAge);
+        Assert.Equal(1000m, plan.PlanYears[0].Accounts[0].BeginningBalance);
+        Assert.Equal(0m, plan.PlanYears[0].EndingBalance);
+        plan.Build();
+        Assert.Equal(1000m, plan.PlanYears[0].EndingBalance);
+        Assert.Equal(1000m, plan.PlanYears[1].EndingBalance);
+        Assert.Equal(scenario.StartYear, plan.PlanYears[0].StartingYear);
+        Assert.Equal(scenario.CurrentAge, plan.PlanYears[0].StartingAge);
+        Assert.Equal(scenario.StartYear + 1, plan.PlanYears[1].StartingYear);
+        Assert.Equal(scenario.CurrentAge + 1, plan.PlanYears[1].StartingAge);
+
+        Assert.Equal(0m, scenario.Accounts[0].EndingBalance);
+    }
+
+    [Theory]
+    [InlineData(58, 100, 42)]
+    [InlineData(99, 100, 1)]
+    [InlineData(100, 100, 0)]
+    public void PlanStopsAtLifeExpectancy(int startingAge, int lifeExpectancy, int expectedPeriods)
+    {
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-startingAge),
+            LifeExpectancy = lifeExpectancy,
+            Accounts = [new Account { BeginningBalance = 1000m }]
+        };
+        var plan = new Plan(scenario, "Financial Plan");
+        plan.Build();
+
+        Assert.Equal(expectedPeriods, plan.PlanYears.Count);
+        if (expectedPeriods > 0)
+        {
+            Assert.True(plan.IsSuccessful);
+            Assert.Equal(startingAge, plan.PlanYears[0].StartingAge);
+            Assert.Equal(lifeExpectancy, plan.PlanYears[^1].EndingAge);
+            Assert.Equal(scenario.EndYear, plan.PlanYears[^1].EndingYear);
+        }
+    }
+
     [Theory]
     [InlineData(60, 100)]
     [InlineData(65, 113)]
@@ -78,7 +130,7 @@ public class ExpenseForecastTests
             ]
         };
         var originalJson = scenario.Serialize();
-        var plan = new Plan(scenario);
+        var plan = new Plan(scenario, "Financial Plan");
         plan.Build();
 
         Assert.True(plan.IsSuccessful);

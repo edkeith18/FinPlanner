@@ -1,7 +1,10 @@
-﻿namespace FinPlanner.Engine;
+namespace FinPlanner.Engine;
 
 public class Plan
 {
+    private readonly Scenario scenario;
+
+    public string Name { get; }
 
     /// <summary>
     /// The calendar year at the start of the plan.
@@ -9,19 +12,9 @@ public class Plan
     public int BeginningYear { get; private set; }
 
     /// <summary>
-    /// The calendar year at the end of the plan.
+    /// The calendar year when the final 12-month period ends.
     /// </summary>
     public int EndingYear { get; private set; }
-
-    /// <summary>
-    /// The user's age at the start of the plan.
-    /// </summary>
-    public int BeginningAge { get; private set; }
-
-    /// <summary>
-    /// The user's age at the end of the plan.
-    /// </summary>
-    public int EndingAge { get; private set; }
 
     /// <summary>
     /// Indicates whether or not plan was built successfully
@@ -37,16 +30,24 @@ public class Plan
 
     /// <summary>
     /// Constructor
-    /// Creates the first plan year from the scenario.
+    /// Snapshots the scenario and creates the first plan year from those inputs.
     /// </summary>
     /// <param name="scenario"></param>
-    public Plan(Scenario scenario)
+    /// <param name="name">The display name of the plan.</param>
+    public Plan(Scenario scenario, string name)
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(name);
+        Name = name;
+        this.scenario = new Scenario(scenario);
+        scenario = this.scenario;
         BeginningYear = scenario.StartYear;
         EndingYear = scenario.EndYear;
 
-        BeginningAge = scenario.CurrentAge;
-        EndingAge = scenario.LifeExpectancy;
+        if (EndingYear <= BeginningYear)
+        {
+            FailureReason = "There are no remaining 12-month periods before life expectancy.";
+            return;
+        }
 
         var categorizedExpenseAmount =
             scenario.Expenses.Sum(expense => expense.Amount);
@@ -69,6 +70,7 @@ public class Plan
 
     /// <summary>
     /// Builds the plan by forecasting each year from the current year, starting from the beginning year to the ending year.
+    /// Call once per Plan instance.
     /// </summary>
     public void Build()
     {
@@ -81,18 +83,10 @@ public class Plan
 
         FailureReason = null;
 
-        // Remove any existing plan years beyond the first year, as we will rebuild the plan from scratch
-        // The first year is already created in the constructor, so we only need to remove any additional years if they exist
-        if (PlanYears.Count > 1)
-        {
-            PlanYears.RemoveRange(1, PlanYears.Count - 1);
-        }
-
         var currentYear = PlanYears[0];
 
         while (true)
         {
-            // Loop through all the accounts in the current year and appreciate their balances
             foreach (var account in currentYear.Accounts)
             {
                 account.Appreciate();
@@ -102,7 +96,7 @@ public class Plan
 
             if (remainingExpenses > 0)
             {
-                FailureReason = $"Plan fails at year {currentYear.EndingYear}.";
+                FailureReason = $"Plan fails at year {currentYear.StartingYear}.";
                 break;
             }
 
@@ -118,59 +112,65 @@ public class Plan
     }
 
     /// <summary>
-    /// Determines the maximum annual expenses that can be sustained over the plan's duration without depleting the accounts. It uses a MaximumExpenseCalculator to perform the calculation based on the initial scenario and the plan's parameters.
+    /// Finds the maximum sustainable initial annual expenses in $1,000 increments,
+    /// keeping named expenses fixed and varying uncategorized expenses.
     /// </summary>
-    /// <returns>The maximum annual expenses that can be sustained.</returns>
     public decimal GetMaximumAnnualExpenses()
-    {
-        decimal ExpenseStep = 1_000m;
-        var trialMaximumExpenses = 0;
+        => GetMaximumAnnualExpenses(out _);
 
-        var lowerBound = 0;
-        var upperBound = Math.Max(
-            1,
-            (int)(PlanYears[0].Accounts.Sum(account => account.BeginningBalance)
-                / ExpenseStep));
+    /// <summary>
+    /// Also returns the successful trial plan for the maximum expense amount.
+    /// The plan is null if no sustainable candidate was found.
+    /// </summary>
+    public decimal GetMaximumAnnualExpenses(out Plan? maximumSpendPlan)
+    {
+        maximumSpendPlan = null;
+        Plan? bestPlan = null;
+        const decimal ExpenseStep = 1_000m;
+        if (this.scenario.EndYear <= this.scenario.StartYear)
+        {
+            return 0m;
+        }
+
+        var scenario = new Scenario(this.scenario);
+
+        bool CanSustain(decimal expenseSteps)
+        {
+            scenario.AnnualExpenses = expenseSteps * ExpenseStep;
+            var trialPlan = new Plan(scenario, "Maximum Spend Plan");
+            trialPlan.Build();
+
+            // Preserve the requirement that some money remains at the end.
+            var isSustainable = trialPlan.IsSuccessful
+                && decimal.Truncate(trialPlan.PlanYears[^1].EndingBalance) > 0m;
+            if (isSustainable)
+            {
+                bestPlan = trialPlan;
+            }
+            return isSustainable;
+        }
+
+        // Candidates below named expenses would require negative uncategorized expenses.
+        var lowerBound = Math.Max(0m, decimal.Ceiling(
+            scenario.Expenses.Sum(expense => expense.Amount) / ExpenseStep));
+        var upperBound = Math.Max(lowerBound, Math.Max(1m, decimal.Ceiling(
+            scenario.Accounts.Sum(account => account.BeginningBalance) / ExpenseStep)));
+        var maximumExpenses = 0m;
+
+        // Find a failing upper bound, including when growth supports spending above initial assets.
+        while (CanSustain(upperBound))
+        {
+            maximumExpenses = upperBound * ExpenseStep;
+            lowerBound = upperBound + 1;
+            upperBound *= 2;
+        }
 
         while (lowerBound <= upperBound)
         {
-            var midpoint = lowerBound + (upperBound - lowerBound) / 2;
-
-            List<PlanYear> trialPlanYears = new List<PlanYear>();
-            var currentYear = new PlanYear
+            var midpoint = lowerBound + decimal.Floor((upperBound - lowerBound) / 2);
+            if (CanSustain(midpoint))
             {
-                EndingAge = BeginningAge,
-                EndingYear = BeginningYear,
-                Accounts = PlanYears[0].Accounts
-                    .Select(account => new Account(account))
-                    .ToList(),
-                AnnualExpenses = midpoint * ExpenseStep
-            };
-
-            while (true)
-            {
-                foreach (var account in currentYear.Accounts)
-                {
-                    account.Appreciate();
-                }
-
-                trialPlanYears.Add(currentYear);
-
-                if (currentYear.EndingYear >= EndingYear)
-                {
-                    break;
-                }
-
-                currentYear = PlanYear.ForecastFrom(currentYear);
-            }
-
-            var finalBalance = trialPlanYears[^1].EndingBalance;
-
-            // A plan ending at exactly zero is considered unsuccessful.
-            // We use decimal.Truncate to avoid floating-point precision issues.
-            if (decimal.Truncate(finalBalance) > 0m)
-            {
-                trialMaximumExpenses = midpoint;
+                maximumExpenses = midpoint * ExpenseStep;
                 lowerBound = midpoint + 1;
             }
             else
@@ -179,7 +179,8 @@ public class Plan
             }
         }
 
-        return trialMaximumExpenses * ExpenseStep;
+        maximumSpendPlan = bestPlan;
+        return maximumExpenses;
     }
 
 }

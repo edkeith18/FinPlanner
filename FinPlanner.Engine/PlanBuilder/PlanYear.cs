@@ -7,14 +7,24 @@ public class PlanYear
 {
 
     /// <summary>
-    /// The calendar year represented by this PlanYear at the end of the 12-month period.
+    /// The calendar year represented by this PlanYear at the start of the 12-month period.
     /// </summary>
-    public int EndingYear { get; init; }
+    public int StartingYear { get; init; }
+
+    /// <summary>
+    /// The user's age at the start of the 12-month period.
+    /// </summary>
+    public int StartingAge { get; init; }
+
+    /// <summary>
+    /// The calendar year at the end of the 12-month period.
+    /// </summary>
+    public int EndingYear => StartingYear + 1;
 
     /// <summary>
     /// The user's age at the end of the 12-month period.
     /// </summary>
-    public int EndingAge { get; init; }
+    public int EndingAge => StartingAge + 1;
 
     /// <summary>
     /// The accounts in the plan for this year.
@@ -60,8 +70,8 @@ public class PlanYear
 
         return new PlanYear
         {
-            EndingAge = scenario.CurrentAge,
-            EndingYear = scenario.StartYear,
+            StartingAge = scenario.CurrentAge,
+            StartingYear = scenario.StartYear,
             AnnualExpenses = scenario.AnnualExpenses,
             Accounts = scenario.Accounts
                 .Select(account =>
@@ -92,8 +102,8 @@ public class PlanYear
     {
         return new PlanYear
         {
-            EndingAge = previousYear.EndingAge + 1,
-            EndingYear = previousYear.EndingYear + 1,
+            StartingAge = previousYear.EndingAge,
+            StartingYear = previousYear.EndingYear,
             AnnualExpenses = previousYear.AnnualExpenses,
             Accounts = previousYear.Accounts
                 .Select(account =>
@@ -110,7 +120,7 @@ public class PlanYear
                 .Select(expense =>
                 {
                     var newExpense = new Expense(expense);
-                    newExpense.ForecastFromAge(previousYear.EndingAge + 1);
+                    newExpense.ForecastFromAge(previousYear.EndingAge);
                     return newExpense;
                 })
                 .ToList()
