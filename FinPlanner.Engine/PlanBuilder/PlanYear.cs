@@ -5,6 +5,11 @@ namespace FinPlanner.Engine;
 /// </summary>
 public class PlanYear
 {
+    private List<Transfer> scheduledTransfers = new();
+    private int planStartAge;
+    private decimal inflationRate;
+    public decimal UnfundedTransfers { get; private set; }
+
 
     /// <summary>
     /// The calendar year represented by this PlanYear at the start of the 12-month period.
@@ -32,9 +37,18 @@ public class PlanYear
     public List<Account> Accounts { get; set; } = new List<Account>();
 
     /// <summary>
-    /// Mandatory and voluntary withdrawals, with one income entry per account.
+    /// Earned investment income, with one entry per account.
     /// </summary>
-    public List<Income> Incomes { get; private set; } = new();
+    public List<AccountEarnings> AccountEarnings { get; private set; } = new();
+
+    /// <summary>Individual scheduled transfers, RMDs, expense withdrawals, and cash reinvestments.</summary>
+    public List<AccountTransfer> Transfers { get; private set; } = new();
+
+    public decimal MandatoryCashFlow => AccountEarnings.Sum(income => income.Amount)
+        + Transfers.Sum(transfer => transfer.MandatoryAmount);
+
+    public decimal TotalCashFlow => AccountEarnings.Sum(income => income.Amount)
+        + Transfers.Where(transfer => transfer.ToAccount is null).Sum(transfer => transfer.Amount);
 
     /// <summary>
     /// The expenses in the plan for this year.
@@ -75,6 +89,9 @@ public class PlanYear
 
         var year = new PlanYear
         {
+            scheduledTransfers = scenario.Transfers.Select(transfer => new Transfer(transfer)).ToList(),
+            planStartAge = scenario.CurrentAge,
+            inflationRate = scenario.AnnualInflationRate / 100m,
             StartingAge = scenario.CurrentAge,
             StartingYear = scenario.StartYear,
             AnnualExpenses = scenario.AnnualExpenses,
@@ -101,7 +118,8 @@ public class PlanYear
                 })
                 .ToList()
         };
-        year.Incomes = year.Accounts.Select(account => new Income(account)).ToList();
+        year.AccountEarnings = year.Accounts.Select(account => new AccountEarnings(account)).ToList();
+        year.BuildTransfers();
         return year;
     }
 
@@ -109,6 +127,9 @@ public class PlanYear
     {
         var year = new PlanYear
         {
+            scheduledTransfers = previousYear.scheduledTransfers.Select(transfer => new Transfer(transfer)).ToList(),
+            planStartAge = previousYear.planStartAge,
+            inflationRate = previousYear.inflationRate,
             StartingAge = previousYear.EndingAge,
             StartingYear = previousYear.EndingYear,
             AnnualExpenses = previousYear.AnnualExpenses,
@@ -132,52 +153,79 @@ public class PlanYear
                 })
                 .ToList()
         };
-        year.Incomes = year.Accounts.Select(account => new Income(account)).ToList();
+        year.AccountEarnings = year.Accounts.Select(account => new AccountEarnings(account)).ToList();
+        year.BuildTransfers();
         return year;
+    }
+
+    private void BuildTransfers()
+    {
+        Transfers = Accounts.Select(account => new AccountTransfer(account, StartingAge))
+            .Where(transfer => transfer.RequestedAmount > 0m).ToList();
+        foreach (var instruction in scheduledTransfers)
+        {
+            var amount = instruction.ForecastAmount(planStartAge, StartingAge, inflationRate);
+            if (amount <= 0m) continue;
+            var from = FindTransferAccount(instruction.FromAccountName);
+            var to = FindTransferAccount(instruction.ToAccountName);
+            Transfers.Add(new AccountTransfer(instruction.Name, from, to, amount, TransferReason.Scheduled));
+        }
+    }
+
+    private Account FindTransferAccount(string name)
+    {
+        var matches = Accounts.Where(account => account.Name == name).ToList();
+        if (matches.Count != 1)
+            throw new InvalidOperationException($"Transfer account '{name}' must identify exactly one account.");
+        return matches[0];
     }
 
     public decimal ApplyExpenses()
     {
-        var mandatoryIncome = Incomes.Sum(income =>
-            Math.Min(income.MandatoryAmount, Math.Max(0m, income.Account.EndingBalance)));
-        var surplus = Math.Max(0m, mandatoryIncome - TotalExpenses);
+        var earned = AccountEarnings.Sum(income => income.Amount);
+        var required = Transfers.Where(transfer => transfer.Reason == TransferReason.Rmd)
+            .Sum(transfer => Math.Min(transfer.RequestedAmount,
+                Math.Max(0m, transfer.FromAccount!.EndingBalance)));
+        var surplus = Math.Max(0m, earned + required - TotalExpenses);
         var destination = surplus > 0m
             ? Accounts.Where(account => account.Type == AccountType.Brokerage)
-                .OrderBy(account => account.WithdrawalPriority)
-                .FirstOrDefault()
-                ?? throw new InvalidOperationException(
-                    "A Brokerage account is required to receive excess mandatory income.")
+                .OrderBy(account => account.WithdrawalPriority).FirstOrDefault()
+                ?? throw new InvalidOperationException("A Brokerage account is required to receive excess mandatory income.")
             : null;
 
-        // Withdraw from every mandatory source before following withdrawal priority.
-        foreach (var income in Incomes)
+        // Earnings are new cash in addition to appreciation. RMDs instead
+        // withdraw existing funds into that same cash pool.
+        var cash = earned;
+        foreach (var transfer in Transfers.Where(transfer => transfer.Reason == TransferReason.Rmd))
+            cash += transfer.Execute();
+
+        // Explicit account-to-account instructions are separate from expense
+        // funding. Required distributions take precedence over these movements.
+        foreach (var transfer in Transfers.Where(transfer => transfer.Reason == TransferReason.Scheduled))
         {
-            income.MandatoryAmount = Math.Min(
-                income.MandatoryAmount, Math.Max(0m, income.Account.EndingBalance));
-            income.Account.EndingBalance -= income.MandatoryAmount;
+            transfer.Execute();
+            UnfundedTransfers += transfer.RequestedAmount - transfer.Amount;
         }
 
         if (destination is not null)
         {
-            destination.EndingBalance += surplus;
+            var reinvestment = new AccountTransfer("Unspent cash", null, destination,
+                surplus, TransferReason.SurplusReinvestment);
+            reinvestment.Execute();
+            Transfers.Add(reinvestment);
         }
 
-        var remainingExpenses = Math.Max(0m, TotalExpenses - mandatoryIncome);
-        foreach (var income in Incomes.OrderBy(income => income.Account.WithdrawalPriority))
+        var remainingExpenses = Math.Max(0m, TotalExpenses - cash);
+        foreach (var account in Accounts.OrderBy(account => account.WithdrawalPriority))
         {
-            if (remainingExpenses <= 0)
-            {
-                break;
-            }
-
-            var withdrawal = Math.Min(Math.Max(0m, income.Account.EndingBalance), remainingExpenses);
-
-            income.Account.EndingBalance -= withdrawal;
-            income.VoluntaryAmount = withdrawal;
-            remainingExpenses -= withdrawal;
+            if (remainingExpenses <= 0m) break;
+            var amount = Math.Min(Math.Max(0m, account.EndingBalance), remainingExpenses);
+            if (amount <= 0m) continue;
+            var withdrawal = new AccountTransfer("Expense funding", account, null,
+                amount, TransferReason.ExpenseWithdrawal);
+            remainingExpenses -= withdrawal.Execute();
+            Transfers.Add(withdrawal);
         }
-
-        return remainingExpenses;
+        return remainingExpenses + UnfundedTransfers;
     }
-
 }

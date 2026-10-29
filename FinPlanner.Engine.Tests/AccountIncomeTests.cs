@@ -24,16 +24,18 @@ public class AccountIncomeTests
         var maximum = calculator.CalculateMaximumSpend(scenario);
         var perpetual = calculator.CalculatePerpetualSpend(scenario);
 
-        Assert.Equal(19600m, current.PlanYears[^1].EndingBalance);
-        Assert.Equal(9000m, maximum.AnnualExpenses);
+        Assert.Equal(19835m, current.PlanYears[^1].EndingBalance);
+        Assert.Equal(10000m, maximum.AnnualExpenses);
         Assert.Equal(0m, perpetual.AnnualExpenses);
         foreach (var plan in new[] { current, maximum, perpetual })
         {
             Assert.True(plan.IsSuccessful);
             Assert.Equal(2, plan.PlanYears.Count);
-            Assert.All(plan.PlanYears, year => Assert.Equal(year.Accounts.Count, year.Incomes.Count));
-            Assert.Equal(1500m, plan.PlanYears[0].Incomes[1].MandatoryAmount);
-            Assert.Equal(20000m - plan.PlanYears.Sum(year => year.TotalExpenses),
+            Assert.All(plan.PlanYears, year => Assert.Equal(year.Accounts.Count, year.AccountEarnings.Count));
+            Assert.Equal(116m, plan.PlanYears[0].AccountEarnings[0].Amount);
+            Assert.Equal(353m, plan.PlanYears[0].MandatoryFrom(1));
+            Assert.Equal(20000m + plan.PlanYears.Sum(year => year.AccountEarnings.Sum(income => income.EarnedAmount))
+                - plan.PlanYears.Sum(year => year.TotalExpenses),
                 plan.PlanYears[^1].EndingBalance);
         }
         Assert.Equal(originalJson, scenario.Serialize());
@@ -47,15 +49,20 @@ public class AccountIncomeTests
             .ToArray();
         var year = CreateYear(0m, accounts);
 
-        Assert.Equal(accounts.Length, year.Incomes.Count);
+        Assert.Equal(accounts.Length, year.AccountEarnings.Count);
         for (var index = 0; index < accounts.Length; index++)
         {
-            var income = year.Incomes[index];
+            var income = year.AccountEarnings[index];
             Assert.Same(year.Accounts[index], income.Account);
             Assert.NotSame(accounts[index], income.Account);
-            Assert.Equal(accounts[index].Type == AccountType.Inherited ? 150m : 0m,
-                income.MandatoryAmount);
-            Assert.Equal(0m, income.VoluntaryAmount);
+            Assert.Equal(accounts[index].Type switch
+                {
+                    AccountType.Inherited => 0m,
+                    AccountType.Brokerage => 12m,
+                    _ => 0m
+                },
+                income.Amount);
+            Assert.Equal(0m, year.VoluntaryFrom(index));
         }
     }
 
@@ -67,12 +74,12 @@ public class AccountIncomeTests
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
 
         Assert.Equal(0m, Apply(year));
-        Assert.Equal(950m, year.Accounts[0].EndingBalance);
-        Assert.Equal(850m, year.Accounts[1].EndingBalance);
-        Assert.Equal(50m, year.Incomes[0].VoluntaryAmount);
-        Assert.Equal(150m, year.Incomes[1].MandatoryAmount);
-        Assert.Equal(0m, year.Incomes[1].VoluntaryAmount);
-        Assert.Equal(200m, year.Incomes.Sum(income => income.Amount));
+        Assert.Equal(847m, year.Accounts[0].EndingBalance);
+        Assert.Equal(965m, year.Accounts[1].EndingBalance);
+        Assert.Equal(153m, year.VoluntaryFrom(0));
+        Assert.Equal(35m, year.MandatoryFrom(1));
+        Assert.Equal(0m, year.VoluntaryFrom(1));
+        Assert.Equal(200m, year.TotalCashFlow);
     }
 
     [Fact]
@@ -85,9 +92,9 @@ public class AccountIncomeTests
 
         Apply(year);
 
-        Assert.Equal(150m, year.Incomes[1].MandatoryAmount);
-        Assert.Equal(950m, year.Accounts[1].EndingBalance);
-        Assert.Equal(950m, year.Accounts[0].EndingBalance);
+        Assert.Equal(35m, year.MandatoryFrom(1));
+        Assert.Equal(1065m, year.Accounts[1].EndingBalance);
+        Assert.Equal(847m, year.Accounts[0].EndingBalance);
     }
 
     [Fact]
@@ -99,15 +106,15 @@ public class AccountIncomeTests
 
         Apply(year);
 
-        Assert.Equal(150m, year.Incomes[0].MandatoryAmount);
-        Assert.Equal(150m, year.Incomes[0].VoluntaryAmount);
-        Assert.Equal(700m, year.Accounts[0].EndingBalance);
+        Assert.Equal(35m, year.MandatoryFrom(0));
+        Assert.Equal(253m, year.VoluntaryFrom(0));
+        Assert.Equal(712m, year.Accounts[0].EndingBalance);
         Assert.Equal(1000m, year.Accounts[1].EndingBalance);
     }
 
     [Theory]
-    [InlineData(100, 850, 1350, 0)]
-    [InlineData(500, 800, 1000, 50)]
+    [InlineData(100, 965, 1018, 0)]
+    [InlineData(500, 583, 1000, 382)]
     public void EveryMandatoryWithdrawalOccursBeforeVoluntaryIncome(
         int expenses, int firstEndingBalance, int brokerageEndingBalance, int voluntary)
     {
@@ -117,18 +124,18 @@ public class AccountIncomeTests
             new Account { Type = AccountType.Inherited, BeginningBalance = 2000m, WithdrawalPriority = 99 });
 
         Assert.Equal(0m, Apply(year));
-        Assert.Equal(450m, year.Incomes.Sum(income => income.MandatoryAmount));
-        Assert.Equal((decimal)voluntary, year.Incomes.Sum(income => income.VoluntaryAmount));
+        Assert.Equal(118m, year.MandatoryCashFlow);
+        Assert.Equal((decimal)voluntary, year.Transfers.Sum(transfer => transfer.VoluntaryAmount));
         Assert.Equal((decimal)firstEndingBalance, year.Accounts[0].EndingBalance);
         Assert.Equal((decimal)brokerageEndingBalance, year.Accounts[1].EndingBalance);
-        Assert.Equal(1700m, year.Accounts[2].EndingBalance);
-        Assert.Equal(4000m - expenses, year.EndingBalance);
+        Assert.Equal(1929m, year.Accounts[2].EndingBalance);
+        Assert.Equal(4012m - expenses, year.EndingBalance);
     }
 
     [Fact]
     public void SurplusGoesToFirstBrokerageByWithdrawalPriority()
     {
-        var year = CreateYear(100m,
+        var year = CreateYear(10m,
             new Account { BeginningBalance = 1000m, WithdrawalPriority = 9 },
             new Account { Type = AccountType.Retirement, BeginningBalance = 500m, WithdrawalPriority = 0 },
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 1 },
@@ -138,10 +145,10 @@ public class AccountIncomeTests
 
         Assert.Equal(1000m, year.Accounts[0].EndingBalance);
         Assert.Equal(500m, year.Accounts[1].EndingBalance);
-        Assert.Equal(850m, year.Accounts[2].EndingBalance);
-        Assert.Equal(550m, year.Accounts[3].EndingBalance);
-        Assert.All(year.Incomes, income => Assert.Equal(0m, income.VoluntaryAmount));
-        Assert.Equal(2900m, year.EndingBalance);
+        Assert.Equal(965m, year.Accounts[2].EndingBalance);
+        Assert.Equal(543m, year.Accounts[3].EndingBalance);
+        Assert.All(year.Transfers, transfer => Assert.Equal(0m, transfer.VoluntaryAmount));
+        Assert.Equal(3008m, year.EndingBalance);
     }
 
     [Fact]
@@ -153,8 +160,8 @@ public class AccountIncomeTests
 
         Apply(year);
 
-        Assert.Equal(850m, year.Accounts[0].EndingBalance);
-        Assert.Equal(150m, year.Accounts[1].EndingBalance);
+        Assert.Equal(965m, year.Accounts[0].EndingBalance);
+        Assert.Equal(35m, year.Accounts[1].EndingBalance);
         Assert.Equal(1000m, year.EndingBalance);
     }
 
@@ -168,23 +175,23 @@ public class AccountIncomeTests
 
         var next = PlanYear.ForecastFrom(first);
 
-        Assert.Equal(2, next.Incomes.Count);
-        Assert.Equal(850m, next.Accounts[1].BeginningBalance);
-        Assert.Equal(128m, next.Incomes[1].MandatoryAmount);
-        Assert.All(next.Incomes, income => Assert.Equal(0m, income.VoluntaryAmount));
-        Assert.Same(next.Accounts[1], next.Incomes[1].Account);
-        Assert.NotSame(first.Incomes[1], next.Incomes[1]);
+        Assert.Equal(2, next.AccountEarnings.Count);
+        Assert.Equal(965m, next.Accounts[1].BeginningBalance);
+        Assert.Equal(35m, next.MandatoryFrom(1));
+        Assert.All(next.Transfers, transfer => Assert.Equal(0m, transfer.VoluntaryAmount));
+        Assert.Same(next.Accounts[1], next.AccountEarnings[1].Account);
+        Assert.NotSame(first.AccountEarnings[1], next.AccountEarnings[1]);
         Apply(next);
-        Assert.Equal(150m, first.Incomes[1].MandatoryAmount);
-        Assert.Equal(150m, first.Incomes[0].VoluntaryAmount);
-        Assert.Equal(850m, first.Accounts[0].EndingBalance);
-        Assert.Equal(300m, next.Incomes.Sum(income => income.Amount));
+        Assert.Equal(35m, first.MandatoryFrom(1));
+        Assert.Equal(253m, first.VoluntaryFrom(0));
+        Assert.Equal(747m, first.Accounts[0].EndingBalance);
+        Assert.Equal(300m, next.TotalCashFlow);
     }
 
     [Fact]
     public void MissingBrokerageIsReportedBeforeAnyWithdrawals()
     {
-        var year = CreateYear(100m,
+        var year = CreateYear(10m,
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m });
         year.Accounts[0].Appreciate();
 
@@ -200,13 +207,13 @@ public class AccountIncomeTests
         var year = CreateYear(200m,
             new Account { BeginningBalance = 1000m, WithdrawalPriority = 1 },
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
-        year.Accounts[1].AppreciationRate = -0.9m;
+        year.Accounts[1].AppreciationRate = -0.99m;
 
         Assert.Equal(0m, Apply(year));
-        Assert.Equal(100m, year.Incomes[1].MandatoryAmount);
+        Assert.Equal(10m, year.MandatoryFrom(1));
         Assert.Equal(0m, year.Accounts[1].EndingBalance);
-        Assert.Equal(100m, year.Incomes[0].VoluntaryAmount);
-        Assert.Equal(900m, year.Accounts[0].EndingBalance);
+        Assert.Equal(178m, year.VoluntaryFrom(0));
+        Assert.Equal(822m, year.Accounts[0].EndingBalance);
     }
 
     [Fact]
@@ -216,9 +223,9 @@ public class AccountIncomeTests
             new Account { BeginningBalance = 100m, WithdrawalPriority = 1 },
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
 
-        Assert.Equal(400m, Apply(year));
+        Assert.Equal(399m, Apply(year));
         Assert.Equal(0m, year.EndingBalance);
-        Assert.Equal(1100m, year.Incomes.Sum(income => income.Amount));
+        Assert.Equal(1101m, year.TotalCashFlow);
     }
 
     private static PlanYear CreateYear(decimal annualExpenses, params Account[] accounts)

@@ -62,9 +62,9 @@ public class ScenarioSnapshotTests
             StartYear = 2026,
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 100,
-            Accounts = [new Account { BeginningBalance = 1000.49m, EndingBalance = 2000.51m }],
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000.49m, EndingBalance = 2000.51m }],
             Expenses = [new Expense { Name = "Expense", Amount = 100m }],
-            Income = [new IncomeItem { Name = "Incomes", Amount = 200m }],
+            Income = [new Income { Name = "Incomes", Amount = 200m }],
             Transfers = [new Transfer { Name = "Transfer", Amount = 300m }]
         };
         var notifications = 0;

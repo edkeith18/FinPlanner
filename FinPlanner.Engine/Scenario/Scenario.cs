@@ -18,7 +18,7 @@ public class Scenario
     };
 
     public List<Account> Accounts { get; set; } = new();
-    public List<IncomeItem> Income { get; set; } = new();
+    public List<Income> Income { get; set; } = new();
     public List<Expense> Expenses { get; set; } = new();
     public List<Transfer> Transfers { get; set; } = new();
     [JsonIgnore] 
@@ -83,7 +83,7 @@ public class Scenario
             EndingBalance = account.EndingBalance
         }).ToList();
         Expenses = source.Expenses.Select(expense => new Expense(expense)).ToList();
-        Income = source.Income.Select(income => new IncomeItem
+        Income = source.Income.Select(income => new Income
         {
             Name = income.Name,
             Amount = income.Amount,
@@ -319,7 +319,7 @@ public class Scenario
 
     public void AddIncome(string name, decimal amount)
     {
-        Income.Add(new IncomeItem { Name = name, Amount = amount, LastUpdated = DateTime.Now });
+        Income.Add(new Income { Name = name, Amount = amount, LastUpdated = DateTime.Now });
         NotifyStateChanged();
     }
 

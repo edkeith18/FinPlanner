@@ -14,7 +14,7 @@ public class ExpenseForecastTests
             LifeExpectancy = 60,
             AnnualExpenses = 100m,
             SecuritiesAnnualRateOfReturn = 0.10m,
-            Accounts = [new Account { BeginningBalance = 1000m }]
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000m }]
         };
         var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
@@ -40,7 +40,7 @@ public class ExpenseForecastTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-startingAge),
             LifeExpectancy = lifeExpectancy,
-            Accounts = [new Account { BeginningBalance = 1000m }]
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000m }]
         };
         var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
@@ -119,7 +119,7 @@ public class ExpenseForecastTests
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-65),
             LifeExpectancy = 67,
             AnnualExpenses = 300,
-            Accounts = [new Account { BeginningBalance = 10000m }],
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }],
             Expenses =
             [
                 new Expense { Name = "Before 66", Amount = 100m, AgeStart = 60, AgeEnd = 65 },
@@ -134,16 +134,75 @@ public class ExpenseForecastTests
         Assert.Equal(0m, plan.PlanYears[0].Expenses[1].Amount);
         Assert.Equal(0m, plan.PlanYears[1].Expenses[0].Amount);
         Assert.Equal(200m, plan.PlanYears[1].Expenses[1].Amount);
-        Assert.Equal(100m, plan.PlanYears[0].TotalExpenses);
-        Assert.Equal(200m, plan.PlanYears[1].TotalExpenses);
-        Assert.Equal(9900m, plan.PlanYears[0].EndingBalance);
-        Assert.Equal(9700m, plan.PlanYears[1].EndingBalance);
+        Assert.Equal(300m, plan.PlanYears[0].TotalExpenses);
+        Assert.Equal(400m, plan.PlanYears[1].TotalExpenses);
+        Assert.Equal(9700m, plan.PlanYears[0].EndingBalance);
+        Assert.Equal(9300m, plan.PlanYears[1].EndingBalance);
         Assert.Equal(originalJson, scenario.Serialize());
         Assert.Equal(originalJson, Scenario.Deserialize(originalJson).Serialize());
 
         using var json = JsonDocument.Parse(originalJson);
         Assert.Equal(200m, json.RootElement.GetProperty("Expenses")[1].GetProperty("Amount").GetDecimal());
         Assert.False(json.RootElement.GetProperty("Expenses")[1].TryGetProperty("PlanStartAge", out _));
+    }
+
+    [Fact]
+    public void FutureMedicareDoesNotReduceTheStartingAnnualBudget()
+    {
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
+            LifeExpectancy = 60,
+            AnnualExpenses = 348942.94m,
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000000m }],
+            Expenses =
+            [
+                new Expense { Name = "Healthcare", Amount = 39492m, AgeStart = 57, AgeEnd = 64 },
+                new Expense { Name = "Medicare", Amount = 8820m, AgeStart = 65, AgeEnd = 100 },
+                new Expense { Name = "Charity", Amount = 29952m, AgeStart = 57, AgeEnd = 100 },
+                new Expense { Name = "SALT", Amount = 14375m, AgeStart = 57, AgeEnd = 100 }
+            ]
+        };
+        var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
+        Assert.Equal(348943m, year.TotalExpenses);
+        Assert.Equal(265124m, year.Expenses[^1].Amount);
+        Assert.Equal(0m, year.Expenses[1].Amount);
+    }
+
+    [Fact]
+    public void AllPlansOnlyIncludeNamedExpensesWithinTheirInclusiveAgeRanges()
+    {
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
+            LifeExpectancy = 62,
+            AnnualExpenses = 1000m,
+            SecuritiesAnnualRateOfReturn = 0.1m,
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 100000m }],
+            Expenses =
+            [
+                new Expense { Name = "Ending now", Amount = 100m, AgeStart = 58, AgeEnd = 58 },
+                new Expense { Name = "Future", Amount = 200m, AgeStart = 60, AgeEnd = 60 },
+                new Expense { Name = "Expired", Amount = 1000000m, AgeStart = 50, AgeEnd = 57 }
+            ]
+        };
+        var originalJson = scenario.Serialize();
+        var calculator = new PlanCalculator();
+        foreach (var plan in new[] { calculator.CalculateCurrentTrajectory(scenario),
+            calculator.CalculateMaximumSpend(scenario), calculator.CalculatePerpetualSpend(scenario) })
+        {
+            Assert.True(plan.IsSuccessful);
+            Assert.Equal(plan.AnnualExpenses, plan.PlanYears[0].TotalExpenses);
+            Assert.Equal(new[] { 100m, 0m, 0m, 0m },
+                plan.PlanYears.Select(year => year.Expenses[0].Amount).ToArray());
+            Assert.Equal(new[] { 0m, 0m, 200m, 0m },
+                plan.PlanYears.Select(year => year.Expenses[1].Amount).ToArray());
+            Assert.All(plan.PlanYears, year => Assert.Equal(0m, year.Expenses[2].Amount));
+            var baseline = plan.AnnualExpenses - 100m;
+            Assert.Equal(new[] { baseline + 100m, baseline, baseline + 200m, baseline },
+                plan.PlanYears.Select(year => year.TotalExpenses).ToArray());
+        }
+        Assert.Equal(originalJson, scenario.Serialize());
     }
 
     private static Expense Forecast(Expense source, int age)

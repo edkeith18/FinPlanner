@@ -123,6 +123,6 @@ public class PlanCalculatorTests
         LifeExpectancy = 60,
         AnnualExpenses = 1000m,
         SecuritiesAnnualRateOfReturn = 0.1m,
-        Accounts = [new Account { BeginningBalance = 10000m }]
+        Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }]
     };
 }

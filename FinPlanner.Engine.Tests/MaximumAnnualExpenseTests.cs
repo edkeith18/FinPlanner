@@ -21,7 +21,7 @@ public class MaximumAnnualExpenseTests
             AnnualExpenses = 10000m,
             SecuritiesAnnualRateOfReturn = (decimal)growth,
             AnnualInflationRate = (decimal)inflation * 100m,
-            Accounts = [new Account { BeginningBalance = 10000m }],
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }],
             Expenses = [new Expense
             {
                 Name = "Named expense", Amount = namedExpense,

@@ -1,6 +1,6 @@
 ﻿namespace FinPlanner.Engine;
 
-public class IncomeItem
+public class Income
 {
     public string Name { get; set; } = "";
     public decimal Amount { get; set; }

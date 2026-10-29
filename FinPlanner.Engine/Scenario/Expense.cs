@@ -23,6 +23,9 @@ public class Expense
 
     public Expense() { }
 
+    /// <summary>Expense age boundaries are inclusive and use the period's starting age.</summary>
+    public bool IsActiveAtAge(int age) => age >= AgeStart && age <= AgeEnd;
+
     public Expense(Expense sourceExpense)
     {
         Name = sourceExpense.Name;
@@ -52,7 +55,7 @@ public class Expense
         }
 
         initialAmount ??= Amount;
-        if (age < AgeStart || age > AgeEnd)
+        if (!IsActiveAtAge(age))
         {
             Amount = 0m;
             return;

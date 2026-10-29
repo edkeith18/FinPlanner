@@ -21,7 +21,9 @@ public class PerpetualAnnualExpenseTests
 
         Assert.True(plan.IsSuccessful);
         Assert.Equal((decimal)expected, plan.AnnualExpenses);
-        Assert.True(plan.PlanYears[0].Accounts[1].EndingBalance > 0m);
+        // At 58 the personal RMD is below $1,000, so that spending case
+        // initially consumes it all. The zero-spending case transfers surplus.
+        Assert.Equal(expected == 0, plan.PlanYears[0].Accounts[1].EndingBalance > 0m);
     }
 
     [Theory]
@@ -71,8 +73,8 @@ public class PerpetualAnnualExpenseTests
         scenario.AnnualInflationRate = 2m;
         scenario.Accounts =
         [
-            new Account { BeginningBalance = 55000m, WithdrawalPriority = 1 },
-            new Account { BeginningBalance = 55000m, WithdrawalPriority = 2 }
+            new Account { Type = AccountType.Hsa, BeginningBalance = 55000m, WithdrawalPriority = 1 },
+            new Account { Type = AccountType.Hsa, BeginningBalance = 55000m, WithdrawalPriority = 2 }
         ];
 
         Assert.Equal(8000m, new PlanCalculator().CalculatePerpetualSpend(scenario).AnnualExpenses);
@@ -137,7 +139,7 @@ public class PerpetualAnnualExpenseTests
             AnnualRateOfIncrease = 0.04m
         }];
 
-        Assert.Equal(9000m, new PlanCalculator().CalculatePerpetualSpend(scenario).AnnualExpenses);
+        Assert.Equal(4000m, new PlanCalculator().CalculatePerpetualSpend(scenario).AnnualExpenses);
     }
 
     [Fact]
@@ -183,8 +185,8 @@ public class PerpetualAnnualExpenseTests
         scenario.BondsAnnualRateOfReturn = 0.04m;
         scenario.Accounts =
         [
-            new Account { BeginningBalance = 50000m, Holdings = AccountHoldings.Bonds, WithdrawalPriority = 1 },
-            new Account { BeginningBalance = 50000m, Holdings = AccountHoldings.Equities, WithdrawalPriority = 2 }
+            new Account { Type = AccountType.Hsa, BeginningBalance = 50000m, Holdings = AccountHoldings.Bonds, WithdrawalPriority = 1 },
+            new Account { Type = AccountType.Hsa, BeginningBalance = 50000m, Holdings = AccountHoldings.Equities, WithdrawalPriority = 2 }
         ];
 
         Assert.Equal(9000m, new PlanCalculator().CalculatePerpetualSpend(scenario).AnnualExpenses);
@@ -236,7 +238,7 @@ public class PerpetualAnnualExpenseTests
             LifeExpectancy = 60,
             AnnualExpenses = 1000m,
             SecuritiesAnnualRateOfReturn = returnRate,
-            Accounts = [new Account { BeginningBalance = balance }]
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = balance }]
         };
     }
 }

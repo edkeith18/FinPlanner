@@ -40,7 +40,7 @@ public class PlanCalculator
 
         // Candidates below named expenses would require negative uncategorized expenses.
         var lowerBound = Math.Max(0m, decimal.Ceiling(
-            scenario.Expenses.Sum(expense => expense.Amount) / ExpenseStep));
+            StartingNamedExpenses(scenario) / ExpenseStep));
         var upperBound = Math.Max(lowerBound, Math.Max(1m, decimal.Ceiling(
             scenario.Accounts.Sum(account => account.BeginningBalance) / ExpenseStep)));
 
@@ -104,7 +104,7 @@ public class PlanCalculator
         }
 
         var uncategorizedExpenses = scenario.AnnualExpenses
-            - scenario.Expenses.Sum(expense => expense.Amount);
+            - StartingNamedExpenses(scenario);
         if (uncategorizedExpenses < 0m)
         {
             return new Plan(scenario, name, years, false, "Known expenses exceed AnnualExpenses.");
@@ -117,7 +117,9 @@ public class PlanCalculator
             if (CalculateYear(currentYear) > 0m)
             {
                 return new Plan(scenario, name, years, false,
-                    $"Plan fails at year {currentYear.StartingYear}.");
+                    currentYear.UnfundedTransfers > 0m
+                        ? $"Scheduled transfers cannot be fully funded at year {currentYear.StartingYear}."
+                        : $"Plan fails at year {currentYear.StartingYear}.");
             }
 
             if (currentYear.EndingYear >= scenario.EndYear)
@@ -145,7 +147,8 @@ public class PlanCalculator
             || scenario.SecuritiesAnnualRateOfReturn < 0m
             || scenario.BondsAnnualRateOfReturn < 0m
             || scenario.Accounts.Any(account => account.BeginningBalance < 0m)
-            || scenario.Expenses.Any(expense => expense.Amount < 0m || expense.AnnualRateOfIncrease < 0m))
+            || scenario.Expenses.Any(expense => expense.Amount < 0m || expense.AnnualRateOfIncrease < 0m)
+            || scenario.Transfers.Any(transfer => transfer.Amount < 0m || transfer.AnnualRateOfIncrease < 0m))
         {
             throw new NotSupportedException(
                 "The perpetual calculation requires nonnegative balances, expenses, returns, and inflation.");
@@ -160,7 +163,7 @@ public class PlanCalculator
 
         // Life expectancy limits the report, not ongoing expense streams.
         scenario.LifeExpectancy = int.MaxValue;
-        var namedExpenses = scenario.Expenses.Sum(expense => expense.Amount);
+        var namedExpenses = StartingNamedExpenses(scenario);
         var lowerBound = Math.Max(0m, decimal.Ceiling(namedExpenses / ExpenseStep));
         var upperBound = Math.Max(lowerBound, Math.Max(1m, decimal.Ceiling(
             scenario.Accounts.Sum(account => account.BeginningBalance) / ExpenseStep)));
@@ -196,6 +199,12 @@ public class PlanCalculator
         return maximumExpenses;
     }
 
+    // AnnualExpenses describes the starting-period budget. Future and expired
+    // named expenses must not reduce its uncategorized portion.
+    private static decimal StartingNamedExpenses(Scenario scenario)
+        => scenario.Expenses.Where(expense => expense.IsActiveAtAge(scenario.CurrentAge))
+            .Sum(expense => expense.Amount);
+
     private static bool CanSustainPerpetually(Scenario scenario, decimal uncategorizedExpenses)
     {
         var year = PlanYear.FromScenario(scenario, uncategorizedExpenses);
@@ -215,7 +224,7 @@ public class PlanCalculator
                 ? stream.Amount > 0m
                 : decimal.Round(stream.Amount, 0, MidpointRounding.AwayFromZero) > 0m)
             .ToArray();
-        var maximumReturn = year.Accounts.Max(account => account.AppreciationRate);
+        var maximumReturn = year.Accounts.Max(AccountEarnings.GetTotalReturn);
         var maximumExpenseGrowth = streams.Select(stream => stream.Rate).DefaultIfEmpty(0m).Max();
         var hasSurplusDestination = year.Accounts.Any(account => account.Type == AccountType.Brokerage);
 
@@ -230,6 +239,9 @@ public class PlanCalculator
         var lastTransitionAge = scenario.Expenses
             .Where(expense => expense.Amount > 0m)
             .Select(expense => expense.AgeEnd == int.MaxValue ? expense.AgeStart - 1 : expense.AgeEnd)
+            .Concat(scenario.Transfers.Where(transfer => transfer.Amount > 0m
+                && transfer.AgeStart <= transfer.AgeEnd && transfer.AgeEnd >= scenario.CurrentAge)
+                .Select(transfer => transfer.AgeEnd))
             .DefaultIfEmpty(scenario.CurrentAge - 1)
             .Max();
 
@@ -246,10 +258,14 @@ public class PlanCalculator
                 {
                     streams[streamIndex].Amount *= 1m + streams[streamIndex].Rate;
                 }
-                // Do not prove future transfers feasible without a destination.
+                // Wait out future RMD starts and divisor changes before using
+                // proofs that assume the same annual rules continue forever.
                 if (year.StartingAge > lastTransitionAge
+                    && year.Accounts.All(account => account.EndingBalance == 0m
+                        || RmdCalculator.IsScheduleStable(account.Type, year.StartingAge))
                     && (hasSurplusDestination || year.Accounts.All(account =>
-                        account.Type != AccountType.Inherited || account.EndingBalance == 0m)))
+                        account.Type is not (AccountType.Inherited or AccountType.Retirement)
+                        || account.EndingBalance == 0m)))
                 {
                     if (streams.Length == 0)
                     {
@@ -266,8 +282,11 @@ public class PlanCalculator
 
                     // A currently empty Brokerage account may receive future surplus,
                     // so include every potential destination in the portfolio bounds.
-                    var roundingAllowance = (year.Accounts.Count + streams.Length) / 2m;
-                    var fastestReturn = year.Accounts.Max(account => account.AppreciationRate);
+                    // Brokerage has three separately rounded income components.
+                    var incomeRounding = year.Accounts.Sum(account =>
+                        AccountEarnings.HasBrokerageEquityIncome(account) ? 3m : 1m);
+                    var roundingAllowance = (year.Accounts.Count + streams.Length + incomeRounding) / 2m;
+                    var fastestReturn = year.Accounts.Max(AccountEarnings.GetTotalReturn);
                     if (fastestReturn <= maximumExpenseGrowth)
                     {
                         return false;
@@ -282,7 +301,7 @@ public class PlanCalculator
                         return false;
                     }
 
-                    var slowestReturn = year.Accounts.Min(account => account.AppreciationRate);
+                    var slowestReturn = year.Accounts.Min(AccountEarnings.GetTotalReturn);
                     if (slowestReturn > maximumExpenseGrowth)
                     {
                         var sufficientBalance = streams.Sum(stream => stream.Amount / (slowestReturn - stream.Rate))
@@ -295,8 +314,9 @@ public class PlanCalculator
 
                     foreach (var account in year.Accounts)
                     {
-                        var mandatoryRate = Income.GetMandatoryRate(account.Type);
-                        var rate = account.AppreciationRate - mandatoryRate;
+                        var mandatoryRate = AccountEarnings.GetEarnedRate(account)
+                            + AccountTransfer.GetMandatoryRate(account, year.StartingAge);
+                        var rate = AccountEarnings.GetTotalReturn(account) - mandatoryRate;
                         if (rate <= maximumExpenseGrowth)
                         {
                             continue;
@@ -308,7 +328,8 @@ public class PlanCalculator
                         // This account alone can
                         // cover that liability; other accounts only add protection.
                         var requiredBalance = streams.Sum(stream => stream.Amount / (rate - stream.Rate))
-                            + (streams.Length + 1m + (mandatoryRate > 0m ? 1m : 0m)) / (2m * rate);
+                            + (streams.Length + 1m + (AccountEarnings.HasBrokerageEquityIncome(account)
+                                ? 3m : mandatoryRate > 0m ? 1m : 0m)) / (2m * rate);
                         if (account.EndingBalance >= requiredBalance)
                         {
                             return true;

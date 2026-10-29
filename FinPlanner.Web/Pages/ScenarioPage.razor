@@ -903,7 +903,7 @@
             return;
 
         scenario.Accounts = data.Accounts ?? new List<Account>();
-        scenario.Income = data.Income ?? new List<IncomeItem>();
+        scenario.Income = data.Income ?? new List<Income>();
         scenario.Expenses = data.Expenses ?? new List<Expense>();
         scenario.Transfers = data.Transfers ?? new List<Transfer>();
         scenario.StartYear = data.StartYear;
@@ -1384,7 +1384,7 @@
         accountDropTarget = null;
     }
 
-    private async Task DeleteIncome(IncomeItem income)
+    private async Task DeleteIncome(Income income)
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete income '{income.Name}'?"))
         {
@@ -1538,7 +1538,7 @@
         return item switch
         {
             Account account => account.Balance,
-            IncomeItem income => income.Amount,
+            Income income => income.Amount,
             Expense expense => expense.Amount,
             Transfer transfer => transfer.Amount,
             _ => 0m
@@ -1552,7 +1552,7 @@
             case Account account:
                 account.Balance = value;
                 break;
-            case IncomeItem income:
+            case Income income:
                 income.Amount = value;
                 break;
             case Expense expense:
@@ -1569,7 +1569,7 @@
         return item switch
         {
             Account account => account.Name,
-            IncomeItem income => income.Name,
+            Income income => income.Name,
             Expense expense => expense.Name,
             Transfer transfer => transfer.Name,
             _ => string.Empty
@@ -1583,7 +1583,7 @@
             case Account account:
                 account.Name = value;
                 break;
-            case IncomeItem income:
+            case Income income:
                 income.Name = value;
                 break;
             case Expense expense:
@@ -1670,7 +1670,7 @@
         return item switch
         {
             Account => AddItemType.Account,
-            IncomeItem => AddItemType.Income,
+            Income => AddItemType.Income,
             Expense => AddItemType.Expense,
             Transfer => AddItemType.Transfer,
             _ => null
@@ -1685,7 +1685,7 @@
             || editingHoldingsRows.Contains(account);
     }
 
-    private bool IsIncomeRowEditing(IncomeItem income)
+    private bool IsIncomeRowEditing(Income income)
     {
         return editingRows.Contains(income) || editingNameRows.Contains(income);
     }
