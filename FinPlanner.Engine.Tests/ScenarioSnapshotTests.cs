@@ -65,7 +65,7 @@ public class ScenarioSnapshotTests
             Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000.49m, EndingBalance = 2000.51m }],
             Expenses = [new Expense { Name = "Expense", Amount = 100m }],
             Income = [new Income { Name = "Incomes", Amount = 200m }],
-            Transfers = [new Transfer { Name = "Transfer", Amount = 300m }]
+            Transfers = [new ScheduledTransfer { Name = "Transfer", Amount = 300m }]
         };
         var notifications = 0;
         scenario.Changed += () => notifications++;

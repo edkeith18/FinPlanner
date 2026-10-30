@@ -69,7 +69,8 @@ public class BrokerageIncomeTests
         Assert.Equal(520m, year.VoluntaryFrom(0));
         Assert.Equal(103960m, year.EndingBalance);
 
-        var next = PlanYear.ForecastFrom(year);
+        var next = PlanYearCalculator.ForecastFrom(year, scenario, scenario.AnnualExpenses);
+        PlanYearCalculator.CalculateEarnings(next);
         Assert.Equal(0.0448m, next.Accounts[0].AppreciationRate);
         Assert.Equal(4657m, next.AccountEarnings[0].Interest);
     }
@@ -102,7 +103,7 @@ public class BrokerageIncomeTests
     [InlineData(AccountHoldings.Bonds, 5000)]
     public void BrokerageIncomeUsesTheScheduleForItsHoldings(AccountHoldings holdings, int expected)
     {
-        var income = new AccountEarnings(new Account
+        var income = PlanYearCalculator.CalculateAccountEarnings(new Account
         {
             Type = AccountType.Brokerage, Holdings = holdings, BeginningBalance = 100000m,
             AppreciationRate = 0.05m
@@ -114,7 +115,7 @@ public class BrokerageIncomeTests
     [Fact]
     public void BrokerageCalculatesThreeSeparatelyRoundedMandatoryComponents()
     {
-        var income = new AccountEarnings(new Account
+        var income = PlanYearCalculator.CalculateAccountEarnings(new Account
         {
             Type = AccountType.Brokerage, BeginningBalance = 100000m
         });
@@ -122,7 +123,7 @@ public class BrokerageIncomeTests
         Assert.Equal(170m, income.Interest);
         Assert.Equal(940m, income.DivQ);
         Assert.Equal(50m, income.DivUQ);
-        Assert.Equal(0m, new AccountTransfer(income.Account, 58).MandatoryAmount);
+        Assert.Equal(0m, PlanYearCalculator.CreateRmdTransfer(income.Account, 58).MandatoryAmount);
         Assert.Equal(1160m, income.Amount);
         Assert.Equal(1160m, income.Amount);
     }
@@ -134,7 +135,7 @@ public class BrokerageIncomeTests
     public void ComponentsUseWholeDollarRoundingAndNonnegativeBalances(
         int balance, int interest, int divQ, int divUQ)
     {
-        var income = new AccountEarnings(new Account { BeginningBalance = balance });
+        var income = PlanYearCalculator.CalculateAccountEarnings(new Account { BeginningBalance = balance });
         Assert.Equal((decimal)interest, income.Interest);
         Assert.Equal((decimal)divQ, income.DivQ);
         Assert.Equal((decimal)divUQ, income.DivUQ);
@@ -148,7 +149,7 @@ public class BrokerageIncomeTests
     [InlineData(AccountType.Hsa)]
     public void OtherAccountTypesDoNotReceiveBrokerageIncome(AccountType type)
     {
-        var income = new AccountEarnings(new Account { Type = type, BeginningBalance = 100000m });
+        var income = PlanYearCalculator.CalculateAccountEarnings(new Account { Type = type, BeginningBalance = 100000m });
         Assert.Equal(0m, income.Interest + income.DivQ + income.DivUQ);
         Assert.Equal(0m, income.Amount);
     }
@@ -197,13 +198,15 @@ public class BrokerageIncomeTests
     [Fact]
     public void EarnedIncomeIsNewValueEvenWhenTheExistingBalanceIsSmall()
     {
-        var year = PlanYear.FromScenario(new Scenario
+        var year = PlanYearCalculator.FromScenario(new Scenario
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             Accounts = [new Account { BeginningBalance = 100000m }]
         }, 0m);
         year.Accounts[0].EndingBalance = 200m;
-        year.ApplyExpenses();
+        PlanYearCalculator.CalculateEarnings(year);
+        PlanYearCalculator.ApplyRmdsAndScheduledTransfers(year);
+        PlanYearCalculator.ApplyExpenses(year);
         var income = year.AccountEarnings[0];
         Assert.Equal(170m, income.Interest);
         Assert.Equal(940m, income.DivQ);

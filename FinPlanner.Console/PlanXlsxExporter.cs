@@ -58,7 +58,8 @@ internal static class PlanXlsxExporter
             sheet.Cell(row, 2).Value = year.StartingAge;
             sheet.Cell(row, 3).Value = transfer.Name;
             sheet.Cell(row, 4).Value = transfer.Reason.ToString();
-            sheet.Cell(row, 5).Value = transfer.FromAccount?.Name ?? "Expense cash";
+            sheet.Cell(row, 5).Value = transfer.Reason == TransferReason.ExternalIncome
+                ? "External" : transfer.FromAccount?.Name ?? "Expense cash";
             sheet.Cell(row, 6).Value = transfer.ToAccount?.Name ?? "Expense cash";
             sheet.Cell(row, 7).Value = transfer.RequestedAmount;
             sheet.Cell(row, 8).Value = transfer.Amount;
@@ -79,7 +80,9 @@ internal static class PlanXlsxExporter
         }
         var sheet = workbook.Worksheets.Add(plan.Name);
         var firstYear = plan.PlanYears[0];
-        var mandatoryTotalColumn = 3 + firstYear.AccountEarnings.Count;
+        var firstEarningsColumn = plan.IncomeNames.Count > 0 ? 4 + plan.IncomeNames.Count : 3;
+        var externalIncomeTotalColumn = firstEarningsColumn - 1;
+        var mandatoryTotalColumn = firstEarningsColumn + firstYear.AccountEarnings.Count;
         var transferTotalColumn = mandatoryTotalColumn + 1 + firstYear.Accounts.Count;
         var voluntaryTotalColumn = transferTotalColumn + 1 + firstYear.Accounts.Count;
         var incomeTotalColumn = voluntaryTotalColumn + 1;
@@ -87,7 +90,10 @@ internal static class PlanXlsxExporter
         var expenseTotalColumn = firstExpenseColumn + firstYear.Expenses.Count;
         var firstAccountColumn = expenseTotalColumn + 1;
         var accountTotalColumn = firstAccountColumn + firstYear.Accounts.Count;
+        var externalIncomeHeaders = plan.IncomeNames.Count > 0
+            ? plan.IncomeNames.Append("Total External Income for period") : Enumerable.Empty<string>();
         var headers = new[] { "Year", "Age" }
+            .Concat(externalIncomeHeaders)
             .Concat(firstYear.AccountEarnings.Select(income => income.Account.Name))
             .Append("Total Earned Income for period")
             .Concat(firstYear.Accounts.Select(account => account.Name))
@@ -106,11 +112,11 @@ internal static class PlanXlsxExporter
             sheet.Cell(1, column + 1).Value = headers[column];
         }
 
-        WritePlanRows(sheet, plan, mandatoryTotalColumn, transferTotalColumn, voluntaryTotalColumn, incomeTotalColumn, firstExpenseColumn, expenseTotalColumn,
+        WritePlanRows(sheet, plan, firstEarningsColumn, mandatoryTotalColumn, transferTotalColumn, voluntaryTotalColumn, incomeTotalColumn, firstExpenseColumn, expenseTotalColumn,
             firstAccountColumn, accountTotalColumn);
 
         var lastRow = plan.PlanYears.Count + 2;
-        FormatPlanSheet(sheet, lastRow, headers.Count, mandatoryTotalColumn, transferTotalColumn, voluntaryTotalColumn, incomeTotalColumn, firstExpenseColumn,
+        FormatPlanSheet(sheet, lastRow, headers.Count, firstEarningsColumn, mandatoryTotalColumn, transferTotalColumn, voluntaryTotalColumn, incomeTotalColumn, firstExpenseColumn,
             expenseTotalColumn, firstAccountColumn, accountTotalColumn);
         sheet.Range(2, 1, 2, headers.Count).Style.Font.Bold = true;
         sheet.Range(2, 1, 2, headers.Count).Style.Font.FontColor = XLColor.Black;
@@ -130,7 +136,9 @@ internal static class PlanXlsxExporter
         sheet.SheetView.FreezeColumns(2);
         sheet.Range(2, 1, lastRow + 1, headers.Count).SetAutoFilter();
 
-        CollapseDetailColumns(sheet, 3, mandatoryTotalColumn);
+        if (plan.IncomeNames.Count > 0)
+            CollapseDetailColumns(sheet, 3, externalIncomeTotalColumn);
+        CollapseDetailColumns(sheet, firstEarningsColumn, mandatoryTotalColumn);
         CollapseDetailColumns(sheet, mandatoryTotalColumn + 1, transferTotalColumn);
         CollapseDetailColumns(sheet, transferTotalColumn + 1, voluntaryTotalColumn);
         CollapseDetailColumns(sheet, 3, incomeTotalColumn);
@@ -138,7 +146,7 @@ internal static class PlanXlsxExporter
         CollapseDetailColumns(sheet, firstAccountColumn, accountTotalColumn);
     }
 
-    private static void WritePlanRows(IXLWorksheet sheet, Plan plan, int mandatoryTotalColumn, int transferTotalColumn,
+    private static void WritePlanRows(IXLWorksheet sheet, Plan plan, int firstEarningsColumn, int mandatoryTotalColumn, int transferTotalColumn,
         int voluntaryTotalColumn, int incomeTotalColumn,
         int firstExpenseColumn, int expenseTotalColumn, int firstAccountColumn, int accountTotalColumn)
     {
@@ -160,6 +168,15 @@ internal static class PlanXlsxExporter
             sheet.Cell(row, 1).Value = $"{year.StartingYear} -> {year.EndingYear}";
             sheet.Cell(row, 2).Value = $"{year.StartingAge} -> {year.EndingAge}";
             var column = 3;
+            if (plan.IncomeNames.Count > 0)
+            {
+                foreach (var name in plan.IncomeNames)
+                    sheet.Cell(row, column++).Value = year.Transfers
+                        .Where(transfer => transfer.Reason == TransferReason.ExternalIncome && transfer.Name == name)
+                        .Sum(transfer => transfer.Amount);
+                sheet.Cell(row, column++).Value = year.ExternalIncome;
+            }
+            column = firstEarningsColumn;
             foreach (var income in year.AccountEarnings)
             {
                 sheet.Cell(row, column++).Value = income.Amount;
@@ -199,7 +216,7 @@ internal static class PlanXlsxExporter
     }
 
     private static void FormatPlanSheet(IXLWorksheet sheet, int lastRow, int columnCount,
-        int mandatoryTotalColumn, int transferTotalColumn, int voluntaryTotalColumn, int incomeTotalColumn,
+        int firstEarningsColumn, int mandatoryTotalColumn, int transferTotalColumn, int voluntaryTotalColumn, int incomeTotalColumn,
         int firstExpenseColumn, int expenseTotalColumn,
         int firstAccountColumn, int accountTotalColumn)
     {
@@ -215,6 +232,8 @@ internal static class PlanXlsxExporter
         sheet.Range(1, firstExpenseColumn, lastRow, expenseTotalColumn).Style.Font.FontColor =
             XLColor.FromHtml(ExpenseColor);
         sheet.Range(2, 3, lastRow, columnCount).Style.NumberFormat.Format = CurrencyFormat;
+        if (firstEarningsColumn > 3)
+            sheet.Column(firstEarningsColumn - 1).Style.Font.Bold = true;
         sheet.Column(accountTotalColumn).Style.Font.Bold = true;
         sheet.Column(incomeTotalColumn).Style.Font.Bold = true;
         sheet.Column(mandatoryTotalColumn).Style.Font.Bold = true;

@@ -15,14 +15,14 @@ public class AccountTransferTests
         AccountType type, int age, int balance, int expected)
     {
         var account = new Account { Type = type, BeginningBalance = balance };
-        var transfer = new AccountTransfer(account, age);
+        var transfer = PlanYearCalculator.CreateRmdTransfer(account, age);
         Assert.Same(account, transfer.FromAccount);
         Assert.Null(transfer.ToAccount);
         Assert.Equal(TransferReason.Rmd, transfer.Reason);
         Assert.Equal((decimal)expected, transfer.MandatoryAmount);
         Assert.Equal(0m, transfer.VoluntaryAmount);
         Assert.Equal((decimal)expected, transfer.Amount);
-        Assert.Equal(0m, new AccountEarnings(account).Amount);
+        Assert.Equal(0m, PlanYearCalculator.CalculateAccountEarnings(account).Amount);
     }
 
     [Theory]

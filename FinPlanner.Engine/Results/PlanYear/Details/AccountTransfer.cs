@@ -1,11 +1,13 @@
 namespace FinPlanner.Engine;
 
-public enum TransferReason { Rmd, Scheduled, ExpenseWithdrawal, SurplusReinvestment }
+public enum TransferReason { Rmd, Scheduled, ExpenseWithdrawal, SurplusReinvestment, ExternalIncome }
 
 /// <summary>
-/// One movement of existing funds in a plan period. A null endpoint represents
+/// One movement of funds in a plan period. External income has no account endpoints.
+/// A null endpoint represents
 /// the period's cash pool for expenses; account-to-account transfers conserve wealth.
-/// Amount is the amount actually moved, while RequestedAmount preserves the instruction.
+/// RequestedAmount preserves the instruction; Amount starts at the requested value
+/// and records the amount actually moved once the calculator applies the transfer.
 /// </summary>
 public class AccountTransfer
 {
@@ -14,15 +16,17 @@ public class AccountTransfer
     public Account? ToAccount { get; }
     public TransferReason Reason { get; }
     public decimal RequestedAmount { get; }
-    public decimal Amount { get; private set; }
+    public decimal Amount { get; internal set; }
     public decimal MandatoryAmount => Reason == TransferReason.Rmd ? Amount : 0m;
     public decimal VoluntaryAmount => Reason == TransferReason.ExpenseWithdrawal ? Amount : 0m;
 
     public AccountTransfer(string name, Account? fromAccount, Account? toAccount,
         decimal amount, TransferReason reason)
     {
-        if (fromAccount is null && toAccount is null)
+        if (fromAccount is null && toAccount is null && reason != TransferReason.ExternalIncome)
             throw new ArgumentException("A transfer needs at least one account endpoint.");
+        if (reason == TransferReason.ExternalIncome && (fromAccount is not null || toAccount is not null))
+            throw new ArgumentException("External income must flow directly into the cash pool.");
         if (fromAccount is not null && fromAccount.Id == toAccount?.Id)
             throw new ArgumentException("Transfer source and destination must differ.");
         Name = name;
@@ -32,20 +36,4 @@ public class AccountTransfer
         RequestedAmount = Math.Max(0m, amount);
         Amount = RequestedAmount;
     }
-
-    public AccountTransfer(Account account, int startingAge)
-        : this("RMD", account, null,
-            RmdCalculator.Calculate(account.Type, account.BeginningBalance, startingAge), TransferReason.Rmd) { }
-
-    internal decimal Execute()
-    {
-        Amount = FromAccount is null ? RequestedAmount
-            : Math.Min(RequestedAmount, Math.Max(0m, FromAccount.EndingBalance));
-        if (FromAccount is not null) FromAccount.EndingBalance -= Amount;
-        if (ToAccount is not null) ToAccount.EndingBalance += Amount;
-        return Amount;
-    }
-
-    internal static decimal GetMandatoryRate(Account account, int startingAge)
-        => RmdCalculator.GetDivisor(account.Type, startingAge) is decimal divisor ? 1m / divisor : 0m;
 }

@@ -41,13 +41,6 @@ public class Account
         WithdrawalPriority = sourceAccount.WithdrawalPriority;
     }
 
-    public void Appreciate()
-    {
-        EndingBalance = decimal.Round(
-            BeginningBalance * (1 + AppreciationRate),
-            0,
-            MidpointRounding.AwayFromZero);
-    }
 }
 
 public enum AccountType

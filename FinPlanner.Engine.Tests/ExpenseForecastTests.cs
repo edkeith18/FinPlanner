@@ -73,7 +73,6 @@ public class ExpenseForecastTests
         var inactive = Forecast(expense, 65);
 
         Assert.Equal(0m, inactive.Amount);
-        Assert.Equal(116m, Forecast(inactive, 66).Amount);
         Assert.Equal(116m, Forecast(expense, 66).Amount);
         Assert.Equal(0m, Forecast(expense, 91).Amount);
     }
@@ -86,10 +85,9 @@ public class ExpenseForecastTests
         var nextYear = Forecast(expense, 61);
 
         Assert.Equal(103m, nextYear.Amount);
-        Assert.Equal(105m, Forecast(nextYear, 62).Amount);
         Assert.Equal(105m, Forecast(expense, 62).Amount);
-        Assert.Equal(Forecast(expense, 70).Amount, Forecast(later, 70).Amount);
-        Assert.Equal(105m, Forecast(later, 62).Amount);
+        Assert.Equal(later.Amount, Forecast(expense, 70).Amount);
+        Assert.Equal(100m, expense.Amount);
     }
 
     [Fact]
@@ -98,17 +96,16 @@ public class ExpenseForecastTests
         var expense = new Expense(new Expense
         {
             Amount = 100.49m, AgeStart = 60, AgeEnd = 90, AnnualRateOfIncrease = 0.01m
-        }) { PlanStartAge = 60 };
+        });
 
         Assert.Equal(100m, Forecast(expense, 60).Amount);
         Assert.Equal(103m, Forecast(expense, 62).Amount);
     }
 
     [Fact]
-    public void ForecastRequiresPlanStartAndRejectsEarlierAges()
+    public void ForecastRejectsAgesBeforeExplicitPlanStart()
     {
-        Assert.Throws<InvalidOperationException>(() => new Expense().ForecastFromAge(60));
-        Assert.Throws<ArgumentOutOfRangeException>(() => CreateExpense(60, 90).ForecastFromAge(59));
+        Assert.Throws<ArgumentOutOfRangeException>(() => PlanYearCalculator.ForecastExpense(CreateExpense(60, 90), 60, 59));
     }
 
     [Fact]
@@ -205,34 +202,60 @@ public class ExpenseForecastTests
         Assert.Equal(originalJson, scenario.Serialize());
     }
 
-    private static Expense Forecast(Expense source, int age)
+    [Fact]
+    public void AnnualForecastsUseOriginalFractionalAmountsForNamedAndUncategorizedExpenses()
     {
-        var forecast = new Expense(source);
-        forecast.ForecastFromAge(age);
-        return forecast;
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-60),
+            LifeExpectancy = 64,
+            AnnualExpenses = 100.49m,
+            AnnualInflationRate = 1m,
+            Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }],
+            Expenses = [new Expense
+            {
+                Name = "Future expense", Amount = 100.49m, AgeStart = 62, AgeEnd = 63,
+                AnnualRateOfIncrease = 0.01m, UseInflationValue = false
+            }]
+        };
+        var original = scenario.Serialize();
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
+
+        Assert.True(plan.IsSuccessful);
+        Assert.Equal(new[] { 0m, 0m, 103m, 104m },
+            plan.PlanYears.Select(year => year.Expenses[0].Amount));
+        Assert.Equal(new[] { 100m, 101m, 103m, 104m },
+            plan.PlanYears.Select(year => year.Expenses[^1].Amount));
+        Assert.Equal(original, scenario.Serialize());
     }
 
+    private static Expense Forecast(Expense source, int age)
+        => PlanYearCalculator.ForecastExpense(source, 60, age);
+
     [Fact]
-    public void ForecastUpdatesTheSameExpenseWithoutLosingItsBaseline()
+    public void ForecastReturnsSeparateResultsWithoutChangingTheOriginalExpense()
     {
         var expense = CreateExpense(66, 90);
-        expense.ForecastFromAge(65);
-        Assert.Equal(0m, expense.Amount);
-        expense.ForecastFromAge(66);
-        Assert.Equal(116m, expense.Amount);
-        expense.ForecastFromAge(66);
-        Assert.Equal(116m, expense.Amount);
-        expense.ForecastFromAge(91);
-        Assert.Equal(0m, expense.Amount);
-        expense.ForecastFromAge(66);
-        Assert.Equal(116m, expense.Amount);
+        var inactive = Forecast(expense, 65);
+        var active = Forecast(expense, 66);
+        var expired = Forecast(expense, 91);
+
+        Assert.NotSame(expense, inactive);
+        Assert.NotSame(expense, active);
+        Assert.NotSame(active, Forecast(expense, 66));
+        Assert.Equal(100m, expense.Amount);
+        Assert.Equal(0m, inactive.Amount);
+        Assert.Equal(116m, active.Amount);
+        Assert.Equal(0m, expired.Amount);
+        Assert.Equal(116m, Forecast(expense, 66).Amount);
     }
-    private static Expense CreateExpense(int ageStart, int ageEnd) => new(new Expense
+
+    private static Expense CreateExpense(int ageStart, int ageEnd) => new()
     {
         Name = "Healthcare",
         Amount = 100m,
         AgeStart = ageStart,
         AgeEnd = ageEnd,
         AnnualRateOfIncrease = 0.025m
-    }) { PlanStartAge = 60 };
+    };
 }

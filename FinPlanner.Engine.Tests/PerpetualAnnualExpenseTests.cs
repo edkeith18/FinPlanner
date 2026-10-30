@@ -230,6 +230,34 @@ public class PerpetualAnnualExpenseTests
             new PlanCalculator().CalculatePerpetualSpend(scenario).AnnualExpenses);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void EmptyAccountsThatCannotReceiveSurplusDoNotPreventPerpetualProof(bool withIncome)
+    {
+        var scenario = CreateScenario(1010123m, 0.07m);
+        scenario.AnnualInflationRate = 6m;
+        scenario.BondsAnnualRateOfReturn = 0.0453m;
+        scenario.Accounts[0].Type = AccountType.Brokerage;
+        if (withIncome)
+            scenario.Income.Add(new Income { InitialAmount = 1000m, AgeStart = 58 });
+        var calculator = new PlanCalculator();
+        var expected = calculator.CalculatePerpetualSpend(scenario);
+        scenario.Accounts.Insert(0, new Account
+        {
+            Type = AccountType.Inherited, Holdings = AccountHoldings.Bonds,
+            BeginningBalance = 0m, WithdrawalPriority = 0
+        });
+        var original = scenario.Serialize();
+
+        var actual = calculator.CalculatePerpetualSpend(scenario);
+
+        Assert.True(actual.IsSuccessful);
+        Assert.Equal(expected.AnnualExpenses, actual.AnnualExpenses);
+        Assert.Equal(original, scenario.Serialize());
+        Assert.All(actual.PlanYears, year => Assert.Equal(0m, year.Accounts[0].EndingBalance));
+    }
+
     private static Scenario CreateScenario(decimal balance, decimal returnRate)
     {
         return new Scenario

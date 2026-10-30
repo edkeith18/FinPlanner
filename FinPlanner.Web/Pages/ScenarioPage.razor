@@ -833,12 +833,12 @@
     private readonly Dictionary<Expense, int> originalExpenseEndAges = new();
     private readonly Dictionary<Expense, decimal> originalExpenseAnnualRates = new();
     private readonly Dictionary<Expense, bool> originalExpenseUseInflationValues = new();
-    private readonly Dictionary<Transfer, int> originalTransferStartAges = new();
-    private readonly Dictionary<Transfer, int> originalTransferEndAges = new();
-    private readonly Dictionary<Transfer, decimal> originalTransferAnnualRates = new();
-    private readonly Dictionary<Transfer, bool> originalTransferUseInflationValues = new();
-    private readonly Dictionary<Transfer, string> originalTransferFromAccountNames = new();
-    private readonly Dictionary<Transfer, string> originalTransferToAccountNames = new();
+    private readonly Dictionary<ScheduledTransfer, int> originalTransferStartAges = new();
+    private readonly Dictionary<ScheduledTransfer, int> originalTransferEndAges = new();
+    private readonly Dictionary<ScheduledTransfer, decimal> originalTransferAnnualRates = new();
+    private readonly Dictionary<ScheduledTransfer, bool> originalTransferUseInflationValues = new();
+    private readonly Dictionary<ScheduledTransfer, string> originalTransferFromAccountNames = new();
+    private readonly Dictionary<ScheduledTransfer, string> originalTransferToAccountNames = new();
     private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
     {
         ["step"] = "1",
@@ -854,11 +854,11 @@
     private readonly HashSet<Expense> editingExpenseStartAgeRows = new();
     private readonly HashSet<Expense> editingExpenseEndAgeRows = new();
     private readonly HashSet<Expense> editingExpenseAnnualRateRows = new();
-    private readonly HashSet<Transfer> editingTransferStartAgeRows = new();
-    private readonly HashSet<Transfer> editingTransferEndAgeRows = new();
-    private readonly HashSet<Transfer> editingTransferAnnualRateRows = new();
-    private readonly HashSet<Transfer> editingTransferFromAccountRows = new();
-    private readonly HashSet<Transfer> editingTransferToAccountRows = new();
+    private readonly HashSet<ScheduledTransfer> editingTransferStartAgeRows = new();
+    private readonly HashSet<ScheduledTransfer> editingTransferEndAgeRows = new();
+    private readonly HashSet<ScheduledTransfer> editingTransferAnnualRateRows = new();
+    private readonly HashSet<ScheduledTransfer> editingTransferFromAccountRows = new();
+    private readonly HashSet<ScheduledTransfer> editingTransferToAccountRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private string dateOfBirthInput = string.Empty;
@@ -905,7 +905,7 @@
         scenario.Accounts = data.Accounts ?? new List<Account>();
         scenario.Income = data.Income ?? new List<Income>();
         scenario.Expenses = data.Expenses ?? new List<Expense>();
-        scenario.Transfers = data.Transfers ?? new List<Transfer>();
+        scenario.Transfers = data.Transfers ?? new List<ScheduledTransfer>();
         scenario.StartYear = data.StartYear;
         scenario.SecuritiesAnnualRateOfReturn = data.SecuritiesAnnualRateOfReturn;
         scenario.AnnualInflationRate = data.AnnualInflationRate;
@@ -1417,7 +1417,7 @@
         }
     }
 
-    private async Task DeleteTransfer(Transfer transfer)
+    private async Task DeleteTransfer(ScheduledTransfer transfer)
     {
         if (await JS.InvokeAsync<bool>("confirm", $"Delete transfer '{transfer.Name}'?"))
         {
@@ -1540,7 +1540,7 @@
             Account account => account.Balance,
             Income income => income.Amount,
             Expense expense => expense.Amount,
-            Transfer transfer => transfer.Amount,
+            ScheduledTransfer transfer => transfer.Amount,
             _ => 0m
         };
     }
@@ -1558,7 +1558,7 @@
             case Expense expense:
                 expense.Amount = value;
                 break;
-            case Transfer transfer:
+            case ScheduledTransfer transfer:
                 transfer.Amount = value;
                 break;
         }
@@ -1571,7 +1571,7 @@
             Account account => account.Name,
             Income income => income.Name,
             Expense expense => expense.Name,
-            Transfer transfer => transfer.Name,
+            ScheduledTransfer transfer => transfer.Name,
             _ => string.Empty
         };
     }
@@ -1589,7 +1589,7 @@
             case Expense expense:
                 expense.Name = value;
                 break;
-            case Transfer transfer:
+            case ScheduledTransfer transfer:
                 transfer.Name = value;
                 break;
         }
@@ -1672,7 +1672,7 @@
             Account => AddItemType.Account,
             Income => AddItemType.Income,
             Expense => AddItemType.Expense,
-            Transfer => AddItemType.Transfer,
+            ScheduledTransfer => AddItemType.Transfer,
             _ => null
         };
     }
@@ -1699,7 +1699,7 @@
             || editingExpenseAnnualRateRows.Contains(expense);
     }
 
-    private bool IsTransferRowEditing(Transfer transfer)
+    private bool IsTransferRowEditing(ScheduledTransfer transfer)
     {
         return editingRows.Contains(transfer)
             || editingNameRows.Contains(transfer)
@@ -1729,7 +1729,7 @@
         return FormatAnnualRate(expense.AnnualRateOfIncrease, expense.UseInflationValue);
     }
 
-    private static string FormatTransferAnnualRate(Transfer transfer)
+    private static string FormatTransferAnnualRate(ScheduledTransfer transfer)
     {
         return FormatAnnualRate(transfer.AnnualRateOfIncrease, transfer.UseInflationValue);
     }
@@ -1763,7 +1763,7 @@
         }
     }
 
-    private void NormalizeLoadedTransfers(IEnumerable<Transfer> transfers)
+    private void NormalizeLoadedTransfers(IEnumerable<ScheduledTransfer> transfers)
     {
         var currentCalendarYear = DateTime.Now.Year;
 
@@ -1812,7 +1812,7 @@
         }
     }
 
-    private void OnTransferUseInflationChanged(Transfer transfer, ChangeEventArgs e)
+    private void OnTransferUseInflationChanged(ScheduledTransfer transfer, ChangeEventArgs e)
     {
         transfer.UseInflationValue = IsChecked(e);
 
@@ -1942,31 +1942,31 @@
 
     private bool CanAddTransfer => scenario.Accounts.Count > 0;
 
-    private bool IsEditingTransferStartAge(Transfer transfer) => editingTransferStartAgeRows.Contains(transfer);
+    private bool IsEditingTransferStartAge(ScheduledTransfer transfer) => editingTransferStartAgeRows.Contains(transfer);
 
-    private bool IsEditingTransferEndAge(Transfer transfer) => editingTransferEndAgeRows.Contains(transfer);
+    private bool IsEditingTransferEndAge(ScheduledTransfer transfer) => editingTransferEndAgeRows.Contains(transfer);
 
-    private bool IsEditingTransferAnnualRate(Transfer transfer) => editingTransferAnnualRateRows.Contains(transfer);
+    private bool IsEditingTransferAnnualRate(ScheduledTransfer transfer) => editingTransferAnnualRateRows.Contains(transfer);
 
-    private bool IsEditingTransferFromAccount(Transfer transfer) => editingTransferFromAccountRows.Contains(transfer);
+    private bool IsEditingTransferFromAccount(ScheduledTransfer transfer) => editingTransferFromAccountRows.Contains(transfer);
 
-    private bool IsEditingTransferToAccount(Transfer transfer) => editingTransferToAccountRows.Contains(transfer);
+    private bool IsEditingTransferToAccount(ScheduledTransfer transfer) => editingTransferToAccountRows.Contains(transfer);
 
-    private void StartEditingTransferStartAge(Transfer transfer)
+    private void StartEditingTransferStartAge(ScheduledTransfer transfer)
     {
         if (editingTransferStartAgeRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
         originalTransferStartAges[transfer] = transfer.AgeStart;
         editingTransferStartAgeRows.Add(transfer);
     }
 
-    private void StartEditingTransferEndAge(Transfer transfer)
+    private void StartEditingTransferEndAge(ScheduledTransfer transfer)
     {
         if (editingTransferEndAgeRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
         originalTransferEndAges[transfer] = transfer.AgeEnd;
         editingTransferEndAgeRows.Add(transfer);
     }
 
-    private void StartEditingTransferAnnualRate(Transfer transfer)
+    private void StartEditingTransferAnnualRate(ScheduledTransfer transfer)
     {
         if (editingTransferAnnualRateRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
         originalTransferAnnualRates[transfer] = transfer.AnnualRateOfIncrease;
@@ -1978,7 +1978,7 @@
         editingTransferAnnualRateRows.Add(transfer);
     }
 
-    private void StartEditingTransferFromAccount(Transfer transfer)
+    private void StartEditingTransferFromAccount(ScheduledTransfer transfer)
     {
         if (editingTransferFromAccountRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
         originalTransferFromAccountNames[transfer] = transfer.FromAccountName;
@@ -1986,7 +1986,7 @@
         editingTransferFromAccountRows.Add(transfer);
     }
 
-    private void StartEditingTransferToAccount(Transfer transfer)
+    private void StartEditingTransferToAccount(ScheduledTransfer transfer)
     {
         if (editingTransferToAccountRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
         originalTransferToAccountNames[transfer] = transfer.ToAccountName;
@@ -1994,7 +1994,7 @@
         editingTransferToAccountRows.Add(transfer);
     }
 
-    private void StopEditingTransferFields(Transfer transfer, bool commitChanges)
+    private void StopEditingTransferFields(ScheduledTransfer transfer, bool commitChanges)
     {
         if (editingTransferStartAgeRows.Remove(transfer) && !commitChanges && originalTransferStartAges.TryGetValue(transfer, out var originalStartAge))
         {
@@ -2050,7 +2050,7 @@
         UpdateDirtyState();
     }
 
-    private void OnTransferFieldKeyDown(Transfer transfer, KeyboardEventArgs e)
+    private void OnTransferFieldKeyDown(ScheduledTransfer transfer, KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
@@ -2062,13 +2062,13 @@
         }
     }
 
-    private void CommitTransferEdit(Transfer transfer)
+    private void CommitTransferEdit(ScheduledTransfer transfer)
     {
         CommitItemEdit(transfer);
         StopEditingTransferFields(transfer, commitChanges: true);
     }
 
-    private void CancelTransferEdit(Transfer transfer)
+    private void CancelTransferEdit(ScheduledTransfer transfer)
     {
         CancelItemEdit(transfer);
         StopEditingTransferFields(transfer, commitChanges: false);
@@ -2085,7 +2085,7 @@
         newTransferToAccountName = orderedAccountNames.Skip(1).FirstOrDefault() ?? newTransferFromAccountName;
     }
 
-    private void EnsureTransferAccountSelectionIsValid(Transfer transfer)
+    private void EnsureTransferAccountSelectionIsValid(ScheduledTransfer transfer)
     {
         var orderedAccountNames = scenario.Accounts
             .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)

@@ -20,7 +20,7 @@ public class Scenario
     public List<Account> Accounts { get; set; } = new();
     public List<Income> Income { get; set; } = new();
     public List<Expense> Expenses { get; set; } = new();
-    public List<Transfer> Transfers { get; set; } = new();
+    public List<ScheduledTransfer> Transfers { get; set; } = new();
     [JsonIgnore] 
     public int StartYear { get; set; } = DateTime.Now.Year;
     [JsonIgnore]
@@ -86,20 +86,12 @@ public class Scenario
         Income = source.Income.Select(income => new Income
         {
             Name = income.Name,
-            Amount = income.Amount,
+            InitialAmount = income.InitialAmount,
+            AgeStart = income.AgeStart,
+            AnnualRateOfIncrease = income.AnnualRateOfIncrease,
             LastUpdated = income.LastUpdated
         }).ToList();
-        Transfers = source.Transfers.Select(transfer => new Transfer
-        {
-            Name = transfer.Name,
-            FromAccountName = transfer.FromAccountName,
-            ToAccountName = transfer.ToAccountName,
-            AgeStart = transfer.AgeStart,
-            AgeEnd = transfer.AgeEnd,
-            Amount = transfer.Amount,
-            AnnualRateOfIncrease = transfer.AnnualRateOfIncrease,
-            UseInflationValue = transfer.UseInflationValue
-        }).ToList();
+        Transfers = source.Transfers.Select(transfer => new ScheduledTransfer(transfer)).ToList();
     }
 
     public string Serialize()
@@ -340,7 +332,7 @@ public class Scenario
 
     public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, string fromAccountName, string toAccountName, decimal annualRateOfIncrease, bool useInflationValue = true)
     {
-        Transfers.Add(new Transfer
+        Transfers.Add(new ScheduledTransfer
         {
             Name = name,
             Amount = amount,

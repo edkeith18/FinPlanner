@@ -42,12 +42,15 @@ public class AccountIncomeTests
     }
 
     [Fact]
-    public void FromScenarioCreatesOneIncomePerOwnedAccount()
+    public void CalculateEarningsCreatesOneIncomePerOwnedAccount()
     {
         var accounts = Enum.GetValues<AccountType>()
             .Select(type => new Account { Type = type, BeginningBalance = 1000m })
             .ToArray();
         var year = CreateYear(0m, accounts);
+
+        Assert.Empty(year.AccountEarnings);
+        PlanYearCalculator.CalculateEarnings(year);
 
         Assert.Equal(accounts.Length, year.AccountEarnings.Count);
         for (var index = 0; index < accounts.Length; index++)
@@ -73,7 +76,9 @@ public class AccountIncomeTests
             new Account { BeginningBalance = 1000m, WithdrawalPriority = 1 },
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
 
-        Assert.Equal(0m, Apply(year));
+        Apply(year);
+        Assert.True(year.IsFullyFunded);
+        Assert.Equal(0m, year.UnfundedExpenses);
         Assert.Equal(847m, year.Accounts[0].EndingBalance);
         Assert.Equal(965m, year.Accounts[1].EndingBalance);
         Assert.Equal(153m, year.VoluntaryFrom(0));
@@ -123,7 +128,9 @@ public class AccountIncomeTests
             new Account { BeginningBalance = 1000m, WithdrawalPriority = 2 },
             new Account { Type = AccountType.Inherited, BeginningBalance = 2000m, WithdrawalPriority = 99 });
 
-        Assert.Equal(0m, Apply(year));
+        Apply(year);
+        Assert.True(year.IsFullyFunded);
+        Assert.Equal(0m, year.UnfundedExpenses);
         Assert.Equal(118m, year.MandatoryCashFlow);
         Assert.Equal((decimal)voluntary, year.Transfers.Sum(transfer => transfer.VoluntaryAmount));
         Assert.Equal((decimal)firstEndingBalance, year.Accounts[0].EndingBalance);
@@ -168,12 +175,22 @@ public class AccountIncomeTests
     [Fact]
     public void ForecastFromRecalculatesMandatoryIncomeAndResetsVoluntaryIncome()
     {
-        var first = CreateYear(300m,
-            new Account { BeginningBalance = 1000m, WithdrawalPriority = 1 },
-            new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
+            LifeExpectancy = 60,
+            AnnualExpenses = 300m,
+            Accounts =
+            [
+                new Account { BeginningBalance = 1000m, WithdrawalPriority = 1 },
+                new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 }
+            ]
+        };
+        var first = PlanYearCalculator.FromScenario(scenario, 300m);
         Apply(first);
 
-        var next = PlanYear.ForecastFrom(first);
+        var next = PlanYearCalculator.ForecastFrom(first, scenario, 300m);
+        PlanYearCalculator.CalculateEarnings(next);
 
         Assert.Equal(2, next.AccountEarnings.Count);
         Assert.Equal(965m, next.Accounts[1].BeginningBalance);
@@ -193,9 +210,10 @@ public class AccountIncomeTests
     {
         var year = CreateYear(10m,
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m });
-        year.Accounts[0].Appreciate();
+        PlanYearCalculator.AppreciateAccounts(year);
 
-        var exception = Assert.Throws<InvalidOperationException>(() => year.ApplyExpenses());
+        PlanYearCalculator.CalculateEarnings(year);
+        var exception = Assert.Throws<InvalidOperationException>(() => PlanYearCalculator.ApplyRmdsAndScheduledTransfers(year));
 
         Assert.Contains("Brokerage", exception.Message);
         Assert.Equal(1000m, year.Accounts[0].EndingBalance);
@@ -209,7 +227,9 @@ public class AccountIncomeTests
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
         year.Accounts[1].AppreciationRate = -0.99m;
 
-        Assert.Equal(0m, Apply(year));
+        Apply(year);
+        Assert.True(year.IsFullyFunded);
+        Assert.Equal(0m, year.UnfundedExpenses);
         Assert.Equal(10m, year.MandatoryFrom(1));
         Assert.Equal(0m, year.Accounts[1].EndingBalance);
         Assert.Equal(178m, year.VoluntaryFrom(0));
@@ -217,13 +237,15 @@ public class AccountIncomeTests
     }
 
     [Fact]
-    public void UnfundedExpensesAreReturnedAfterAllIncomeIsUsed()
+    public void UnfundedExpensesAreRecordedAfterAllIncomeIsUsed()
     {
         var year = CreateYear(1500m,
             new Account { BeginningBalance = 100m, WithdrawalPriority = 1 },
             new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 });
 
-        Assert.Equal(399m, Apply(year));
+        Apply(year);
+        Assert.False(year.IsFullyFunded);
+        Assert.Equal(399m, year.UnfundedExpenses);
         Assert.Equal(0m, year.EndingBalance);
         Assert.Equal(1101m, year.TotalCashFlow);
     }
@@ -237,15 +259,11 @@ public class AccountIncomeTests
             AnnualExpenses = annualExpenses,
             Accounts = accounts.ToList()
         };
-        return PlanYear.FromScenario(scenario, annualExpenses);
+        return PlanYearCalculator.FromScenario(scenario, annualExpenses);
     }
 
-    private static decimal Apply(PlanYear year)
+    private static void Apply(PlanYear year)
     {
-        foreach (var account in year.Accounts)
-        {
-            account.Appreciate();
-        }
-        return year.ApplyExpenses();
+        PlanYearCalculator.Calculate(year);
     }
 }

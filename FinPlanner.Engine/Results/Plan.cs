@@ -9,6 +9,8 @@ public class Plan
     public int BeginningYear { get; }
     public int EndingYear { get; }
     public decimal AnnualExpenses { get; }
+    /// <summary>Income source names, including sources that start beyond the reported years.</summary>
+    public IReadOnlyList<string> IncomeNames { get; }
     public bool IsSuccessful { get; }
     public string? FailureReason { get; }
 
@@ -25,6 +27,7 @@ public class Plan
         BeginningYear = scenario.StartYear;
         EndingYear = scenario.EndYear;
         AnnualExpenses = scenario.AnnualExpenses;
+        IncomeNames = scenario.Income.Select(income => income.Name).Distinct().ToList().AsReadOnly();
         PlanYears = years.AsReadOnly();
         IsSuccessful = isSuccessful;
         FailureReason = failureReason;
