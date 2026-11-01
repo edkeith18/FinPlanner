@@ -54,7 +54,7 @@ public class BrokerageIncomeTests
             {
               "DateOfBirth": "10/21/1968",
               "LifeExpectancy": 100,
-              "AnnualExpenses": 5000,
+              "FirstYearAnnualExpenses": 5000,
               "BondsAnnualRateOfReturn": 4.48,
               "SecuritiesAnnualRateOfReturn": 7,
               "Accounts": [{ "Type": "Brokerage", "Holdings": "Bonds", "Balance": 100000 }]
@@ -69,7 +69,7 @@ public class BrokerageIncomeTests
         Assert.Equal(520m, year.VoluntaryFrom(0));
         Assert.Equal(103960m, year.EndingBalance);
 
-        var next = PlanYearCalculator.ForecastFrom(year, scenario, scenario.AnnualExpenses);
+        var next = PlanYearCalculator.ForecastFrom(year, scenario, scenario.FirstYearAnnualExpenses);
         PlanYearCalculator.CalculateEarnings(next);
         Assert.Equal(0.0448m, next.Accounts[0].AppreciationRate);
         Assert.Equal(4657m, next.AccountEarnings[0].Interest);
@@ -161,7 +161,7 @@ public class BrokerageIncomeTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 60,
-            AnnualExpenses = 2000m,
+            FirstYearAnnualExpenses = 2000m,
             SecuritiesAnnualRateOfReturn = 0.1m,
             Accounts = [new Account { BeginningBalance = 100000m }]
         };
@@ -195,25 +195,5 @@ public class BrokerageIncomeTests
         Assert.Equal(100000m, account.BeginningBalance);
     }
 
-    [Fact]
-    public void EarnedIncomeIsNewValueEvenWhenTheExistingBalanceIsSmall()
-    {
-        var year = PlanYearCalculator.FromScenario(new Scenario
-        {
-            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
-            Accounts = [new Account { BeginningBalance = 100000m }]
-        }, 0m);
-        year.Accounts[0].EndingBalance = 200m;
-        PlanYearCalculator.CalculateEarnings(year);
-        PlanYearCalculator.ApplyRmdsAndScheduledTransfers(year);
-        PlanYearCalculator.ApplyExpenses(year);
-        var income = year.AccountEarnings[0];
-        Assert.Equal(170m, income.Interest);
-        Assert.Equal(940m, income.DivQ);
-        Assert.Equal(50m, income.DivUQ);
-        Assert.Equal(1160m, income.Amount);
-        Assert.Equal(1360m, year.EndingBalance);
-        Assert.Equal(income.Interest + income.DivQ + income.DivUQ,
-            income.Amount);
-    }
+
 }

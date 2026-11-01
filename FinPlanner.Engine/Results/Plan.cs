@@ -13,6 +13,7 @@ public class Plan
     public IReadOnlyList<string> IncomeNames { get; }
     public bool IsSuccessful { get; }
     public string? FailureReason { get; }
+    public string? CalculationNote { get; }
 
     /// <summary>
     /// The calculated 12-month periods, in chronological order.
@@ -21,15 +22,16 @@ public class Plan
     public IReadOnlyList<PlanYear> PlanYears { get; }
 
     internal Plan(Scenario scenario, string name, List<PlanYear> years,
-        bool isSuccessful, string? failureReason = null)
+        bool isSuccessful, string? failureReason = null, string? calculationNote = null)
     {
         Name = name;
         BeginningYear = scenario.StartYear;
         EndingYear = scenario.EndYear;
-        AnnualExpenses = scenario.AnnualExpenses;
+        AnnualExpenses = scenario.FirstYearAnnualExpenses;
         IncomeNames = scenario.Income.Select(income => income.Name).Distinct().ToList().AsReadOnly();
         PlanYears = years.AsReadOnly();
         IsSuccessful = isSuccessful;
         FailureReason = failureReason;
+        CalculationNote = calculationNote;
     }
 }

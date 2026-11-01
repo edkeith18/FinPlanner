@@ -67,12 +67,12 @@ public class ScheduledTransferTests
         scenario.Accounts =
         [
             new Account { Name = "IRA", Type = AccountType.Retirement, BeginningBalance = 24600m },
-            new Account { Name = "Roth", Type = AccountType.RetirementRoth },
+            new Account { Name = "Other IRA", Type = AccountType.Retirement },
             new Account { Name = "Brokerage", Type = AccountType.Brokerage }
         ];
         scenario.Transfers.Add(new ScheduledTransfer
         {
-            Name = "Conversion", FromAccountName = "IRA", ToAccountName = "Roth",
+            Name = "Rollover", FromAccountName = "IRA", ToAccountName = "Other IRA",
             Amount = 500m, AgeStart = 75, AgeEnd = 75
         });
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
@@ -86,6 +86,34 @@ public class ScheduledTransferTests
         Assert.Equal(24600m, year.EndingBalance);
         Assert.Equal(1000m, year.TotalCashFlow);
         Assert.Equal(0m, year.AccountEarnings.Sum(e => e.Amount));
+    }
+
+    [Theory]
+    [InlineData(AccountType.Retirement, 58)]
+    [InlineData(AccountType.Inherited, 58)]
+    [InlineData(AccountType.Retirement, 59)]
+    [InlineData(AccountType.Inherited, 59)]
+    public void ScheduledRothConversionsAreRejectedInEveryPlanningMode(AccountType sourceType, int age)
+    {
+        var scenario = CreateScenario();
+        scenario.Accounts =
+        [
+            new Account { Name = "IRA", Type = sourceType, BeginningBalance = 1000000m },
+            new Account { Name = "Roth", Type = AccountType.RetirementRoth },
+            new Account { Name = "Brokerage", Type = AccountType.Brokerage }
+        ];
+        scenario.Transfers.Add(new ScheduledTransfer
+        {
+            Name = "Unsupported", FromAccountName = "IRA", ToAccountName = "Roth",
+            Amount = 1000m, AgeStart = age, AgeEnd = age
+        });
+        var original = scenario.Serialize();
+        var calculator = new PlanCalculator();
+        Assert.Contains("Roth conversions", Assert.Throws<NotSupportedException>(
+            () => calculator.CalculateCurrentTrajectory(scenario)).Message);
+        Assert.Throws<NotSupportedException>(() => calculator.CalculateMaximumSpend(scenario));
+        Assert.Throws<NotSupportedException>(() => calculator.CalculatePerpetualSpend(scenario));
+        Assert.Equal(original, scenario.Serialize());
     }
 
     [Fact]
@@ -130,7 +158,7 @@ public class ScheduledTransferTests
     }
 
     [Fact]
-    public void AllPlanningModesApplyScheduledTransfersWithoutChangingInputs()
+    public void FinitePlanningModesApplyScheduledTransfersWithoutChangingInputs()
     {
         var scenario = CreateScenario();
         scenario.SecuritiesAnnualRateOfReturn = 0.1m;
@@ -142,7 +170,7 @@ public class ScheduledTransferTests
         var original = scenario.Serialize();
         var calculator = new PlanCalculator();
         foreach (var plan in new[] { calculator.CalculateCurrentTrajectory(scenario),
-            calculator.CalculateMaximumSpend(scenario), calculator.CalculatePerpetualSpend(scenario) })
+            calculator.CalculateMaximumSpend(scenario) })
         {
             Assert.True(plan.IsSuccessful);
             Assert.Equal(new[] { 100m, 100m, 0m, 0m }, plan.PlanYears.Select(year =>

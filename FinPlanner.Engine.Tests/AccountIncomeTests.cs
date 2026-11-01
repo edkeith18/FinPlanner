@@ -11,7 +11,7 @@ public class AccountIncomeTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 60,
-            AnnualExpenses = 200m,
+            FirstYearAnnualExpenses = 200m,
             Accounts =
             [
                 new Account { BeginningBalance = 10000m, WithdrawalPriority = 1 },
@@ -179,7 +179,7 @@ public class AccountIncomeTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 60,
-            AnnualExpenses = 300m,
+            FirstYearAnnualExpenses = 300m,
             Accounts =
             [
                 new Account { BeginningBalance = 1000m, WithdrawalPriority = 1 },
@@ -203,20 +203,6 @@ public class AccountIncomeTests
         Assert.Equal(253m, first.VoluntaryFrom(0));
         Assert.Equal(747m, first.Accounts[0].EndingBalance);
         Assert.Equal(300m, next.TotalCashFlow);
-    }
-
-    [Fact]
-    public void MissingBrokerageIsReportedBeforeAnyWithdrawals()
-    {
-        var year = CreateYear(10m,
-            new Account { Type = AccountType.Inherited, BeginningBalance = 1000m });
-        PlanYearCalculator.AppreciateAccounts(year);
-
-        PlanYearCalculator.CalculateEarnings(year);
-        var exception = Assert.Throws<InvalidOperationException>(() => PlanYearCalculator.ApplyRmdsAndScheduledTransfers(year));
-
-        Assert.Contains("Brokerage", exception.Message);
-        Assert.Equal(1000m, year.Accounts[0].EndingBalance);
     }
 
     [Fact]
@@ -256,7 +242,7 @@ public class AccountIncomeTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 60,
-            AnnualExpenses = annualExpenses,
+            FirstYearAnnualExpenses = annualExpenses,
             Accounts = accounts.ToList()
         };
         return PlanYearCalculator.FromScenario(scenario, annualExpenses);

@@ -35,7 +35,7 @@ public class AccountTransferTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-75),
             LifeExpectancy = 76,
-            AnnualExpenses = 5000m,
+            FirstYearAnnualExpenses = 5000m,
             Accounts = [new Account { Type = type, BeginningBalance = 24600m }]
         };
         var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);

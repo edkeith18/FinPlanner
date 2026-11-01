@@ -5,6 +5,9 @@ namespace FinPlanner.Engine;
 /// </summary>
 public class PlanYear
 {
+    /// <summary>Calculated tax detail for projected years; null when first-year tax is supplied.</summary>
+    public TaxResult? Taxes { get; internal set; }
+    public decimal TaxExpense => Expenses.Where(expense => expense.Type == ExpenseType.Tax).Sum(expense => expense.Amount);
     public decimal UnfundedTransfers { get; internal set; }
 
     /// <summary>Expenses left unpaid after applying available cash and account withdrawals.</summary>
@@ -17,6 +20,9 @@ public class PlanYear
     /// The calendar year represented by this PlanYear at the start of the 12-month period.
     /// </summary>
     public int StartingYear { get; init; }
+
+    /// <summary>Zero-based projection offset; the first plan year is zero.</summary>
+    public int YearsInFuture { get; init; }
 
     /// <summary>
     /// The user's age at the start of the 12-month period.
@@ -61,6 +67,7 @@ public class PlanYear
     /// </summary>
     public List<Expense> Expenses { get; set; } = new List<Expense>();
 
+    /// <summary>Total expenses for this modeled year, including its funded tax expense.</summary>
     public decimal AnnualExpenses { get; set; }
 
     /// <summary>

@@ -15,6 +15,7 @@ public class AccountTransfer
     public Account? FromAccount { get; }
     public Account? ToAccount { get; }
     public TransferReason Reason { get; }
+    public IncomeType TaxType { get; internal set; } = IncomeType.Ordinary;
     public decimal RequestedAmount { get; }
     public decimal Amount { get; internal set; }
     public decimal MandatoryAmount => Reason == TransferReason.Rmd ? Amount : 0m;
@@ -29,6 +30,10 @@ public class AccountTransfer
             throw new ArgumentException("External income must flow directly into the cash pool.");
         if (fromAccount is not null && fromAccount.Id == toAccount?.Id)
             throw new ArgumentException("Transfer source and destination must differ.");
+        if (reason == TransferReason.Scheduled
+            && fromAccount?.Type is AccountType.Retirement or AccountType.Inherited
+            && toAccount?.Type == AccountType.RetirementRoth)
+            throw new NotSupportedException("Scheduled Roth conversions are not supported.");
         Name = name;
         FromAccount = fromAccount;
         ToAccount = toAccount;

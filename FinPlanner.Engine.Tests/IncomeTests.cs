@@ -52,7 +52,7 @@ public class IncomeTests
     public void IncomeFundsExpensesBeforeAccountWithdrawals()
     {
         var scenario = CreateScenario();
-        scenario.AnnualExpenses = 1500m;
+        scenario.FirstYearAnnualExpenses = 1500m;
         scenario.Income.Add(new Income { InitialAmount = 1000m, AgeStart = 60 });
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
         Assert.Equal(9500m, year.EndingBalance);
@@ -67,7 +67,7 @@ public class IncomeTests
         var scenario = CreateScenario();
         scenario.DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-75);
         scenario.LifeExpectancy = 76;
-        scenario.AnnualExpenses = 500m;
+        scenario.FirstYearAnnualExpenses = 500m;
         scenario.Accounts = [new Account { Type = AccountType.Retirement, BeginningBalance = 24600m },
             new Account { Type = AccountType.Brokerage }];
         scenario.Income.Add(new Income { InitialAmount = 1000m, AgeStart = 75 });
@@ -93,35 +93,32 @@ public class IncomeTests
     {
         var scenario = CreateScenario();
         scenario.Accounts[0].BeginningBalance = 0m;
-        scenario.AnnualExpenses = 1000m;
+        scenario.FirstYearAnnualExpenses = 1000m;
         scenario.Income.Add(new Income { InitialAmount = 1000m });
         var calculator = new PlanCalculator();
         Assert.True(calculator.CalculateCurrentTrajectory(scenario).IsSuccessful);
         var maximum = calculator.CalculateMaximumSpend(scenario);
         Assert.True(maximum.IsSuccessful);
         Assert.Equal(1000m, maximum.AnnualExpenses);
-        var perpetual = calculator.CalculatePerpetualSpend(scenario);
-        Assert.True(perpetual.IsSuccessful);
-        Assert.Equal(1000m, perpetual.AnnualExpenses);
+
     }
 
     [Fact]
-    public void AllPlanningModesIncludeIncomeAndCopyAllInputFields()
+    public void FinitePlanningModesIncludeIncomeAndCopyAllInputFields()
     {
         var scenario = CreateScenario();
-        scenario.AnnualExpenses = 2000m;
+        scenario.FirstYearAnnualExpenses = 2000m;
         scenario.SecuritiesAnnualRateOfReturn = 0.1m;
         scenario.Income.Add(new Income { Name = "Pension", InitialAmount = 1000m, AgeStart = 60 });
         var original = scenario.Serialize();
         var calculator = new PlanCalculator();
         var plans = new[] { calculator.CalculateCurrentTrajectory(scenario),
-            calculator.CalculateMaximumSpend(scenario), calculator.CalculatePerpetualSpend(scenario) };
+            calculator.CalculateMaximumSpend(scenario) };
         Assert.All(plans, plan =>
         {
             Assert.True(plan.IsSuccessful);
             Assert.All(plan.PlanYears, year => Assert.Equal(1000m, year.ExternalIncome));
         });
-        Assert.Equal(2000m, plans[2].AnnualExpenses);
         Assert.Equal(original, scenario.Serialize());
         var snapshot = new Scenario(scenario);
         Assert.NotSame(scenario.Income[0], snapshot.Income[0]);
@@ -134,14 +131,14 @@ public class IncomeTests
         var scenario = CreateScenario();
         scenario.Accounts[0].BeginningBalance = 500m;
         scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
-        scenario.AnnualExpenses = 1000m;
+        scenario.FirstYearAnnualExpenses = 1000m;
         scenario.Income.Add(new Income { InitialAmount = 1000m, AgeStart = 62 });
         var calculator = new PlanCalculator();
         Assert.False(calculator.CalculateCurrentTrajectory(scenario).IsSuccessful);
         var maximum = calculator.CalculateMaximumSpend(scenario);
         var perpetual = calculator.CalculatePerpetualSpend(scenario);
         Assert.Equal(0m, maximum.AnnualExpenses);
-        Assert.Equal(0m, perpetual.AnnualExpenses);
+        Assert.False(perpetual.IsSuccessful);
         Assert.All(maximum.PlanYears.Take(2), year => Assert.Equal(0m, year.ExternalIncome));
     }
 
@@ -163,15 +160,15 @@ public class IncomeTests
     }
 
     [Fact]
-    public void GrowingIncomeCanSupportGrowingSpendingWithoutInvestmentReturns()
+    public void GrowingIncomeAloneDoesNotProvideAConservativePerpetualCertificate()
     {
         var scenario = CreateScenario();
         scenario.Accounts.Add(new Account { Type = AccountType.Brokerage, Holdings = AccountHoldings.Bonds });
         scenario.AnnualInflationRate = 2m;
         scenario.Income.Add(new Income { InitialAmount = 2000m, AgeStart = 60, AnnualRateOfIncrease = 0.03m });
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
-        Assert.True(plan.IsSuccessful);
-        Assert.True(plan.AnnualExpenses >= 2000m);
+        Assert.False(plan.IsSuccessful);
+        Assert.Contains("does not prove", plan.FailureReason);
     }
 
     [Fact]
@@ -187,14 +184,14 @@ public class IncomeTests
     }
 
     [Fact]
-    public void IdenticalGrowingIncomeAndExpensesNeedNoInvestmentBalanceOrSurplusAccount()
+    public void IdenticalGrowingIncomeAndExpensesCanFundTheReportingHorizon()
     {
         var scenario = CreateScenario();
         scenario.Accounts[0].BeginningBalance = 0m;
-        scenario.AnnualExpenses = 1000m;
+        scenario.FirstYearAnnualExpenses = 1000m;
         scenario.AnnualInflationRate = 2m;
         scenario.Income.Add(new Income { InitialAmount = 1000m, AgeStart = 60, AnnualRateOfIncrease = 0.02m });
-        var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
         Assert.True(plan.IsSuccessful);
         Assert.Equal(1000m, plan.AnnualExpenses);
         Assert.All(plan.PlanYears, year => Assert.Equal(0m, year.EndingBalance));

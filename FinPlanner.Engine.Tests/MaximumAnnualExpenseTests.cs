@@ -18,7 +18,7 @@ public class MaximumAnnualExpenseTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 58 + periods,
-            AnnualExpenses = 10000m,
+            FirstYearAnnualExpenses = 10000m,
             SecuritiesAnnualRateOfReturn = (decimal)growth,
             AnnualInflationRate = (decimal)inflation * 100m,
             Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }],

@@ -30,6 +30,10 @@ buildCommand.SetAction(parseResult =>
         var plan = calculator.CalculateCurrentTrajectory(scenario);
         var maximumSpendPlan = calculator.CalculateMaximumSpend(scenario);
         var perpetualSpendPlan = calculator.CalculatePerpetualSpend(scenario);
+        if (perpetualSpendPlan.CalculationNote is not null)
+            Console.WriteLine(perpetualSpendPlan.CalculationNote);
+        if (!perpetualSpendPlan.IsSuccessful)
+            Console.WriteLine($"Perpetual plan: {perpetualSpendPlan.FailureReason}");
         var plans = new List<Plan> { plan };
         if (maximumSpendPlan.IsSuccessful)
         {

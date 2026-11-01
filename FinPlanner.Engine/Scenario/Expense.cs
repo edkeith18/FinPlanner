@@ -4,6 +4,7 @@ namespace FinPlanner.Engine;
 
 public class Expense
 {
+    public ExpenseType Type { get; set; } = ExpenseType.General;
     public string Name { get; set; } = "";
     public decimal Amount { get; set; }
     public int AgeStart { get; set; }
@@ -24,6 +25,7 @@ public class Expense
     public Expense(Expense sourceExpense)
     {
         Name = sourceExpense.Name;
+        Type = sourceExpense.Type;
         Amount = sourceExpense.Amount;
         AgeStart = sourceExpense.AgeStart;
         AgeEnd = sourceExpense.AgeEnd;

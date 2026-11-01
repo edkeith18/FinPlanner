@@ -15,7 +15,16 @@ internal static class PlanYearCalculator
         AppreciateAccounts(year);
         CalculateEarnings(year);
         ApplyRmdsAndScheduledTransfers(year);
-        ApplyExpenses(year);
+        if (year.YearsInFuture == 0)
+        {
+            FundExpenses(year);
+            DepositSurplus(year);
+            // The supplied tax amount is authoritative; no calculated detail is claimed.
+            year.Taxes = null;
+        }
+        else
+            ApplyTaxesAndExpenses(year);
+        year.AnnualExpenses = year.TotalExpenses;
     }
 
     internal static PlanYear FromScenario(
@@ -26,7 +35,8 @@ internal static class PlanYearCalculator
         {
             StartingAge = scenario.CurrentAge,
             StartingYear = scenario.StartYear,
-            AnnualExpenses = scenario.AnnualExpenses,
+            YearsInFuture = 0,
+            AnnualExpenses = scenario.FirstYearAnnualExpenses,
             Accounts = scenario.Accounts
                 .Select(account =>
                 {
@@ -42,6 +52,7 @@ internal static class PlanYearCalculator
                 .ToList(),
             Expenses = ForecastExpenses(scenario, uncategorizedExpenseAmount, scenario.CurrentAge)
         };
+        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = scenario.FirstYearTaxExpense;
         BuildTransfers(year, scenario);
         return year;
     }
@@ -53,6 +64,7 @@ internal static class PlanYearCalculator
         {
             StartingAge = previousYear.EndingAge,
             StartingYear = previousYear.EndingYear,
+            YearsInFuture = previousYear.YearsInFuture + 1,
             AnnualExpenses = previousYear.AnnualExpenses,
             Accounts = previousYear.Accounts
                 .Select(account =>
@@ -76,14 +88,17 @@ internal static class PlanYearCalculator
         var uncategorized = new Expense
         {
             Name = "Uncategorized Expenses",
+            Type = ExpenseType.Uncategorized,
             Amount = uncategorizedAmount,
             AgeStart = scenario.CurrentAge,
             AgeEnd = scenario.LifeExpectancy,
             AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m,
             UseInflationValue = true
         };
-        return scenario.Expenses.Append(uncategorized)
+        var expenses = scenario.Expenses.Append(uncategorized)
             .Select(expense => ForecastExpense(expense, scenario.CurrentAge, age)).ToList();
+        expenses.Add(new Expense { Name = "Taxes", Type = ExpenseType.Tax, AgeStart = scenario.CurrentAge, AgeEnd = scenario.LifeExpectancy });
+        return expenses;
     }
 
     /// <summary>Forecasts a copy from the original expense, rounding only at the target age.</summary>
@@ -135,7 +150,11 @@ internal static class PlanYearCalculator
         {
             var amount = ForecastIncomeAmount(income, scenario.CurrentAge, year.StartingAge);
             if (amount > 0m)
-                year.Transfers.Add(new AccountTransfer(income.Name, null, null, amount, TransferReason.ExternalIncome));
+                year.Transfers.Add(new AccountTransfer(income.Name, null, null, amount, TransferReason.ExternalIncome)
+                {
+                    TaxType = income.Type == IncomeType.Ordinary && income.Name.Equals("Social Security", StringComparison.OrdinalIgnoreCase)
+                        ? IncomeType.SocialSecurity : income.Type
+                });
         }
         foreach (var instruction in scenario.Transfers)
         {
@@ -216,14 +235,6 @@ internal static class PlanYearCalculator
     /// <summary>Executes RMDs first, followed by scheduled account-to-account transfers.</summary>
     internal static void ApplyRmdsAndScheduledTransfers(PlanYear year)
     {
-        var earned = year.AccountEarnings.Sum(income => income.Amount);
-        var required = year.Transfers.Where(transfer => transfer.Reason == TransferReason.Rmd)
-            .Sum(transfer => Math.Min(transfer.RequestedAmount,
-                Math.Max(0m, transfer.FromAccount!.EndingBalance)));
-
-        // Check for a surplus destination before withdrawing any funds.
-        FindSurplusDestination(year, year.ExternalIncome + earned + required);
-
         // RMDs move existing funds into the cash pool used for expenses.
         foreach (var transfer in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Rmd))
             ApplyTransfer(transfer);
@@ -256,21 +267,23 @@ internal static class PlanYearCalculator
             : null;
     }
 
-    /// <summary>Funds expenses from external income, earnings, and RMDs, reinvesting surplus or withdrawing any shortfall.</summary>
-    internal static void ApplyExpenses(PlanYear year)
+    /// <summary>Deposits cash remaining after final expenses and taxes into a Brokerage account.</summary>
+    private static void DepositSurplus(PlanYear year)
     {
         var cash = year.MandatoryCashFlow;
-        var surplus = Math.Max(0m, cash - year.TotalExpenses);
         var destination = FindSurplusDestination(year, cash);
+        if (destination is null) return;
 
-        if (destination is not null)
-        {
-            var reinvestment = new AccountTransfer("Unspent cash", null, destination,
-                surplus, TransferReason.SurplusReinvestment);
-            ApplyTransfer(reinvestment);
-            year.Transfers.Add(reinvestment);
-        }
+        var deposit = new AccountTransfer("Unspent cash", null, destination,
+            cash - year.TotalExpenses, TransferReason.SurplusReinvestment);
+        ApplyTransfer(deposit);
+        year.Transfers.Add(deposit);
+    }
 
+    /// <summary>Funds expenses from external income, earnings, and RMDs, withdrawing any shortfall.</summary>
+    internal static void FundExpenses(PlanYear year)
+    {
+        var cash = year.MandatoryCashFlow;
         var remainingExpenses = Math.Max(0m, year.TotalExpenses - cash);
         foreach (var account in year.Accounts.OrderBy(account => account.WithdrawalPriority))
         {
@@ -283,5 +296,29 @@ internal static class PlanYearCalculator
             year.Transfers.Add(withdrawal);
         }
         year.UnfundedExpenses = remainingExpenses;
+    }
+    // Trial withdrawals are rolled back before every iteration. Taxes are calculated
+    // from the trial ledger, so only the converged attempt changes the year's result.
+    private static void ApplyTaxesAndExpenses(PlanYear year)
+    {
+        var balances = year.Accounts.Select(account => account.EndingBalance).ToArray();
+        var transferCount = year.Transfers.Count;
+        var taxExpense = year.Expenses.Single(expense => expense.Type == ExpenseType.Tax);
+        for (var iteration = 0; iteration < 100; iteration++)
+        {
+            for (var i = 0; i < balances.Length; i++) year.Accounts[i].EndingBalance = balances[i];
+            year.Transfers.RemoveRange(transferCount, year.Transfers.Count - transferCount);
+            FundExpenses(year);
+            var taxes = TaxCalculator.Calculate(year, year.YearsInFuture);
+            var nextTax = Round(taxes.TotalTax);
+            if (taxExpense.Amount == nextTax)
+            {
+                DepositSurplus(year);
+                year.Taxes = TaxCalculator.Calculate(year, year.YearsInFuture);
+                return;
+            }
+            taxExpense.Amount = nextTax;
+        }
+        throw new InvalidOperationException($"Unable to converge on income and taxes at year {year.StartingYear} after 100 iterations.");
     }
 }

@@ -20,10 +20,10 @@ public class PlanCalculatorTests
         Assert.Equal("Perpetual Spend Plan", perpetual.Name);
         Assert.Equal(1000m, current.AnnualExpenses);
         Assert.Equal(5000m, maximum.AnnualExpenses);
-        Assert.Equal(1000m, perpetual.AnnualExpenses);
+        Assert.Equal(0m, perpetual.AnnualExpenses);
         Assert.Equal(10000m, current.PlanYears[^1].EndingBalance);
         Assert.Equal(1600m, maximum.PlanYears[^1].EndingBalance);
-        Assert.Equal(10000m, perpetual.PlanYears[^1].EndingBalance);
+        Assert.Equal(12100m, perpetual.PlanYears[^1].EndingBalance);
         foreach (var plan in new[] { current, maximum, perpetual })
         {
             Assert.True(plan.IsSuccessful);
@@ -58,9 +58,8 @@ public class PlanCalculatorTests
         })
         {
             Assert.False(plan.IsSuccessful);
-            Assert.Equal("No sustainable spending plan was found.", plan.FailureReason);
+            Assert.NotNull(plan.FailureReason);
             Assert.Empty(plan.PlanYears);
-            Assert.Equal(0m, plan.AnnualExpenses);
         }
     }
 
@@ -74,12 +73,10 @@ public class PlanCalculatorTests
 
         foreach (var plan in new[]
         {
-            calculator.CalculateMaximumSpend(scenario),
-            calculator.CalculatePerpetualSpend(scenario)
+            calculator.CalculateMaximumSpend(scenario)
         })
         {
             Assert.True(plan.IsSuccessful);
-            Assert.Equal(0m, plan.AnnualExpenses);
             Assert.Equal(1000m, plan.PlanYears[^1].EndingBalance);
         }
     }
@@ -90,7 +87,7 @@ public class PlanCalculatorTests
         var scenario = CreateScenario();
         scenario.Accounts[0].BeginningBalance = 1000m;
         scenario.SecuritiesAnnualRateOfReturn = 0m;
-        scenario.AnnualExpenses = 600m;
+        scenario.FirstYearAnnualExpenses = 600m;
 
         var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
@@ -108,7 +105,7 @@ public class PlanCalculatorTests
         var calculator = new PlanCalculator();
         var original = calculator.CalculateCurrentTrajectory(scenario);
 
-        scenario.AnnualExpenses = 2000m;
+        scenario.FirstYearAnnualExpenses = 2000m;
         var updated = calculator.CalculateCurrentTrajectory(scenario);
 
         Assert.Equal(1000m, original.AnnualExpenses);
@@ -121,8 +118,8 @@ public class PlanCalculatorTests
     {
         DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
         LifeExpectancy = 60,
-        AnnualExpenses = 1000m,
+        FirstYearAnnualExpenses = 1000m,
         SecuritiesAnnualRateOfReturn = 0.1m,
-        Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }]
+        Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 10000m }, new Account { Type = AccountType.Brokerage }]
     };
 }

@@ -54,6 +54,58 @@ public class ScenarioDeserializationTests
         Assert.Equal(syncScenario.Serialize(), asyncScenario.Serialize());
     }
 
+    [Theory]
+    [InlineData("\"FirstYearAnnualExpenses\": -1")]
+    [InlineData("\"FirstYearTaxExpense\": -0.01")]
+    [InlineData("\"AnnualInflationRate\": -2.5")]
+    [InlineData("\"Income\": [{\"InitialAmount\": -100}]")]
+    [InlineData("\"Accounts\": [{\"WithdrawalPriority\": -1}]")]
+    [InlineData("\"Expenses\": [{\"AnnualRateOfIncrease\": -0.5}]")]
+    [InlineData("\"Transfers\": [{\"AgeEnd\": -1}]")]
+    [InlineData("\"Unknown\": {\"Nested\": [0, {\"Number\": -1e2}]}")]
+    public async Task BothLoadersRejectNegativeNumbersAnywhere(string property)
+    {
+        var json = "{" + property + "," + CreateJson(100, includeAccounts: true)[1..];
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+        var syncError = Assert.Throws<JsonException>(() => Scenario.Deserialize(json));
+        var asyncError = await Assert.ThrowsAsync<JsonException>(() => Scenario.DeserializeAsync(stream));
+
+        Assert.Equal("JSON numbers must be non-negative.", syncError.Message);
+        Assert.Equal(syncError.Message, asyncError.Message);
+    }
+
+    [Theory]
+    [InlineData("0")]
+    [InlineData("0.125")]
+    [InlineData("42")]
+    [InlineData("1e2")]
+    [InlineData("-0")]
+    public async Task BothLoadersAcceptNonNegativeNumbersAndIgnoreNumericStrings(string number)
+    {
+        var json = "{\"Unknown\": {\"Nested\": [" + number +
+            ", \"-100\"]}," + CreateJson(100, includeAccounts: true)[1..];
+        using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
+
+        var syncScenario = Scenario.Deserialize(json);
+        var asyncScenario = await Scenario.DeserializeAsync(stream);
+
+        Assert.Equal(syncScenario.Serialize(), asyncScenario.Serialize());
+    }
+
+    [Fact]
+    public async Task StreamLoaderAcceptsUtf8ByteOrderMark()
+    {
+        var json = CreateJson(100, includeAccounts: true);
+        using var stream = new MemoryStream(
+            Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(json)).ToArray());
+
+        var scenario = await Scenario.DeserializeAsync(stream);
+
+        Assert.Single(scenario.Accounts);
+        Assert.True(stream.CanRead);
+    }
+
     private static string CreateJson(int lifeExpectancy, bool includeAccounts)
     {
         return JsonSerializer.Serialize(new

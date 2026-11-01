@@ -13,7 +13,7 @@ public class ScenarioSnapshotTests
             StartYear = 2026,
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 60,
-            AnnualExpenses = 1000m,
+            FirstYearAnnualExpenses = 1000m,
             AnnualInflationRate = 4m,
             SecuritiesAnnualRateOfReturn = 0.07m,
             BondsAnnualRateOfReturn = 0.04m,
@@ -39,7 +39,7 @@ public class ScenarioSnapshotTests
         scenario.StartYear = 2040;
         scenario.DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-70);
         scenario.LifeExpectancy = 90;
-        scenario.AnnualExpenses = 100000m;
+        scenario.FirstYearAnnualExpenses = 100000m;
         scenario.AnnualInflationRate = 50m;
         scenario.SecuritiesAnnualRateOfReturn = 1m;
         scenario.BondsAnnualRateOfReturn = 1m;

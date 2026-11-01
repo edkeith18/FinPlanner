@@ -93,32 +93,63 @@
                         }
                     </td>
                 </tr>
-                <tr class="@(IsEditingParameter(ParameterField.AnnualExpenses) ? "edit-mode-row" : null)">
-                    <td class="item-name">Annual expenses</td>
+                <tr class="@(IsEditingParameter(ParameterField.FirstYearAnnualExpenses) ? "edit-mode-row" : null)">
+                    <td class="item-name">First-year annual expenses</td>
                     <td class="item-value">
-                        @if (IsEditingParameter(ParameterField.AnnualExpenses))
+                        @if (IsEditingParameter(ParameterField.FirstYearAnnualExpenses))
                         {
-                            <InputNumber @bind-Value="scenario.AnnualExpenses"
+                            <InputNumber @bind-Value="scenario.FirstYearAnnualExpenses"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="3"
-                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.AnnualExpenses, e)" />
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.FirstYearAnnualExpenses, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualExpenses)">@scenario.AnnualExpenses.ToString("C")</span>
+                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearAnnualExpenses)">@scenario.FirstYearAnnualExpenses.ToString("C")</span>
                         }
                     </td>
                     <td class="item-actions">
-                        @if (IsEditingParameter(ParameterField.AnnualExpenses))
+                        @if (IsEditingParameter(ParameterField.FirstYearAnnualExpenses))
                         {
                             <button class="btn btn-link text-success p-0 me-2"
-                                    @onclick="() => CommitParameterEdit(ParameterField.AnnualExpenses)"
+                                    @onclick="() => CommitParameterEdit(ParameterField.FirstYearAnnualExpenses)"
                                     aria-label="Commit annual expenses edit">
                                 <i class="bi bi-check-circle"></i>
                             </button>
                             <button class="btn btn-link text-secondary p-0"
-                                    @onclick="() => CancelParameterEdit(ParameterField.AnnualExpenses)"
+                                    @onclick="() => CancelParameterEdit(ParameterField.FirstYearAnnualExpenses)"
                                     aria-label="Cancel annual expenses edit">
+                                <i class="bi bi-x-circle"></i>
+                            </button>
+                        }
+                    </td>
+                </tr>
+                <tr class="@(IsEditingParameter(ParameterField.FirstYearTaxExpense) ? "edit-mode-row" : null)">
+                    <td class="item-name">First-year tax expense</td>
+                    <td class="item-value">
+                        @if (IsEditingParameter(ParameterField.FirstYearTaxExpense))
+                        {
+                            <InputNumber @bind-Value="scenario.FirstYearTaxExpense"
+                                         class="form-control form-control-sm number-input-no-spinner"
+                                         tabindex="3"
+                                         @onkeydown="(e) => OnParameterKeyDown(ParameterField.FirstYearTaxExpense, e)" />
+                        }
+                        else
+                        {
+                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearTaxExpense)">@scenario.FirstYearTaxExpense.ToString("C")</span>
+                        }
+                    </td>
+                    <td class="item-actions">
+                        @if (IsEditingParameter(ParameterField.FirstYearTaxExpense))
+                        {
+                            <button class="btn btn-link text-success p-0 me-2"
+                                    @onclick="() => CommitParameterEdit(ParameterField.FirstYearTaxExpense)"
+                                    aria-label="Commit first-year tax expense edit">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            <button class="btn btn-link text-secondary p-0"
+                                    @onclick="() => CancelParameterEdit(ParameterField.FirstYearTaxExpense)"
+                                    aria-label="Cancel first-year tax expense edit">
                                 <i class="bi bi-x-circle"></i>
                             </button>
                         }
@@ -911,7 +942,8 @@
         scenario.AnnualInflationRate = data.AnnualInflationRate;
         scenario.DateOfBirth = data.DateOfBirth;
         scenario.LifeExpectancy = data.LifeExpectancy;
-        scenario.AnnualExpenses = data.AnnualExpenses;
+        scenario.FirstYearAnnualExpenses = data.FirstYearAnnualExpenses;
+        scenario.FirstYearTaxExpense = data.FirstYearTaxExpense;
         scenario.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
         scenario.NormalizeWithdrawalPriorities();
         NormalizeLoadedExpenses(scenario.Expenses);
@@ -1600,7 +1632,8 @@
         return parameter switch
         {
             ParameterField.LifeExpectancy => scenario.LifeExpectancy,
-            ParameterField.AnnualExpenses => scenario.AnnualExpenses,
+            ParameterField.FirstYearAnnualExpenses => scenario.FirstYearAnnualExpenses,
+            ParameterField.FirstYearTaxExpense => scenario.FirstYearTaxExpense,
             ParameterField.SecuritiesAnnualRateOfReturn => scenario.SecuritiesAnnualRateOfReturn,
             ParameterField.AnnualInflationRate => scenario.AnnualInflationRate,
             ParameterField.BondsAnnualRateOfReturn => scenario.BondsAnnualRateOfReturn,
@@ -1615,8 +1648,11 @@
             case ParameterField.LifeExpectancy:
                 scenario.LifeExpectancy = decimal.ToInt32(decimal.Truncate(value));
                 break;
-            case ParameterField.AnnualExpenses:
-                scenario.AnnualExpenses = value;
+            case ParameterField.FirstYearAnnualExpenses:
+                scenario.FirstYearAnnualExpenses = value;
+                break;
+            case ParameterField.FirstYearTaxExpense:
+                scenario.FirstYearTaxExpense = value;
                 break;
             case ParameterField.SecuritiesAnnualRateOfReturn:
                 scenario.SecuritiesAnnualRateOfReturn = value;
@@ -2173,7 +2209,8 @@
     {
         DateOfBirth,
         LifeExpectancy,
-        AnnualExpenses,
+        FirstYearAnnualExpenses,
+        FirstYearTaxExpense,
         SecuritiesAnnualRateOfReturn,
         AnnualInflationRate,
         BondsAnnualRateOfReturn

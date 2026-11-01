@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -52,7 +53,10 @@ public class Scenario
     [JsonIgnore]
     public int CurrentAge { get; private set; }
     public int LifeExpectancy { get; set; }
-    public decimal AnnualExpenses { get; set; }
+    /// <summary>Total first-year budget, including named expenses and the supplied tax expense.</summary>
+    public decimal FirstYearAnnualExpenses { get; set; }
+    /// <summary>Known tax expense funded in the first year; later years calculate taxes.</summary>
+    public decimal FirstYearTaxExpense { get; set; }
     [JsonConverter(typeof(PercentageJsonConverter))]
     public decimal BondsAnnualRateOfReturn { get; set; }
 
@@ -72,7 +76,8 @@ public class Scenario
         dateOfBirth = source.dateOfBirth;
         CurrentAge = source.CurrentAge;
         LifeExpectancy = source.LifeExpectancy;
-        AnnualExpenses = source.AnnualExpenses;
+        FirstYearAnnualExpenses = source.FirstYearAnnualExpenses;
+        FirstYearTaxExpense = source.FirstYearTaxExpense;
         SecuritiesAnnualRateOfReturn = source.SecuritiesAnnualRateOfReturn;
         BondsAnnualRateOfReturn = source.BondsAnnualRateOfReturn;
         AnnualInflationRate = source.AnnualInflationRate;
@@ -86,6 +91,7 @@ public class Scenario
         Income = source.Income.Select(income => new Income
         {
             Name = income.Name,
+            Type = income.Type,
             InitialAmount = income.InitialAmount,
             AgeStart = income.AgeStart,
             AnnualRateOfIncrease = income.AnnualRateOfIncrease,
@@ -119,11 +125,27 @@ public class Scenario
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
 
+        EnsureJsonNumbersAreNonNegative(Encoding.UTF8.GetBytes(json));
+
         var scenario = JsonSerializer.Deserialize<Scenario>(
             json,
             SerializerOptions);
 
         return ValidateDeserializedScenario(scenario);
+    }
+
+    private static void EnsureJsonNumbersAreNonNegative(ReadOnlySpan<byte> json)
+    {
+        // Stream-based JSON can begin with a UTF-8 byte order mark.
+        if (json.StartsWith(Encoding.UTF8.Preamble))
+            json = json[Encoding.UTF8.Preamble.Length..];
+
+        var reader = new Utf8JsonReader(json);
+        while (reader.Read())
+        {
+            if (reader.TokenType == JsonTokenType.Number && reader.GetDecimal() < 0m)
+                throw new JsonException("JSON numbers must be non-negative.");
+        }
     }
 
     private static Scenario ValidateDeserializedScenario(Scenario? scenario)
@@ -159,8 +181,13 @@ public class Scenario
     {
         ArgumentNullException.ThrowIfNull(stream);
 
+        using var buffer = new MemoryStream();
+        await stream.CopyToAsync(buffer, cancellationToken);
+        EnsureJsonNumbersAreNonNegative(buffer.GetBuffer().AsSpan(0, checked((int)buffer.Length)));
+        buffer.Position = 0;
+
         var scenario = await JsonSerializer.DeserializeAsync<Scenario>(
-            stream,
+            buffer,
             SerializerOptions,
             cancellationToken);
 
