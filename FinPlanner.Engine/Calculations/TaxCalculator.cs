@@ -3,7 +3,7 @@ namespace FinPlanner.Engine;
 /// <summary>
 /// Ports the active 2026 VBA MFJ model and its projection assumptions.
 /// This preserves the workbook's formulas, including the AMT expression,
-/// negative deduction behavior, and estate loop that omits its lowest band.
+/// and negative deduction behavior.
 /// </summary>
 public static class TaxCalculator
 {
@@ -77,10 +77,10 @@ public static class TaxCalculator
         }
         var agi = ordinary - hsa + interest + divQ + divUQ + ltcg + stcg;
         healthcare = Math.Max(0m, healthcare - agi * 0.075m);
-        if (year.StartingYear > 2025) charity -= agi * 0.005m;
+        charity -= agi * 0.005m;
         charity = Math.Min(charity, agi * 0.3m);
-        var saltMaximum = 40400m * Growth(0.01m, yearsInFuture);
-        var saltThreshold = 500000m * Growth(0.01m, yearsInFuture);
+        var saltMaximum = 40400m;
+        var saltThreshold = 500000m;
         if (year.StartingYear > 2029) { saltMaximum = 10000m; saltThreshold = agi; }
         salt = Math.Min(salt, saltMaximum - 0.3m * (agi - saltThreshold));
         var standardDeduction = 32200m * Growth(0.0633m, yearsInFuture);
@@ -103,10 +103,6 @@ public static class TaxCalculator
         var tentativeAmt = (Math.Max(0m, (amtBase - amtThreshold) * 0.28m)
             + Math.Min(amtBase, amtThreshold)) * 0.26m;
         var amt = Math.Max(0m, tentativeAmt - ordinaryTax - gainsTax);
-        var estate = year.EndingBalance;
-        var estateTax = BracketTax(Math.Max(0m, estate - 6000000m * Growth(0.0386m, yearsInFuture)),
-            [9000000m, 7000000m, 6000000m, 4000000m, 3000000m, 2000000m, 1000000m],
-            [0.35m, 0.3m, 0.26m, 0.23m, 0.19m, 0.17m, 0.15m]);
         return new TaxResult
         {
             OrdinaryIncome = Money(ordinary), QualifiedDividends = Money(divQ), UnqualifiedDividends = Money(divUQ),
@@ -114,8 +110,7 @@ public static class TaxCalculator
             HsaContribution = Money(hsa), HealthcareDeduction = Money(healthcare), CharityDeduction = Money(charity),
             SaltDeduction = Money(salt), StandardDeduction = Money(standardDeduction), AGI = Money(agi),
             Deductions = Money(deductions), TaxableOrdinaryIncome = Money(taxableOrdinary), TaxableCapitalGains = Money(taxableGains),
-            OrdinaryTax = Money(ordinaryTax), LTCGTax = Money(gainsTax), NIIT = Money(niit), AMT = Money(amt),
-            EstateSize = estate, EstateTaxWA = Money(estateTax)
+            OrdinaryTax = Money(ordinaryTax), LTCGTax = Money(gainsTax), NIIT = Money(niit), AMT = Money(amt)
         };
     }
 

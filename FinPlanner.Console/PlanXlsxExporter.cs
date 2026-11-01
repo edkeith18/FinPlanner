@@ -52,7 +52,7 @@ internal static class PlanXlsxExporter
             "Long-term Gains", "Short-term Gains", "HSA Contributions", "AGI", "Standard Deduction", "Healthcare Deduction",
             "Charity Deduction", "SALT Deduction", "Deductions Used", "Taxable Ordinary Income", "Taxable Capital Gains",
             "Ordinary Tax", "Capital Gains Tax", "Standard Tax", "Additional AMT", "NIIT", "Total Tax",
-            "Tax Expense", "Effective Tax Rate", "Estate Size", "WA Estate Tax (informational)", "Tax Expense Source"];
+            "Tax Expense", "Effective Tax Rate", "Tax Expense Source"];
         for (var i = 0; i < headers.Length; i++) sheet.Cell(1, i + 1).Value = headers[i];
         var row = 2;
         foreach (var year in plan.PlanYears)
@@ -61,7 +61,7 @@ internal static class PlanXlsxExporter
             sheet.Cell(row, 1).Value = year.StartingYear;
             sheet.Cell(row, 2).Value = year.StartingAge;
             sheet.Cell(row, 24).Value = year.TaxExpense;
-            sheet.Cell(row, 28).Value = tax is null ? "Supplied first-year amount" : "Calculated";
+            sheet.Cell(row, 26).Value = tax is null ? "Supplied first-year amount" : "Calculated";
             if (tax is null)
             {
                 row++;
@@ -71,11 +71,11 @@ internal static class PlanXlsxExporter
                 tax.LongTermCapitalGains, tax.ShortTermCapitalGains, tax.HsaContribution, tax.AGI, tax.StandardDeduction,
                 tax.HealthcareDeduction, tax.CharityDeduction, tax.SaltDeduction, tax.Deductions, tax.TaxableOrdinaryIncome,
                 tax.TaxableCapitalGains, tax.OrdinaryTax, tax.LTCGTax, tax.StandardTax, tax.AMT, tax.NIIT, tax.TotalTax,
-                year.TaxExpense, tax.EffectiveTaxRate, tax.EstateSize, tax.EstateTaxWA];
+                year.TaxExpense, tax.EffectiveTaxRate];
             for (var i = 0; i < values.Length; i++) sheet.Cell(row, i + 3).Value = values[i];
             row++;
         }
-        sheet.Columns(3, 27).Style.NumberFormat.Format = CurrencyFormat;
+        sheet.Columns(3, 25).Style.NumberFormat.Format = CurrencyFormat;
         sheet.Column(25).Style.NumberFormat.Format = "0.00%";
         sheet.Row(1).Style.Font.Bold = true;
         sheet.Row(1).Style.Alignment.WrapText = true;

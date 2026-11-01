@@ -136,16 +136,6 @@ public class TaxCalculatorTests
     }
 
     [Fact]
-    public void EstateTaxIsSeparateAndPreservesTheVbaLoopOmission()
-    {
-        var year = new PlanYear { StartingYear = 2026,
-            Accounts = [new Account { EndingBalance = 7500000m }] };
-        var taxes = TaxCalculator.Calculate(year, 0);
-        Assert.Equal(75000m, taxes.EstateTaxWA);
-        Assert.Equal(0m, taxes.TotalTax);
-    }
-
-    [Fact]
     public void ProjectedDeductionsAndSaltRulesUseTheirSeparateGrowthSchedules()
     {
         var year = IncomeYear(100000m);

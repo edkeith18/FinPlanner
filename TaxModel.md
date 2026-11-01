@@ -35,7 +35,6 @@ Required distributions still occur. External income, account earnings, and RMD c
 - NIIT is 3.8% of the lesser of investment income or AGI above $250,000. The threshold is not indexed.
 - AMT uses the workbook's exemption and threshold growth assumptions. Its upper-tier 28% component is multiplied by 26% again in the final expression; this is intentionally preserved.
 - `MarginalTaxRate` in the VBA is total tax divided by AGI. The new result exposes EffectiveTaxRate and a documented MarginalTaxRate alias.
-- Washington estate tax is informational and is not funded as an annual expense. Its exclusion starts at $6 million and grows 3.86%. The VBA's loop omits its lowest band; that omission is preserved.
 
 Decimal arithmetic replaces VBA Single values. This is a formula port, not a guarantee of bit-for-bit floating-point agreement.
 
@@ -45,4 +44,4 @@ The tax-aware search simulates actual tax-funded years through scheduled transit
 
 ## Reporting
 
-Each annual sheet includes a Taxes expense. A separate tax-detail sheet identifies the supplied first-year amount without calculated detail. For subsequent years it exposes income classifications, AGI, deduction components, ordinary and capital-gains tax, AMT, NIIT, total tax, the rounded funded tax expense, effective rate, and informational estate tax.
+Each annual sheet includes a Taxes expense. A separate tax-detail sheet identifies the supplied first-year amount without calculated detail. For subsequent years it exposes income classifications, AGI, deduction components, ordinary and capital-gains tax, AMT, NIIT, total tax, the rounded funded tax expense, and effective rate.

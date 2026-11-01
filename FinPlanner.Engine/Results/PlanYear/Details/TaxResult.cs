@@ -1,6 +1,6 @@
 namespace FinPlanner.Engine;
 
-/// <summary>Annual results of the VBA tax model. Estate tax is informational, not an annual expense.</summary>
+/// <summary>Annual results of the VBA tax model.</summary>
 public sealed class TaxResult
 {
     public decimal OrdinaryIncome { get; init; }
@@ -27,6 +27,4 @@ public sealed class TaxResult
     public decimal EffectiveTaxRate => AGI > 0m ? TotalTax / AGI : 0m;
     /// <summary>The VBA calls this marginal, but computes total tax divided by AGI.</summary>
     public decimal MarginalTaxRate => EffectiveTaxRate;
-    public decimal EstateSize { get; init; }
-    public decimal EstateTaxWA { get; init; }
 }
