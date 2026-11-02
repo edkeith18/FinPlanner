@@ -17,6 +17,11 @@ var buildCommand = new Command("build")
     Description = "Build a financial plan from a scenario file."
 };
 
+var taxInfoOption = new Option<FileInfo?>("--tax-info")
+{
+    Description = "Tax settings JSON file (defaults to TaxInfo.json beside the scenario)."
+};
+buildCommand.Options.Add(taxInfoOption);
 buildCommand.Arguments.Add(scenarioPathArgument);
 
 buildCommand.SetAction(parseResult =>
@@ -26,6 +31,9 @@ buildCommand.SetAction(parseResult =>
 
     try
     {
+        var taxFile = parseResult.GetValue(taxInfoOption)
+            ?? new FileInfo(Path.Combine(file.DirectoryName!, "TaxInfo.json"));
+        scenario.TaxInfo = GetTaxInfo(taxFile);
         var calculator = new PlanCalculator();
         var plan = calculator.CalculateCurrentTrajectory(scenario);
         var maximumSpendPlan = calculator.CalculateMaximumSpend(scenario);
@@ -114,11 +122,17 @@ rootCommand.Subcommands.Add(upgradeCommand);
 return rootCommand.Parse(args).Invoke();
 
 static Scenario GetScenario(FileInfo file)
+    => ReadJsonInput(file, "scenario", Scenario.Deserialize);
+
+static TaxInfo GetTaxInfo(FileInfo file)
+    => ReadJsonInput(file, "tax settings", TaxInfo.Deserialize);
+
+static T ReadJsonInput<T>(FileInfo file, string description, Func<string, T> deserialize)
 {
     try
     {
         var json = File.ReadAllText(file.FullName);
-        return Scenario.Deserialize(json);
+        return deserialize(json);
     }
     catch (FileNotFoundException)
     {
@@ -127,14 +141,14 @@ static Scenario GetScenario(FileInfo file)
     }
     catch (JsonException ex)
     {
-        Console.Error.WriteLine($"Invalid scenario file: {ex.Message}");
+        Console.Error.WriteLine($"Invalid {description} file: {ex.Message}");
         Environment.Exit(2);
     }
     catch (Exception ex)
     {
-        Console.Error.WriteLine($"Unable to read scenario: {ex.Message}");
+        Console.Error.WriteLine($"Unable to read {description}: {ex.Message}");
         Environment.Exit(3);
     }
     // This line will never be reached, but the compiler requires a return statement.
-    return null;
+    return default!;
 }

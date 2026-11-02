@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="..\Input\TaxInfo.json" LogicalName="FinPlanner.TaxInfo.json" />
+  </ItemGroup>
+
 </Project>

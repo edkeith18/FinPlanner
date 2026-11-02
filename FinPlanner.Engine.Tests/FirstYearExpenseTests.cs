@@ -25,7 +25,7 @@ public class FirstYearExpenseTests
         Assert.Equal(0, first.YearsInFuture);
 
         scenario.FirstYearTaxExpense = 30000m;
-        PlanYearCalculator.Calculate(first);
+        PlanYearCalculator.Calculate(first, TaxInfo.Default);
 
         Assert.Equal(12000m, first.TaxExpense);
         Assert.Null(first.Taxes);
@@ -34,7 +34,7 @@ public class FirstYearExpenseTests
         var second = PlanYearCalculator.ForecastFrom(first, scenario, uncategorized);
         Assert.Equal(0m, second.TaxExpense);
         Assert.Equal(1, second.YearsInFuture);
-        PlanYearCalculator.Calculate(second);
+        PlanYearCalculator.Calculate(second, TaxInfo.Default);
         Assert.NotNull(second.Taxes);
         Assert.Equal(decimal.Round(second.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), second.TaxExpense);
         var third = PlanYearCalculator.ForecastFrom(second, scenario, uncategorized);

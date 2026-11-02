@@ -14,4 +14,8 @@
     <ProjectReference Include="..\FinPlanner.Engine\FinPlanner.Engine.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="..\Input\TaxInfo.json" Link="Input\TaxInfo.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

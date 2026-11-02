@@ -250,6 +250,6 @@ public class AccountIncomeTests
 
     private static void Apply(PlanYear year)
     {
-        PlanYearCalculator.Calculate(year);
+        PlanYearCalculator.Calculate(year, TaxInfo.Default);
     }
 }
