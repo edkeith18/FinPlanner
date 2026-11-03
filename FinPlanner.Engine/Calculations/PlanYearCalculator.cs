@@ -10,7 +10,7 @@ internal static class PlanYearCalculator
 
 
     /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
-    internal static void Calculate(PlanYear year)
+    internal static void Calculate(PlanYear year, TaxInfo taxInfo)
     {
         AppreciateAccounts(year);
         CalculateEarnings(year);
@@ -23,7 +23,7 @@ internal static class PlanYearCalculator
             year.Taxes = null;
         }
         else
-            ApplyTaxesAndExpenses(year);
+            ApplyTaxesAndExpenses(year, taxInfo);
         year.AnnualExpenses = year.TotalExpenses;
     }
 
@@ -299,7 +299,7 @@ internal static class PlanYearCalculator
     }
     // Trial withdrawals are rolled back before every iteration. Taxes are calculated
     // from the trial ledger, so only the converged attempt changes the year's result.
-    private static void ApplyTaxesAndExpenses(PlanYear year)
+    private static void ApplyTaxesAndExpenses(PlanYear year, TaxInfo taxInfo)
     {
         var balances = year.Accounts.Select(account => account.EndingBalance).ToArray();
         var transferCount = year.Transfers.Count;
@@ -309,12 +309,12 @@ internal static class PlanYearCalculator
             for (var i = 0; i < balances.Length; i++) year.Accounts[i].EndingBalance = balances[i];
             year.Transfers.RemoveRange(transferCount, year.Transfers.Count - transferCount);
             FundExpenses(year);
-            var taxes = TaxCalculator.Calculate(year, year.YearsInFuture);
+            var taxes = TaxCalculator.Calculate(year, taxInfo);
             var nextTax = Round(taxes.TotalTax);
             if (taxExpense.Amount == nextTax)
             {
                 DepositSurplus(year);
-                year.Taxes = TaxCalculator.Calculate(year, year.YearsInFuture);
+                year.Taxes = TaxCalculator.Calculate(year, taxInfo);
                 return;
             }
             taxExpense.Amount = nextTax;

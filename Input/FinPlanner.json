@@ -1,0 +1,160 @@
+{
+  "Accounts": [
+    {
+      "Id": "7ba47738-8d10-4c19-98a0-b2f8ce18cdf3",
+      "Name": "Schwab Inherited IRA - equities",
+      "Type": "Inherited",
+      "Holdings": "Equities",
+      "Balance": 2844813,
+      "LastUpdated": "2026-04-18T22:54:11.933-07:00",
+      "WithdrawalPriority": 2
+    },
+    {
+      "Id": "1500f5b1-b911-48d5-9200-73f34611fa1c",
+      "Name": "IBonds",
+      "Type": "Brokerage",
+      "Holdings": "Bonds",
+      "Balance": 46904,
+      "LastUpdated": "2026-06-09T12:11:34.718-07:00",
+      "WithdrawalPriority": 3
+    },
+    {
+      "Id": "ba49cbc0-f27a-4f8b-9b4c-41dabde4b0ca",
+      "Name": "Schwab Inherited IRA - bonds",
+      "Type": "Inherited",
+      "Holdings": "Bonds",
+      "Balance": 1525189,
+      "LastUpdated": "2026-04-18T22:54:29.734-07:00",
+      "WithdrawalPriority": 4
+    },
+    {
+      "Id": "b5412f66-278b-497a-a05d-c4e296b9e7f0",
+      "Name": "Lisa\u0027s Traditional IRA",
+      "Type": "Retirement",
+      "Holdings": "Equities",
+      "Balance": 66301,
+      "LastUpdated": "2026-04-18T22:48:35.841-07:00",
+      "WithdrawalPriority": 5
+    },
+    {
+      "Id": "c4f2ec2a-11fb-45f2-8a0f-5e052712bff5",
+      "Name": "Ed\u0027s Microsoft 401(k)",
+      "Type": "Retirement",
+      "Holdings": "Equities",
+      "Balance": 3546360,
+      "LastUpdated": "2026-04-18T22:51:36.82-07:00",
+      "WithdrawalPriority": 6
+    },
+    {
+      "Id": "8d647089-ca43-42b5-9b87-e7907e9936d5",
+      "Name": "Ed\u0027s Roth IRA",
+      "Type": "RetirementRoth",
+      "Holdings": "Equities",
+      "Balance": 979640,
+      "LastUpdated": "2026-04-18T22:52:08.971-07:00",
+      "WithdrawalPriority": 7
+    },
+    {
+      "Id": "ec28a8e5-7ce9-4067-a7b0-5a3b3d5b3726",
+      "Name": "Lisa\u0027s Roth IRA",
+      "Type": "RetirementRoth",
+      "Holdings": "Equities",
+      "Balance": 714255,
+      "LastUpdated": "2026-04-18T22:48:19.079-07:00",
+      "WithdrawalPriority": 8
+    },
+    {
+      "Id": "4b715258-d6d1-41ff-93b9-02402b32a982",
+      "Name": "HSA",
+      "Type": "Hsa",
+      "Holdings": "Equities",
+      "Balance": 61038,
+      "LastUpdated": "2026-04-18T22:52:40.383-07:00",
+      "WithdrawalPriority": 9
+    },
+    {
+      "Id": "79e2d155-a477-4764-a22a-356e121dd1eb",
+      "Name": "Keith Savings",
+      "Type": "Brokerage",
+      "Holdings": "Bonds",
+      "Balance": 235980,
+      "LastUpdated": "2026-04-18T22:46:47.414-07:00",
+      "WithdrawalPriority": 10
+    },
+    {
+      "Id": "3a81308f-9dcc-4bfa-b757-641123766725",
+      "Name": "Keith Revocable Living Trust",
+      "Type": "Brokerage",
+      "Holdings": "Equities",
+      "Balance": 6383775,
+      "LastUpdated": "2026-04-18T22:53:19.532-07:00",
+      "WithdrawalPriority": 11
+    }
+  ],
+  "Income": [
+    {
+      "Name": "Social Security",
+      "InitialAmount": 71208,
+      "AgeStart": 67,
+      "AnnualRateOfIncrease": 4.8,
+      "LastUpdated": "2026-06-26T16:16:53.309-07:00"
+    }
+  ],
+  "Expenses": [
+    {
+      "Name": "Healthcare",
+      "Amount": 39492,
+      "AgeStart": 57,
+      "AgeEnd": 64,
+      "AnnualRateOfIncrease": 17.6,
+      "UseInflationValue": false,
+      "LastUpdated": "2026-06-26T16:16:53.309-07:00"
+    },
+    {
+      "Name": "Medicare",
+      "Amount": 8820,
+      "AgeStart": 65,
+      "AgeEnd": 100,
+      "AnnualRateOfIncrease": 6,
+      "UseInflationValue": false,
+      "LastUpdated": "2026-06-26T16:16:53.309-07:00"
+    },
+    {
+      "Name": "Charitable giving",
+      "Amount": 29952,
+      "AgeStart": 57,
+      "AgeEnd": 100,
+      "AnnualRateOfIncrease": 4,
+      "UseInflationValue": true,
+      "LastUpdated": "2026-06-26T16:51:28.819-07:00"
+    },
+    {
+      "Name": "State and local taxes (SALT)",
+      "Amount": 14375,
+      "AgeStart": 57,
+      "AgeEnd": 100,
+      "AnnualRateOfIncrease": 4,
+      "UseInflationValue": true,
+      "LastUpdated": "2026-06-27T14:51:17.382-07:00"
+    }
+  ],
+  "Transfers": [
+    {
+      "Name": "HSA",
+      "FromAccountName": "Keith Savings",
+      "ToAccountName": "HSA",
+      "AgeStart": 57,
+      "AgeEnd": 65,
+      "Amount": 9750,
+      "AnnualRateOfIncrease": 4,
+      "UseInflationValue": true
+    }
+  ],
+  "SecuritiesAnnualRateOfReturn": 7,
+  "BondsAnnualRateOfReturn": 4.53,
+  "AnnualInflationRate": 4,
+  "DateOfBirth": "10/21/1968",
+  "LifeExpectancy": 100,
+  "FirstYearAnnualExpenses": 348942.94,
+  "FirstYearTaxExpense": 36958
+}

@@ -18,6 +18,21 @@ public class Scenario
         }
     };
 
+    private TaxInfo taxInfo = TaxInfo.Default;
+
+    /// <summary>Validated tax assumptions loaded separately from scenario JSON.</summary>
+    [JsonIgnore]
+    public TaxInfo TaxInfo
+    {
+        get => taxInfo;
+        set
+        {
+            ArgumentNullException.ThrowIfNull(value);
+            value.Validate();
+            taxInfo = value;
+        }
+    }
+
     public List<Account> Accounts { get; set; } = new();
     public List<Income> Income { get; set; } = new();
     public List<Expense> Expenses { get; set; } = new();
@@ -72,6 +87,7 @@ public class Scenario
     {
         ArgumentNullException.ThrowIfNull(source);
 
+        TaxInfo = source.TaxInfo;
         StartYear = source.StartYear;
         dateOfBirth = source.dateOfBirth;
         CurrentAge = source.CurrentAge;

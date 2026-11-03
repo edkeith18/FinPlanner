@@ -4,9 +4,10 @@ namespace FinPlanner.Engine.Tests;
 
 public class TaxCalculatorTests
 {
-    private static PlanYear IncomeYear(decimal ordinary = 0m, decimal divQ = 0m) => new()
+    private static PlanYear IncomeYear(decimal ordinary = 0m, decimal divQ = 0m, int yearsInFuture = 0) => new()
     {
-        StartingYear = 2026,
+        StartingYear = 2026 + yearsInFuture,
+        YearsInFuture = yearsInFuture,
         Transfers =
         [
             new AccountTransfer("Ordinary", null, null, ordinary, TransferReason.ExternalIncome),
@@ -17,7 +18,7 @@ public class TaxCalculatorTests
     [Fact]
     public void OrdinaryIncomeUsesActiveVba2026BracketsAndStandardDeduction()
     {
-        var taxes = TaxCalculator.Calculate(IncomeYear(100000m), 0);
+        var taxes = TaxCalculator.Calculate(IncomeYear(100000m), TaxInfo.Default);
         Assert.Equal(100000m, taxes.AGI);
         Assert.Equal(32200m, taxes.Deductions);
         Assert.Equal(67800m, taxes.TaxableOrdinaryIncome);
@@ -29,8 +30,8 @@ public class TaxCalculatorTests
     [Fact]
     public void QualifiedDividendsStackOnOrdinaryIncomeAndPreserveUnusedDeductionBehavior()
     {
-        Assert.Equal(165m, TaxCalculator.Calculate(IncomeYear(divQ: 100000m), 0).LTCGTax);
-        Assert.Equal(10335m, TaxCalculator.Calculate(IncomeYear(100000m, 100000m), 0).LTCGTax);
+        Assert.Equal(165m, TaxCalculator.Calculate(IncomeYear(divQ: 100000m), TaxInfo.Default).LTCGTax);
+        Assert.Equal(10335m, TaxCalculator.Calculate(IncomeYear(100000m, 100000m), TaxInfo.Default).LTCGTax);
     }
 
     [Fact]
@@ -39,7 +40,7 @@ public class TaxCalculatorTests
         var year = IncomeYear();
         year.Transfers.Add(new AccountTransfer("Social Security", null, null, 100000m, TransferReason.ExternalIncome)
             { TaxType = IncomeType.SocialSecurity });
-        var taxes = TaxCalculator.Calculate(year, 0);
+        var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(85000m, taxes.OrdinaryIncome);
         Assert.Equal(5840m, taxes.TotalTax);
     }
@@ -64,7 +65,7 @@ public class TaxCalculatorTests
                 new AccountTransfer("Roth withdrawal", roth, null, 10000m, TransferReason.ExpenseWithdrawal)
             ]
         };
-        var taxes = TaxCalculator.Calculate(year, 0);
+        var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(30000m, taxes.OrdinaryIncome);
         Assert.Equal(100000m, taxes.LongTermCapitalGains);
     }
@@ -75,7 +76,7 @@ public class TaxCalculatorTests
         var account = new Account { Type = AccountType.Brokerage, BeginningBalance = 1000000m };
         var year = new PlanYear { StartingYear = 2026,
             AccountEarnings = [PlanYearCalculator.CalculateAccountEarnings(account)] };
-        var taxes = TaxCalculator.Calculate(year, 0);
+        var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(1700m, taxes.Interest);
         Assert.Equal(500m, taxes.UnqualifiedDividends);
         Assert.Equal(9400m, taxes.QualifiedDividends);
@@ -92,14 +93,14 @@ public class TaxCalculatorTests
             new Expense { Name = "Charitable giving", Amount = 10000m },
             new Expense { Name = "State and local taxes (SALT)", Amount = 50000m }
         ];
-        var taxes = TaxCalculator.Calculate(year, 0);
+        var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(12500m, taxes.HealthcareDeduction);
         Assert.Equal(9500m, taxes.CharityDeduction);
         // Literal VBA allows more than SALTMaximum below the AGI phaseout threshold.
         Assert.Equal(50000m, taxes.SaltDeduction);
         Assert.Equal(72000m, taxes.Deductions);
         Assert.Equal(2864m, taxes.OrdinaryTax);
-        var high = TaxCalculator.Calculate(IncomeYear(1000000m), 0);
+        var high = TaxCalculator.Calculate(IncomeYear(1000000m), TaxInfo.Default);
         Assert.Equal(-5000m, high.CharityDeduction);
         Assert.Equal(-109600m, high.SaltDeduction);
         Assert.Equal(32200m, high.Deductions);
@@ -112,7 +113,7 @@ public class TaxCalculatorTests
         year.Transfers.Add(new AccountTransfer("HSA contribution",
             new Account { Type = AccountType.Brokerage, Holdings = AccountHoldings.Bonds },
             new Account { Type = AccountType.Hsa }, 10000m, TransferReason.Scheduled));
-        var taxes = TaxCalculator.Calculate(year, 0);
+        var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(10000m, taxes.HsaContribution);
         Assert.Equal(90000m, taxes.AGI);
         Assert.Equal(67800m, taxes.TaxableOrdinaryIncome);
@@ -121,14 +122,14 @@ public class TaxCalculatorTests
     [Fact]
     public void NiitUsesInvestmentIncomeAndExcessAgiButNotRetirementIncomeAlone()
     {
-        Assert.Equal(3800m, TaxCalculator.Calculate(IncomeYear(300000m, 100000m), 0).NIIT);
-        Assert.Equal(0m, TaxCalculator.Calculate(IncomeYear(300000m), 0).NIIT);
+        Assert.Equal(3800m, TaxCalculator.Calculate(IncomeYear(300000m, 100000m), TaxInfo.Default).NIIT);
+        Assert.Equal(0m, TaxCalculator.Calculate(IncomeYear(300000m), TaxInfo.Default).NIIT);
     }
 
     [Fact]
     public void AmtPreservesTheLiteralVbaUpperTierExpression()
     {
-        var taxes = TaxCalculator.Calculate(IncomeYear(divQ: 500000m), 0);
+        var taxes = TaxCalculator.Calculate(IncomeYear(divQ: 500000m), TaxInfo.Default);
         Assert.Equal(60165m, taxes.StandardTax);
         Assert.Equal(12916.84m, taxes.AMT);
         Assert.Equal(9500m, taxes.NIIT);
@@ -136,23 +137,13 @@ public class TaxCalculatorTests
     }
 
     [Fact]
-    public void EstateTaxIsSeparateAndPreservesTheVbaLoopOmission()
-    {
-        var year = new PlanYear { StartingYear = 2026,
-            Accounts = [new Account { EndingBalance = 7500000m }] };
-        var taxes = TaxCalculator.Calculate(year, 0);
-        Assert.Equal(75000m, taxes.EstateTaxWA);
-        Assert.Equal(0m, taxes.TotalTax);
-    }
-
-    [Fact]
     public void ProjectedDeductionsAndSaltRulesUseTheirSeparateGrowthSchedules()
     {
-        var year = IncomeYear(100000m);
+        var year = IncomeYear(100000m, yearsInFuture: 1);
         year.Expenses.Add(new Expense { Type = ExpenseType.Salt, Amount = 50000m });
-        Assert.Equal(34238.26m, TaxCalculator.Calculate(year, 1).StandardDeduction);
-        year = new PlanYear { StartingYear = 2030, Expenses = [new Expense { Type = ExpenseType.Salt, Amount = 50000m }] };
-        Assert.Equal(10000m, TaxCalculator.Calculate(year, 4).SaltDeduction);
+        Assert.Equal(34238.26m, TaxCalculator.Calculate(year, TaxInfo.Default).StandardDeduction);
+        year = new PlanYear { StartingYear = 2030, YearsInFuture = 4, Expenses = [new Expense { Type = ExpenseType.Salt, Amount = 50000m }] };
+        Assert.Equal(10000m, TaxCalculator.Calculate(year, TaxInfo.Default).SaltDeduction);
     }
 
 }

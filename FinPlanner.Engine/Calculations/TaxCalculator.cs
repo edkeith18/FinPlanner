@@ -3,25 +3,19 @@ namespace FinPlanner.Engine;
 /// <summary>
 /// Ports the active 2026 VBA MFJ model and its projection assumptions.
 /// This preserves the workbook's formulas, including the AMT expression,
-/// negative deduction behavior, and estate loop that omits its lowest band.
+/// and negative deduction behavior.
 /// </summary>
 public static class TaxCalculator
 {
-    // With nonnegative deductions selected against the standard deduction,
-    // ordinary tax is at most 37% and NIIT at most 3.8% of gross income.
-    internal const decimal MaximumIncomeTaxRate = 0.408m;
-
-    public static TaxResult Calculate(PlanYear year, int yearsInFuture)
+    public static TaxResult Calculate(PlanYear year, TaxInfo taxInfo)
     {
-        ArgumentNullException.ThrowIfNull(year);
-        ArgumentOutOfRangeException.ThrowIfNegative(yearsInFuture);
         decimal ordinary = 0m, divQ = 0m, divUQ = 0m, interest = 0m, ltcg = 0m, stcg = 0m;
         void Add(IncomeType type, decimal amount)
         {
             switch (type)
             {
                 case IncomeType.Ordinary: ordinary += amount; break;
-                case IncomeType.SocialSecurity: ordinary += amount * 0.85m; break;
+                case IncomeType.SocialSecurity: ordinary += amount * taxInfo.SocialSecurity.TaxablePercentage; break;
                 case IncomeType.DivQ: divQ += amount; break;
                 case IncomeType.DivUQ: divUQ += amount; break;
                 case IncomeType.Interest: interest += amount; break;
@@ -76,37 +70,34 @@ public static class TaxCalculator
             }
         }
         var agi = ordinary - hsa + interest + divQ + divUQ + ltcg + stcg;
-        healthcare = Math.Max(0m, healthcare - agi * 0.075m);
-        if (year.StartingYear > 2025) charity -= agi * 0.005m;
-        charity = Math.Min(charity, agi * 0.3m);
-        var saltMaximum = 40400m * Growth(0.01m, yearsInFuture);
-        var saltThreshold = 500000m * Growth(0.01m, yearsInFuture);
-        if (year.StartingYear > 2029) { saltMaximum = 10000m; saltThreshold = agi; }
-        salt = Math.Min(salt, saltMaximum - 0.3m * (agi - saltThreshold));
-        var standardDeduction = 32200m * Growth(0.0633m, yearsInFuture);
+        healthcare = Math.Max(0m, healthcare - agi * taxInfo.HealthcareDeduction.AgiFloorPercentage);
+        charity -= agi * taxInfo.CharityDeduction.AgiReductionPercentage;
+        charity = Math.Min(charity, agi * taxInfo.CharityDeduction.AgiLimitPercentage);
+        var saltMaximum = taxInfo.SaltDeduction.MaximumAmount;
+        var saltThreshold = taxInfo.SaltDeduction.AgiPhaseoutThreshold;
+        if (year.StartingYear >= taxInfo.SaltDeduction.LimitChangeYear) { saltMaximum = taxInfo.SaltDeduction.MaximumAmountAfterChange; saltThreshold = agi; }
+        salt = Math.Min(salt, saltMaximum - taxInfo.SaltDeduction.PhaseoutPercentage * (agi - saltThreshold));
+        var standardDeduction = taxInfo.StandardDeduction.Amount * Growth(taxInfo.StandardDeduction.AnnualRateOfIncrease, year.YearsInFuture);
         var deductions = Math.Max(standardDeduction, healthcare + charity + salt);
         // Preserve VBA: HSA reduces AGI, but is not subtracted again in this ordinary base.
         var taxableOrdinary = Math.Max(0m, ordinary + interest + divUQ + stcg - deductions);
         var taxableGains = ltcg + divQ;
-        var bracketMultiplier = Growth(0.022m, yearsInFuture);
+        var bracketMultiplier = Growth(taxInfo.OrdinaryIncomeTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture);
         var ordinaryTax = BracketTax(taxableOrdinary,
-            [768700m, 512450m, 403550m, 211400m, 100800m, 24800m, 0m],
-            [0.37m, 0.35m, 0.32m, 0.24m, 0.22m, 0.12m, 0.1m], bracketMultiplier);
+            taxInfo.OrdinaryIncomeTax.Brackets.Reverse().Select(b => b.Threshold).ToArray(),
+            taxInfo.OrdinaryIncomeTax.Brackets.Reverse().Select(b => b.Rate).ToArray(), bracketMultiplier);
         // Preserve VBA's order: subtract ordinary income before multiplying thresholds.
         var gainsTax = BracketTax(taxableGains,
-            [Math.Max(0m, 613700m - taxableOrdinary), Math.Max(0m, 98900m - taxableOrdinary)],
-            [0.2m, 0.15m], bracketMultiplier);
-        var niit = 0.038m * Math.Max(0m, Math.Min(interest + divQ + divUQ + ltcg + stcg, agi - 250000m));
-        var amtBase = Math.Max(0m, agi - healthcare - charity - 140200m * Growth(0.03487m, yearsInFuture));
-        var amtThreshold = 249500m * Growth(0.04173m, yearsInFuture);
+            taxInfo.CapitalGainsTax.Brackets.Reverse().Select(b => Math.Max(0m, b.Threshold - taxableOrdinary)).ToArray(),
+            taxInfo.CapitalGainsTax.Brackets.Reverse().Select(b => b.Rate).ToArray(),
+            Growth(taxInfo.CapitalGainsTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture));
+        var niit = taxInfo.NetInvestmentIncomeTax.Rate * Math.Max(0m, Math.Min(interest + divQ + divUQ + ltcg + stcg, agi - taxInfo.NetInvestmentIncomeTax.AgiThreshold));
+        var amtBase = Math.Max(0m, agi - healthcare - charity - taxInfo.AlternativeMinimumTax.ExemptionAmount * Growth(taxInfo.AlternativeMinimumTax.ExemptionAnnualRateOfIncrease, year.YearsInFuture));
+        var amtThreshold = taxInfo.AlternativeMinimumTax.Threshold * Growth(taxInfo.AlternativeMinimumTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture);
         // Literal VBA expression: the upper-tier component is multiplied by 26% again.
-        var tentativeAmt = (Math.Max(0m, (amtBase - amtThreshold) * 0.28m)
-            + Math.Min(amtBase, amtThreshold)) * 0.26m;
+        var tentativeAmt = (Math.Max(0m, (amtBase - amtThreshold) * taxInfo.AlternativeMinimumTax.UpperRate)
+            + Math.Min(amtBase, amtThreshold)) * taxInfo.AlternativeMinimumTax.LowerRate;
         var amt = Math.Max(0m, tentativeAmt - ordinaryTax - gainsTax);
-        var estate = year.EndingBalance;
-        var estateTax = BracketTax(Math.Max(0m, estate - 6000000m * Growth(0.0386m, yearsInFuture)),
-            [9000000m, 7000000m, 6000000m, 4000000m, 3000000m, 2000000m, 1000000m],
-            [0.35m, 0.3m, 0.26m, 0.23m, 0.19m, 0.17m, 0.15m]);
         return new TaxResult
         {
             OrdinaryIncome = Money(ordinary), QualifiedDividends = Money(divQ), UnqualifiedDividends = Money(divUQ),
@@ -114,8 +105,7 @@ public static class TaxCalculator
             HsaContribution = Money(hsa), HealthcareDeduction = Money(healthcare), CharityDeduction = Money(charity),
             SaltDeduction = Money(salt), StandardDeduction = Money(standardDeduction), AGI = Money(agi),
             Deductions = Money(deductions), TaxableOrdinaryIncome = Money(taxableOrdinary), TaxableCapitalGains = Money(taxableGains),
-            OrdinaryTax = Money(ordinaryTax), LTCGTax = Money(gainsTax), NIIT = Money(niit), AMT = Money(amt),
-            EstateSize = estate, EstateTaxWA = Money(estateTax)
+            OrdinaryTax = Money(ordinaryTax), LTCGTax = Money(gainsTax), NIIT = Money(niit), AMT = Money(amt)
         };
     }
 

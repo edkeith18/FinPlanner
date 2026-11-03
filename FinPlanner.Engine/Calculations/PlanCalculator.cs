@@ -137,12 +137,12 @@ public class PlanCalculator
                 .Select(transfer => transfer.AgeEnd))
             .DefaultIfEmpty(scenario.CurrentAge - 1).Max();
         var year = PlanYearCalculator.FromScenario(scenario, uncategorized);
-        const decimal net = 1m - TaxCalculator.MaximumIncomeTaxRate;
+        var net = 1m - scenario.TaxInfo.MaximumIncomeTaxRate;
         try
         {
             while (year.YearsInFuture < MaximumProofYears)
             {
-                PlanYearCalculator.Calculate(year);
+                PlanYearCalculator.Calculate(year, scenario.TaxInfo);
                 if (!year.IsFullyFunded) return false;
                 if (year.YearsInFuture == 0) uncategorized = year.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount;
                 if (year.StartingAge > lastTransition
@@ -162,7 +162,7 @@ public class PlanCalculator
                     // envelope rate. Additional withdrawals are grossed up above.
                     var minimumReturn = relevant.Select(account => account.AppreciationRate
                         + PlanYearCalculator.GetEarnedRate(account) * net
-                        - RmdCalculator.GetMandatoryRate(account, year.StartingAge) * TaxCalculator.MaximumIncomeTaxRate)
+                        - RmdCalculator.GetMandatoryRate(account, year.StartingAge) * scenario.TaxInfo.MaximumIncomeTaxRate)
                         .DefaultIfEmpty(0m).Min();
                     var rounding = (year.Accounts.Count * 3m + streams.Count + 1m) / net;
                     bool Covers(decimal balance, decimal rate) => rate > 0m
@@ -209,7 +209,7 @@ public class PlanCalculator
         while (true)
         {
             years.Add(currentYear);
-            PlanYearCalculator.Calculate(currentYear);
+            PlanYearCalculator.Calculate(currentYear, scenario.TaxInfo);
             if (currentYear.YearsInFuture == 0)
                 uncategorizedExpenses = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount;
             if (!currentYear.IsFullyFunded)

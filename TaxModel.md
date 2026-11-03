@@ -1,6 +1,6 @@
 # VBA tax model
 
-The engine ports the active formulas in `TaxCalculator`, `Account.AddIncome`, and the yearly tax-funding routines from the supplied `42YRPLAN.xlsm`. It uses the workbook's 2026 married-filing-jointly constants and its assumed future growth rates. It does not download tax tables or infer changes in legislation.
+The engine ports the active formulas in `TaxCalculator`, `Account.AddIncome`, and the yearly tax-funding routines from the supplied `42YRPLAN.xlsm`. Tax parameters and projection growth assumptions come from `Input/TaxInfo.json`. Only MarriedFilingJointly is currently supported. It does not download tax tables or infer changes in legislation.
 
 ## Scenario inputs
 
@@ -35,7 +35,6 @@ Required distributions still occur. External income, account earnings, and RMD c
 - NIIT is 3.8% of the lesser of investment income or AGI above $250,000. The threshold is not indexed.
 - AMT uses the workbook's exemption and threshold growth assumptions. Its upper-tier 28% component is multiplied by 26% again in the final expression; this is intentionally preserved.
 - `MarginalTaxRate` in the VBA is total tax divided by AGI. The new result exposes EffectiveTaxRate and a documented MarginalTaxRate alias.
-- Washington estate tax is informational and is not funded as an annual expense. Its exclusion starts at $6 million and grows 3.86%. The VBA's loop omits its lowest band; that omission is preserved.
 
 Decimal arithmetic replaces VBA Single values. This is a formula port, not a guarantee of bit-for-bit floating-point agreement.
 
@@ -45,4 +44,18 @@ The tax-aware search simulates actual tax-funded years through scheduled transit
 
 ## Reporting
 
-Each annual sheet includes a Taxes expense. A separate tax-detail sheet identifies the supplied first-year amount without calculated detail. For subsequent years it exposes income classifications, AGI, deduction components, ordinary and capital-gains tax, AMT, NIIT, total tax, the rounded funded tax expense, effective rate, and informational estate tax.
+Each annual sheet includes a Taxes expense. A separate tax-detail sheet identifies the supplied first-year amount without calculated detail. For subsequent years it exposes income classifications, AGI, deduction components, ordinary and capital-gains tax, AMT, NIIT, total tax, the rounded funded tax expense, and effective rate.
+
+## Tax settings
+
+The console `build` command loads `TaxInfo.json` beside the scenario file. Use `build <scenario-path> --tax-info <tax-settings-path>` to select another file. Missing or invalid settings stop the build with an error. Publishing also includes the supplied file under `Input/TaxInfo.json`.
+
+The console loads the scenario and tax settings from separate JSON files, then assigns `scenario.TaxInfo = taxInfo`. Engine callers pass only the scenario to the stateless calculator: `new PlanCalculator().CalculateCurrentTrajectory(scenario)`. The maximum and perpetual methods use the same scenario property. Scenario snapshots preserve the immutable tax settings.
+
+`Scenario.TaxInfo` has `[JsonIgnore]`, so scenario serialization and the `upgrade` command never embed tax settings or a tax file path. New and deserialized scenarios default to an embedded copy of the checked-in tax JSON, which also works in browser deployments without filesystem access. The embedded copy changes when the engine is rebuilt; the console replaces it with settings read from the external file on each build command.
+
+All percentage values in tax JSON use percentage units (85 means 85%). Settings require every field, reject unknown properties and null sections, and validate nonnegative amounts, percentage ranges, ascending brackets, the supported filing status, and a conservative tax bound below 100%. Settings and bracket collections are immutable.
+
+Projected tax growth uses `PlanYear.YearsInFuture`, the same zero-based offset used by forecasting. The supplied tax parameters apply at offset zero regardless of `StartingYear` or `TaxInfo.TaxYear`; `TaxYear` identifies the source tax data and does not determine growth. SALT's scheduled limit change still uses the calendar `StartingYear`. First-year supplied taxes remain authoritative. `TaxCalculator.Calculate(year, taxInfo)` reads `year.YearsInFuture` directly; there is no separate projection-offset argument.
+
+The perpetual certificate derives its tax envelope from the configured ordinary, capital-gains, AMT, charity-reduction, and NIIT rates. For the supplied file this remains 40.8%. Tax formulas, income classifications, RMD schedules, and account earnings assumptions remain implemented in code.
