@@ -144,8 +144,6 @@
   "Transfers": [
     {
       "Name": "HSA",
-      "FromAccountName": "Keith Savings",
-      "ToAccountName": "HSA",
       "AgeStart": 57,
       "AgeEnd": 65,
       "Amount": 9750,

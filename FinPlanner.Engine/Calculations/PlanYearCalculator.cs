@@ -159,9 +159,8 @@ internal static class PlanYearCalculator
         {
             var amount = ForecastTransferAmount(instruction, scenario.CurrentAge, year.StartingAge, scenario.AnnualInflationRate / 100m);
             if (amount <= 0m) continue;
-            var from = FindTransferAccount(year, instruction.FromAccountName);
-            var to = FindTransferAccount(year, instruction.ToAccountName);
-            year.Transfers.Add(new AccountTransfer(instruction.Name, from, to, amount, TransferReason.Scheduled));
+            var to = FindTransferAccount(year, instruction.Name);
+            year.Transfers.Add(new AccountTransfer(instruction.Name, null, to, amount, TransferReason.Scheduled));
         }
     }
 
@@ -222,12 +221,30 @@ internal static class PlanYearCalculator
         foreach (var transfer in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Rmd))
             ApplyTransfer(transfer);
 
-        // Explicit account-to-account instructions are separate from expense
-        // funding. Required distributions take precedence over these movements.
-        foreach (var transfer in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Scheduled))
+        // Expand each instruction into funded movements after RMDs have executed.
+        // Each source keeps its own tax treatment and basis calculation.
+        foreach (var instruction in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Scheduled).ToList())
         {
-            ApplyTransfer(transfer);
-            year.UnfundedTransfers += transfer.RequestedAmount - transfer.Amount;
+            year.Transfers.Remove(instruction);
+            var remaining = instruction.RequestedAmount;
+            foreach (var source in year.Accounts.Where(account => account.Id != instruction.ToAccount!.Id)
+                .OrderBy(account => account.WithdrawalPriority))
+            {
+                if (remaining <= 0m) break;
+                var amount = Math.Min(remaining, Math.Max(0m, source.EndingBalance));
+                if (amount <= 0m) continue;
+                var movement = new AccountTransfer(instruction.Name, source, instruction.ToAccount,
+                    amount, TransferReason.Scheduled);
+                remaining -= ApplyTransfer(movement);
+                year.Transfers.Add(movement);
+            }
+            if (remaining > 0m)
+            {
+                // A zero-funded ledger entry preserves the outstanding request without creating cash.
+                year.Transfers.Add(new AccountTransfer(instruction.Name, null, instruction.ToAccount,
+                    remaining, TransferReason.Scheduled) { Amount = 0m });
+                year.UnfundedTransfers += remaining;
+            }
         }
     }
 

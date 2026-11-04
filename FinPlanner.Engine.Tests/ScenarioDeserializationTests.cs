@@ -39,7 +39,7 @@ public class ScenarioDeserializationTests
     [Theory]
     [InlineData(58)]
     [InlineData(100)]
-    public async Task BothLoadersNormalizeValidScenarios(int lifeExpectancy)
+    public async Task BothLoadersPreserveValidScenarioPriorities(int lifeExpectancy)
     {
         var json = CreateJson(lifeExpectancy, includeAccounts: true);
         using var stream = new MemoryStream(Encoding.UTF8.GetBytes(json));
@@ -49,8 +49,8 @@ public class ScenarioDeserializationTests
 
         Assert.Equal(58, syncScenario.CurrentAge);
         Assert.Equal(58, asyncScenario.CurrentAge);
-        Assert.Equal(1, syncScenario.Accounts[0].WithdrawalPriority);
-        Assert.Equal(1, asyncScenario.Accounts[0].WithdrawalPriority);
+        Assert.Equal(9, syncScenario.Accounts[0].WithdrawalPriority);
+        Assert.Equal(9, asyncScenario.Accounts[0].WithdrawalPriority);
         Assert.Equal(syncScenario.Serialize(), asyncScenario.Serialize());
     }
 

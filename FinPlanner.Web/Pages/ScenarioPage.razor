@@ -684,12 +684,10 @@
                 {
                     <thead>
                         <tr>
-                            <th class="item-name">Name</th>
+                            <th class="item-name">Destination account</th>
                             <th class="item-value">Start age</th>
                             <th class="item-value">End age</th>
                             <th class="item-value">Amount</th>
-                            <th class="item-value">From Account</th>
-                            <th class="item-value">To Account</th>
                             <th class="item-value">Annual rate of increase</th>
                             <th class="item-actions"></th>
                         </tr>
@@ -740,36 +738,6 @@
                                 }
                             </td>
                             <td class="item-value">
-                                @if (IsEditingTransferFromAccount(transfer))
-                                {
-                                    <InputSelect @bind-Value="transfer.FromAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
-                                        @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
-                                        {
-                                            <option value="@account.Name">@account.Name</option>
-                                        }
-                                    </InputSelect>
-                                }
-                                else
-                                {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferFromAccount(transfer)">@transfer.FromAccountName</span>
-                                }
-                            </td>
-                            <td class="item-value">
-                                @if (IsEditingTransferToAccount(transfer))
-                                {
-                                    <InputSelect @bind-Value="transfer.ToAccountName" class="form-select form-select-sm" @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)">
-                                        @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
-                                        {
-                                            <option value="@account.Name">@account.Name</option>
-                                        }
-                                    </InputSelect>
-                                }
-                                else
-                                {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferToAccount(transfer)">@transfer.ToAccountName</span>
-                                }
-                            </td>
-                            <td class="item-value">
                                 @if (IsEditingTransferAnnualRate(transfer))
                                 {
                                     <div class="expense-rate-edit">
@@ -813,22 +781,6 @@
                             <td class="item-value"><InputNumber @bind-Value="newExpenseEndAge" class="form-control form-control-sm" @attributes="wholeNumberInputAttributes" @onkeydown="OnAddInputKeyDown" /></td>
                             <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                             <td class="item-value">
-                                <InputSelect @bind-Value="newTransferFromAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
-                                    @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
-                                    {
-                                        <option value="@account.Name">@account.Name</option>
-                                    }
-                                </InputSelect>
-                            </td>
-                            <td class="item-value">
-                                <InputSelect @bind-Value="newTransferToAccountName" class="form-select form-select-sm" @onkeydown="OnAddInputKeyDown">
-                                    @foreach (var account in scenario.Accounts.OrderBy(a => a.Name, StringComparer.CurrentCultureIgnoreCase))
-                                    {
-                                        <option value="@account.Name">@account.Name</option>
-                                    }
-                                </InputSelect>
-                            </td>
-                            <td class="item-value">
                                 <div class="expense-rate-edit">
                                     <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
                                                  class="form-control form-control-sm number-input-no-spinner"
@@ -868,8 +820,6 @@
     private readonly Dictionary<ScheduledTransfer, int> originalTransferEndAges = new();
     private readonly Dictionary<ScheduledTransfer, decimal> originalTransferAnnualRates = new();
     private readonly Dictionary<ScheduledTransfer, bool> originalTransferUseInflationValues = new();
-    private readonly Dictionary<ScheduledTransfer, string> originalTransferFromAccountNames = new();
-    private readonly Dictionary<ScheduledTransfer, string> originalTransferToAccountNames = new();
     private readonly Dictionary<string, object> wholeNumberInputAttributes = new()
     {
         ["step"] = "1",
@@ -888,8 +838,6 @@
     private readonly HashSet<ScheduledTransfer> editingTransferStartAgeRows = new();
     private readonly HashSet<ScheduledTransfer> editingTransferEndAgeRows = new();
     private readonly HashSet<ScheduledTransfer> editingTransferAnnualRateRows = new();
-    private readonly HashSet<ScheduledTransfer> editingTransferFromAccountRows = new();
-    private readonly HashSet<ScheduledTransfer> editingTransferToAccountRows = new();
     private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private string dateOfBirthInput = string.Empty;
@@ -907,8 +855,6 @@
     private int newExpenseEndAge;
     private decimal newExpenseAnnualRateOfIncrease;
     private bool newExpenseUseInflationValue = true;
-    private string newTransferFromAccountName = string.Empty;
-    private string newTransferToAccountName = string.Empty;
     private bool pendingFocusNewRow;
     private const string ScenarioTableClasses =
         "table table-bordered align-middle table-sm scenario-table mb-0";
@@ -933,7 +879,7 @@
         if (data is null)
             return;
 
-        scenario.Accounts = data.Accounts ?? new List<Account>();
+        scenario.Accounts = data.Accounts.OrderBy(account => account.WithdrawalPriority).ToList();
         scenario.Income = data.Income ?? new List<Income>();
         scenario.Expenses = data.Expenses ?? new List<Expense>();
         scenario.Transfers = data.Transfers ?? new List<ScheduledTransfer>();
@@ -945,7 +891,6 @@
         scenario.FirstYearAnnualExpenses = data.FirstYearAnnualExpenses;
         scenario.FirstYearTaxExpense = data.FirstYearTaxExpense;
         scenario.BondsAnnualRateOfReturn = data.BondsAnnualRateOfReturn;
-        scenario.NormalizeWithdrawalPriorities();
         NormalizeLoadedExpenses(scenario.Expenses);
         NormalizeLoadedTransfers(scenario.Transfers);
 
@@ -1327,7 +1272,6 @@
         if (await JS.InvokeAsync<bool>("confirm", $"Delete account '{account.Name}'?"))
         {
             scenario.Accounts.Remove(account);
-            scenario.NormalizeWithdrawalPriorities();
             editingRows.Remove(account);
             editingNameRows.Remove(account);
             editingTypeRows.Remove(account);
@@ -1461,14 +1405,10 @@
             editingTransferStartAgeRows.Remove(transfer);
             editingTransferEndAgeRows.Remove(transfer);
             editingTransferAnnualRateRows.Remove(transfer);
-            editingTransferFromAccountRows.Remove(transfer);
-            editingTransferToAccountRows.Remove(transfer);
             originalTransferStartAges.Remove(transfer);
             originalTransferEndAges.Remove(transfer);
             originalTransferAnnualRates.Remove(transfer);
             originalTransferUseInflationValues.Remove(transfer);
-            originalTransferFromAccountNames.Remove(transfer);
-            originalTransferToAccountNames.Remove(transfer);
             UpdateDirtyState();
         }
     }
@@ -1486,7 +1426,6 @@
         newAccountType = AccountType.Brokerage;
         newAccountHoldings = AccountHoldings.Equities;
         SetNewExpenseDefaults();
-        SetNewTransferDefaults();
         pendingFocusNewRow = true;
     }
 
@@ -1501,8 +1440,6 @@
         newExpenseEndAge = 0;
         newExpenseAnnualRateOfIncrease = 0;
         newExpenseUseInflationValue = true;
-        newTransferFromAccountName = string.Empty;
-        newTransferToAccountName = string.Empty;
         pendingFocusNewRow = false;
     }
 
@@ -1535,7 +1472,7 @@
                 {
                     return;
                 }
-                scenario.AddTransfer(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newTransferFromAccountName, newTransferToAccountName, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
+                scenario.AddTransfer(name, newItemValue, newExpenseStartAge, newExpenseEndAge, newExpenseAnnualRateOfIncrease, newExpenseUseInflationValue);
                 break;
         }
 
@@ -1683,9 +1620,7 @@
         || editingExpenseAnnualRateRows.Any()
         || editingTransferStartAgeRows.Any()
         || editingTransferEndAgeRows.Any()
-        || editingTransferAnnualRateRows.Any()
-        || editingTransferFromAccountRows.Any()
-        || editingTransferToAccountRows.Any();
+        || editingTransferAnnualRateRows.Any();
 
     private string FinancialScenarioPanelClass => HasActiveEditOrAdd
         ? "financial-scenario-panel edit-active"
@@ -1741,9 +1676,7 @@
             || editingNameRows.Contains(transfer)
             || editingTransferStartAgeRows.Contains(transfer)
             || editingTransferEndAgeRows.Contains(transfer)
-            || editingTransferAnnualRateRows.Contains(transfer)
-            || editingTransferFromAccountRows.Contains(transfer)
-            || editingTransferToAccountRows.Contains(transfer);
+            || editingTransferAnnualRateRows.Contains(transfer);
     }
 
     private void CommitItemEdit(object item)
@@ -1757,8 +1690,6 @@
         StopEditingName(item, commitChanges: false);
         StopEditing(item, commitChanges: false);
     }
-
-
 
     private static string FormatExpenseAnnualRate(Expense expense)
     {
@@ -1815,15 +1746,12 @@
                 transfer.AgeEnd = scenario.CurrentAge + transfer.AgeEnd - currentCalendarYear;
             }
 
-            EnsureTransferAccountSelectionIsValid(transfer);
-
             if (transfer.UseInflationValue)
             {
                 transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
             }
         }
     }
-
 
     private void ApplyInflationRateToLinkedItems()
     {
@@ -1984,10 +1912,6 @@
 
     private bool IsEditingTransferAnnualRate(ScheduledTransfer transfer) => editingTransferAnnualRateRows.Contains(transfer);
 
-    private bool IsEditingTransferFromAccount(ScheduledTransfer transfer) => editingTransferFromAccountRows.Contains(transfer);
-
-    private bool IsEditingTransferToAccount(ScheduledTransfer transfer) => editingTransferToAccountRows.Contains(transfer);
-
     private void StartEditingTransferStartAge(ScheduledTransfer transfer)
     {
         if (editingTransferStartAgeRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
@@ -2012,22 +1936,6 @@
             transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
         }
         editingTransferAnnualRateRows.Add(transfer);
-    }
-
-    private void StartEditingTransferFromAccount(ScheduledTransfer transfer)
-    {
-        if (editingTransferFromAccountRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
-        originalTransferFromAccountNames[transfer] = transfer.FromAccountName;
-        EnsureTransferAccountSelectionIsValid(transfer);
-        editingTransferFromAccountRows.Add(transfer);
-    }
-
-    private void StartEditingTransferToAccount(ScheduledTransfer transfer)
-    {
-        if (editingTransferToAccountRows.Contains(transfer) || !CanStartSectionEdit(transfer)) return;
-        originalTransferToAccountNames[transfer] = transfer.ToAccountName;
-        EnsureTransferAccountSelectionIsValid(transfer);
-        editingTransferToAccountRows.Add(transfer);
     }
 
     private void StopEditingTransferFields(ScheduledTransfer transfer, bool commitChanges)
@@ -2062,27 +1970,10 @@
             }
         }
 
-        if (editingTransferFromAccountRows.Remove(transfer) && !commitChanges && originalTransferFromAccountNames.TryGetValue(transfer, out var originalFromAccountName))
-        {
-            transfer.FromAccountName = originalFromAccountName;
-        }
-
-        if (editingTransferToAccountRows.Remove(transfer) && !commitChanges && originalTransferToAccountNames.TryGetValue(transfer, out var originalToAccountName))
-        {
-            transfer.ToAccountName = originalToAccountName;
-        }
-
-        if (commitChanges)
-        {
-            EnsureTransferAccountSelectionIsValid(transfer);
-        }
-
         originalTransferStartAges.Remove(transfer);
         originalTransferEndAges.Remove(transfer);
         originalTransferAnnualRates.Remove(transfer);
         originalTransferUseInflationValues.Remove(transfer);
-        originalTransferFromAccountNames.Remove(transfer);
-        originalTransferToAccountNames.Remove(transfer);
         UpdateDirtyState();
     }
 
@@ -2110,60 +2001,15 @@
         StopEditingTransferFields(transfer, commitChanges: false);
     }
 
-    private void SetNewTransferDefaults()
-    {
-        var orderedAccountNames = scenario.Accounts
-            .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)
-            .Select(account => account.Name)
-            .ToList();
-
-        newTransferFromAccountName = orderedAccountNames.FirstOrDefault() ?? string.Empty;
-        newTransferToAccountName = orderedAccountNames.Skip(1).FirstOrDefault() ?? newTransferFromAccountName;
-    }
-
-    private void EnsureTransferAccountSelectionIsValid(ScheduledTransfer transfer)
-    {
-        var orderedAccountNames = scenario.Accounts
-            .OrderBy(account => account.Name, StringComparer.CurrentCultureIgnoreCase)
-            .Select(account => account.Name)
-            .ToList();
-
-        if (orderedAccountNames.Count == 0)
-        {
-            transfer.FromAccountName = string.Empty;
-            transfer.ToAccountName = string.Empty;
-            return;
-        }
-
-        if (!orderedAccountNames.Contains(transfer.FromAccountName))
-        {
-            transfer.FromAccountName = orderedAccountNames[0];
-        }
-
-        if (!orderedAccountNames.Contains(transfer.ToAccountName))
-        {
-            transfer.ToAccountName = orderedAccountNames.Skip(1).FirstOrDefault() ?? orderedAccountNames[0];
-        }
-
-        if (orderedAccountNames.Count > 1 && transfer.FromAccountName == transfer.ToAccountName)
-        {
-            transfer.ToAccountName = orderedAccountNames.First(accountName => accountName != transfer.FromAccountName);
-        }
-    }
-
     private void ClearTransferEditState()
     {
         editingTransferStartAgeRows.Clear();
         editingTransferEndAgeRows.Clear();
         editingTransferAnnualRateRows.Clear();
-        editingTransferFromAccountRows.Clear();
-        editingTransferToAccountRows.Clear();
         originalTransferStartAges.Clear();
         originalTransferEndAges.Clear();
         originalTransferAnnualRates.Clear();
         originalTransferUseInflationValues.Clear();
-        originalTransferFromAccountNames.Clear();
-        originalTransferToAccountNames.Clear();
     }
 
     private void CommitAccountEdit(Account account)
