@@ -26,6 +26,7 @@ public class AccountIncomeTests
 
         Assert.Equal(19835m, current.PlanYears[^1].EndingBalance);
         Assert.Equal(10000m, maximum.AnnualExpenses);
+        Assert.True(perpetual.IsSuccessful);
         Assert.Equal(0m, perpetual.AnnualExpenses);
         foreach (var plan in new[] { current, maximum, perpetual })
         {

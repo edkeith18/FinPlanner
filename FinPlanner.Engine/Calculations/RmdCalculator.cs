@@ -54,14 +54,4 @@ public static class RmdCalculator
                 0, MidpointRounding.AwayFromZero)
             : 0m;
 
-    internal static decimal GetMandatoryRate(Account account, int startingAge)
-        => GetDivisor(account.Type, startingAge) is decimal divisor ? 1m / divisor : 0m;
-
-    // Perpetual proofs must wait until future withdrawal rates stop changing.
-    internal static bool IsScheduleStable(AccountType type, int startingAge) => type switch
-    {
-        AccountType.Retirement => startingAge >= 120,
-        AccountType.Inherited => startingAge >= 86,
-        _ => true
-    };
 }

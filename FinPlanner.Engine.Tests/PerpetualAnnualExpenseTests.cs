@@ -4,28 +4,6 @@ namespace FinPlanner.Engine.Tests;
 
 public class PerpetualAnnualExpenseTests
 {
-    [Theory]
-    [InlineData(0.02, 0)]
-    [InlineData(0.1, 1000)]
-    public void MandatorySurplusTransfersAffectPerpetualReturns(double brokerageReturn, int expected)
-    {
-        var scenario = CreateScenario(11000m, 0.1m);
-        scenario.BondsAnnualRateOfReturn = (decimal)brokerageReturn;
-        scenario.Accounts =
-        [
-            new Account { Type = AccountType.Inherited, BeginningBalance = 11000m, WithdrawalPriority = 1 },
-            new Account { Type = AccountType.Brokerage, Holdings = AccountHoldings.Bonds, WithdrawalPriority = 2 }
-        ];
-
-        var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
-
-        Assert.True(plan.IsSuccessful);
-        Assert.Equal((decimal)expected, plan.AnnualExpenses);
-        // At 58 the personal RMD is below $1,000, so that spending case
-        // initially consumes it all. The zero-spending case transfers surplus.
-        Assert.Equal(expected == 0, plan.PlanYears[0].Accounts[1].EndingBalance > 0m);
-    }
-
     [Fact]
     public void SearchPreservesInputsAndPreviouslyCalculatedPlans()
     {
@@ -42,25 +20,12 @@ public class PerpetualAnnualExpenseTests
     }
 
     [Fact]
-    public void NegativeRatesAreExplicitlyUnsupported()
-    {
-        var scenario = CreateScenario(10000m, -0.01m);
-
-        Assert.Throws<NotSupportedException>(() =>
-            new PlanCalculator().CalculatePerpetualSpend(scenario).AnnualExpenses);
-    }
-
-    [Theory]
-    [InlineData(false)]
-    [InlineData(true)]
-    public void EmptyAccountsThatCannotReceiveSurplusDoNotPreventPerpetualProof(bool withIncome)
+    public void EmptyAccountsDoNotAffectFinalYearGrowthTarget()
     {
         var scenario = CreateScenario(1010123m, 0.07m);
         scenario.AnnualInflationRate = 6m;
         scenario.BondsAnnualRateOfReturn = 0.0453m;
         scenario.Accounts[0].Type = AccountType.Brokerage;
-        if (withIncome)
-            scenario.Income.Add(new Income { InitialAmount = 1000m, AgeStart = 58 });
         var calculator = new PlanCalculator();
         var expected = calculator.CalculatePerpetualSpend(scenario);
         scenario.Accounts.Insert(0, new Account
@@ -79,31 +44,18 @@ public class PerpetualAnnualExpenseTests
     }
 
     [Fact]
-    public void MissingCertificateDoesNotClaimThatNoSustainableBudgetExists()
+    public void ReturnsFailureWhenEvenZeroSpendingCannotMatchInflation()
     {
-        var scenario = CreateScenario(10000m, 0.1m);
+        var scenario = CreateScenario(10000m, 0.03m);
+        scenario.AnnualInflationRate = 4m;
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
         Assert.False(plan.IsSuccessful);
         Assert.Empty(plan.PlanYears);
-        Assert.Contains("does not prove", plan.FailureReason);
+        Assert.Contains("at least 4%", plan.FailureReason);
     }
 
     [Fact]
-    public void CertifiedBudgetIncludesTaxesAndPreservesTheReportingHorizon()
-    {
-        var scenario = CreateScenario(1000000m, 0.07m);
-        scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
-        var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
-        Assert.True(plan.IsSuccessful);
-        Assert.True(plan.AnnualExpenses > 0m);
-        Assert.Equal(2, plan.PlanYears.Count);
-        Assert.Contains("exact maximum is not proven", plan.CalculationNote);
-        Assert.Null(plan.PlanYears[0].Taxes);
-        Assert.All(plan.PlanYears.Skip(1), year => Assert.NotNull(year.Taxes));
-    }
-
-    [Fact]
-    public void LongObligationsBeyondTheProofHorizonAreNotCertified()
+    public void OverflowingForecastDoesNotMeetGrowthTarget()
     {
         var scenario = CreateScenario(1000000m, 0.1m);
         scenario.LifeExpectancy = 10001;
@@ -115,6 +67,41 @@ public class PerpetualAnnualExpenseTests
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
         Assert.False(plan.IsSuccessful);
         Assert.Empty(plan.PlanYears);
+    }
+
+    [Theory]
+    [InlineData(59, 0, 100000)]
+    [InlineData(59, 2, 80000)]
+    [InlineData(59, 4, 60000)]
+    [InlineData(59, 6, 40000)]
+    [InlineData(60, 4, 60000)]
+    public void FindsClosestGrowthAtOrAboveInflationInFinalYear(int lifeExpectancy, int inflation, int expectedBudget)
+    {
+        var scenario = CreateScenario(500000m, 0.1m);
+        scenario.LifeExpectancy = lifeExpectancy;
+        scenario.AnnualInflationRate = inflation;
+        scenario.Accounts.Add(new Account { Type = AccountType.RetirementRoth, BeginningBalance = 500000m });
+        var calculator = new PlanCalculator();
+        var plan = calculator.CalculatePerpetualSpend(scenario);
+        Assert.True(plan.IsSuccessful);
+        Assert.Equal(expectedBudget, plan.AnnualExpenses);
+        var previous = plan.PlanYears.Count == 1 ? 1000000m : plan.PlanYears[^2].EndingBalance;
+        Assert.True(plan.PlanYears[^1].EndingBalance >= previous * (1m + inflation / 100m));
+        if (lifeExpectancy == 59)
+            Assert.Equal(1000000m * (1m + inflation / 100m), plan.PlanYears[^1].EndingBalance);
+        else
+            Assert.True(plan.PlanYears[0].EndingBalance >= 1000000m * (1m + inflation / 100m));
+        scenario.FirstYearAnnualExpenses = plan.AnnualExpenses + 1000m;
+        var higher = calculator.CalculateCurrentTrajectory(scenario);
+        var higherPrevious = higher.PlanYears.Count == 1 ? 1000000m : higher.PlanYears[^2].EndingBalance;
+        Assert.True(higher.PlanYears[^1].EndingBalance < higherPrevious * (1m + inflation / 100m));
+    }
+
+    [Fact]
+    public void ZeroBalancesDoNotCountAsGrowth()
+    {
+        var scenario = CreateScenario(0m, 0.1m);
+        Assert.False(new PlanCalculator().CalculatePerpetualSpend(scenario).IsSuccessful);
     }
 
     private static Scenario CreateScenario(decimal balance, decimal returnRate)

@@ -40,7 +40,7 @@ Decimal arithmetic replaces VBA Single values. This is a formula port, not a gua
 
 ## Perpetual spending
 
-The tax-aware search simulates actual tax-funded years through scheduled transitions, then uses conservative bounds based on a 40.8% maximum income-tax envelope, including taxes on mandatory distributions and extra withdrawals. Future external income and deductions are conservatively ignored by that certificate. A successful result certifies a sustainable budget but does not prove the exact maximum; the console, result metadata, and XLSX tax sheet state this explicitly. A candidate without a certificate is not claimed to be insolvent. A horizon limit or numeric overflow never counts as a successful proof.
+The public perpetual-spending calculation uses `CalculatePerpetualSpend_Simple`: an upper/lower/midpoint search for the highest initial annual budget in $1,000 increments whose final forecast year grows total account balances by at least the scenario’s `AnnualInflationRate` (JSON percentage units). It compares the final ending balance with the previous year's ending balance, or the initial total balance for a one-year forecast. The comparison requires a positive starting total and does not round growth rates. Earlier years must fund all obligations but need not achieve inflation-matching growth. Taxes, income, transfers, and expenses are included in each trial's forecast. Overflow never counts as success. This finite-forecast target does not prove indefinite sustainability; the result's calculation note states that limitation.
 
 ## Reporting
 
@@ -54,8 +54,8 @@ The console loads the scenario and tax settings from separate JSON files, then a
 
 `Scenario.TaxInfo` has `[JsonIgnore]`, so scenario serialization and the `upgrade` command never embed tax settings or a tax file path. New and deserialized scenarios default to an embedded copy of the checked-in tax JSON, which also works in browser deployments without filesystem access. The embedded copy changes when the engine is rebuilt; the console replaces it with settings read from the external file on each build command.
 
-All percentage values in tax JSON use percentage units (85 means 85%). Settings require every field, reject unknown properties and null sections, and validate nonnegative amounts, percentage ranges, ascending brackets, the supported filing status, and a conservative tax bound below 100%. Settings and bracket collections are immutable.
+All percentage values in tax JSON use percentage units (85 means 85%). Settings require every field, reject unknown properties and null sections, and validate nonnegative amounts, percentage ranges, ascending brackets, the supported filing status. Settings and bracket collections are immutable.
 
 Projected tax growth uses `PlanYear.YearsInFuture`, the same zero-based offset used by forecasting. The supplied tax parameters apply at offset zero regardless of `StartingYear` or `TaxInfo.TaxYear`; `TaxYear` identifies the source tax data and does not determine growth. SALT's scheduled limit change still uses the calendar `StartingYear`. First-year supplied taxes remain authoritative. `TaxCalculator.Calculate(year, taxInfo)` reads `year.YearsInFuture` directly; there is no separate projection-offset argument.
 
-The perpetual certificate derives its tax envelope from the configured ordinary, capital-gains, AMT, charity-reduction, and NIIT rates. For the supplied file this remains 40.8%. Tax formulas, income classifications, RMD schedules, and account earnings assumptions remain implemented in code.
+Tax formulas, income classifications, RMD schedules, and account earnings assumptions remain implemented in code.

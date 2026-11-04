@@ -14,7 +14,6 @@ public class TaxInfoTests
         var info = TaxInfo.Default;
         Assert.Equal(0.85m, info.SocialSecurity.TaxablePercentage);
         Assert.Equal(0.0633m, info.StandardDeduction.AnnualRateOfIncrease);
-        Assert.Equal(0.408m, info.MaximumIncomeTaxRate);
         var year = new PlanYear { StartingYear = 2026, Transfers =
             [new AccountTransfer("Income", null, null, 100000m, TransferReason.ExternalIncome)] };
         Assert.Equal(7640m, TaxCalculator.Calculate(year, info).TotalTax);
@@ -142,7 +141,6 @@ public class TaxInfoTests
     [InlineData("status")]
     [InlineData("brackets")]
     [InlineData("unknown")]
-    [InlineData("bound")]
     public void InvalidSettingsAreRejected(string invalid)
     {
         var json = Settings();
@@ -155,16 +153,8 @@ public class TaxInfoTests
             case "status": json["FilingStatus"] = "Single"; break;
             case "brackets": json["OrdinaryIncomeTax"]!["Brackets"]![1]!["Threshold"] = 0; break;
             case "unknown": json["Typo"] = 1; break;
-            case "bound": json["NetInvestmentIncomeTax"]!["Rate"] = 90; break;
         }
         Assert.Throws<JsonException>(() => TaxInfo.Deserialize(json.ToJsonString()));
     }
 
-    [Fact]
-    public void ConfiguredRatesUpdatePerpetualBound()
-    {
-        var json = Settings();
-        json["OrdinaryIncomeTax"]!["Brackets"]![6]!["Rate"] = 45;
-        Assert.Equal(0.488m, TaxInfo.Deserialize(json.ToJsonString()).MaximumIncomeTaxRate);
-    }
 }

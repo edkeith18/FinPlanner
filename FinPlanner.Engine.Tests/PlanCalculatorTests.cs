@@ -20,10 +20,10 @@ public class PlanCalculatorTests
         Assert.Equal("Perpetual Spend Plan", perpetual.Name);
         Assert.Equal(1000m, current.AnnualExpenses);
         Assert.Equal(5000m, maximum.AnnualExpenses);
-        Assert.Equal(0m, perpetual.AnnualExpenses);
+        Assert.Equal(1000m, perpetual.AnnualExpenses);
         Assert.Equal(10000m, current.PlanYears[^1].EndingBalance);
         Assert.Equal(1600m, maximum.PlanYears[^1].EndingBalance);
-        Assert.Equal(12100m, perpetual.PlanYears[^1].EndingBalance);
+        Assert.Equal(10000m, perpetual.PlanYears[^1].EndingBalance);
         foreach (var plan in new[] { current, maximum, perpetual })
         {
             Assert.True(plan.IsSuccessful);

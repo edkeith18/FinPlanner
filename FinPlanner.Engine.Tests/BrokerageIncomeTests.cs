@@ -37,14 +37,15 @@ public class BrokerageIncomeTests
         {
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 60,
-            SecuritiesAnnualRateOfReturn = 0m,
+            AnnualInflationRate = 4m,
+            SecuritiesAnnualRateOfReturn = 0.04m,
             Accounts = [new Account { BeginningBalance = 100000m }]
         };
-        // Even with zero appreciation, 1.16% in earned income can fund $1,000.
+        // Earned income funds spending while appreciation retains the 4% growth target.
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
         Assert.True(plan.IsSuccessful);
         Assert.Equal(1000m, plan.AnnualExpenses);
-        Assert.Equal(100160m, plan.PlanYears[0].EndingBalance);
+        Assert.Equal(104160m, plan.PlanYears[0].EndingBalance);
     }
 
     [Fact]
