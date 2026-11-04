@@ -138,18 +138,10 @@ public class IncomeTests
         var maximum = calculator.CalculateMaximumSpend(scenario);
         var perpetual = calculator.CalculatePerpetualSpend(scenario);
         Assert.Equal(0m, maximum.AnnualExpenses);
-        Assert.False(perpetual.IsSuccessful);
+        Assert.True(perpetual.IsSuccessful);
+        Assert.Equal(0m, perpetual.AnnualExpenses);
+        Assert.All(perpetual.PlanYears.Take(2), year => Assert.Equal(0m, year.ExternalIncome));
         Assert.All(maximum.PlanYears.Take(2), year => Assert.Equal(0m, year.ExternalIncome));
-    }
-
-    [Theory]
-    [InlineData(-1, 0)]
-    [InlineData(1, -0.1)]
-    public void PerpetualCalculationRejectsNegativeIncomeAssumptions(int amount, double rate)
-    {
-        var scenario = CreateScenario();
-        scenario.Income.Add(new Income { InitialAmount = amount, AnnualRateOfIncrease = (decimal)rate });
-        Assert.Throws<NotSupportedException>(() => new PlanCalculator().CalculatePerpetualSpend(scenario));
     }
 
     [Fact]
@@ -160,15 +152,15 @@ public class IncomeTests
     }
 
     [Fact]
-    public void GrowingIncomeAloneDoesNotProvideAConservativePerpetualCertificate()
+    public void GrowingIncomeCanMeetFinalYearGrowthTarget()
     {
         var scenario = CreateScenario();
         scenario.Accounts.Add(new Account { Type = AccountType.Brokerage, Holdings = AccountHoldings.Bonds });
         scenario.AnnualInflationRate = 2m;
         scenario.Income.Add(new Income { InitialAmount = 2000m, AgeStart = 60, AnnualRateOfIncrease = 0.03m });
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
-        Assert.False(plan.IsSuccessful);
-        Assert.Contains("does not prove", plan.FailureReason);
+        Assert.True(plan.IsSuccessful);
+        Assert.True(plan.PlanYears[^1].EndingBalance >= plan.PlanYears[^2].EndingBalance * 1.04m);
     }
 
     [Fact]

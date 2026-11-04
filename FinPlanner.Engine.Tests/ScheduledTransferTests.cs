@@ -180,7 +180,7 @@ public class ScheduledTransferTests
     }
 
     [Fact]
-    public void PerpetualProofWaitsForFutureScheduledObligations()
+    public void PerpetualGrowthTargetOnlyConsidersObligationsWithinForecast()
     {
         var scenario = CreateScenario();
         scenario.SecuritiesAnnualRateOfReturn = 0.1m;
@@ -189,6 +189,8 @@ public class ScheduledTransferTests
             Name = "Impossible future obligation", FromAccountName = "Source", ToAccountName = "Destination",
             Amount = 1000000m, AgeStart = 65, AgeEnd = 65
         });
+        Assert.True(new PlanCalculator().CalculatePerpetualSpend(scenario).IsSuccessful);
+        scenario.LifeExpectancy = 66;
         Assert.False(new PlanCalculator().CalculatePerpetualSpend(scenario).IsSuccessful);
     }
 

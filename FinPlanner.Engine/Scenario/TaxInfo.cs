@@ -40,14 +40,6 @@ public sealed record TaxInfo
         return settings;
     }
 
-    // Regular tax and tentative AMT are alternatives; NIIT is additional.
-    // Charity can be negative by its AGI reduction, increasing the AMT base.
-    [JsonIgnore]
-    public decimal MaximumIncomeTaxRate => Math.Max(
-        Math.Max(OrdinaryIncomeTax.Brackets.Max(b => b.Rate), CapitalGainsTax.Brackets.Max(b => b.Rate)),
-        Math.Max(AlternativeMinimumTax.LowerRate, AlternativeMinimumTax.LowerRate * AlternativeMinimumTax.UpperRate)
-            * (1m + CharityDeduction.AgiReductionPercentage)) + NetInvestmentIncomeTax.Rate;
-
     public void Validate()
     {
         if (TaxYear < 1 || TaxYear > 9999 || FilingStatus != "MarriedFilingJointly")
@@ -57,13 +49,11 @@ public sealed record TaxInfo
         ValidateBrackets(CapitalGainsTax.Brackets);
         if (SaltDeduction.LimitChangeYear < TaxYear || SaltDeduction.LimitChangeYear > 9999)
             throw new JsonException("SALT change year must be at or after the tax base year.");
-        if (MaximumIncomeTaxRate >= 1m)
-            throw new JsonException("Configured tax rates must produce a conservative tax bound below 100%.");
     }
 
     private static void ValidateObject(object value)
     {
-        foreach (var property in value.GetType().GetProperties().Where(p => p.Name != nameof(MaximumIncomeTaxRate) && p.Name != nameof(Default)))
+        foreach (var property in value.GetType().GetProperties().Where(p => p.Name != nameof(Default)))
         {
             var item = property.GetValue(value) ?? throw new JsonException($"{property.Name} is required.");
             if (item is decimal number)

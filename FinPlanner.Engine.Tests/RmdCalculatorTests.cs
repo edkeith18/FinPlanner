@@ -68,7 +68,7 @@ public class RmdCalculatorTests
     }
 
     [Fact]
-    public void PerpetualProofDoesNotIgnoreFutureRetirementSurplus()
+    public void PerpetualGrowthTargetCanFundRetirementRmdsWithoutSurplus()
     {
         var scenario = new Scenario
         {
@@ -77,9 +77,8 @@ public class RmdCalculatorTests
             SecuritiesAnnualRateOfReturn = 0.1m,
             Accounts = [new Account { Type = AccountType.Retirement, BeginningBalance = 100000m }]
         };
-        // Zero spending looks sustainable before 75, but future mandatory income
-        // needs a Brokerage destination, just as it does in a finite plan.
-        Assert.Throws<InvalidOperationException>(() =>
-            new PlanCalculator().CalculatePerpetualSpend(scenario));
+        var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
+        Assert.True(plan.IsSuccessful);
+        Assert.True(plan.PlanYears[^1].EndingBalance >= plan.PlanYears[^2].EndingBalance * (1m + scenario.AnnualInflationRate / 100m));
     }
 }

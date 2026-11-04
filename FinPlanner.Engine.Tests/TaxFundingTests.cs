@@ -104,7 +104,7 @@ public class TaxFundingTests
     }
 
     [Fact]
-    public void TaxAwarePerpetualBudgetsAreCertifiedAndClearlyMarkedAsConservative()
+    public void PerpetualBudgetsIncludeTaxesAndDescribeFinalYearGrowthTarget()
     {
         var scenario = CreateScenario();
         scenario.SecuritiesAnnualRateOfReturn = 0.07m;
@@ -112,7 +112,9 @@ public class TaxFundingTests
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
         Assert.True(plan.IsSuccessful);
         Assert.True(plan.AnnualExpenses > 0m);
-        Assert.Contains("exact maximum is not proven", plan.CalculationNote);
+        Assert.Contains("final forecast year", plan.CalculationNote);
+        Assert.Contains("does not prove indefinite sustainability", plan.CalculationNote);
+        Assert.Equal(scenario.LifeExpectancy - scenario.CurrentAge, plan.PlanYears.Count);
         Assert.Null(plan.PlanYears[0].Taxes);
         Assert.Equal(scenario.FirstYearTaxExpense, plan.PlanYears[0].TaxExpense);
         Assert.All(plan.PlanYears.Skip(1), year => Assert.NotNull(year.Taxes));

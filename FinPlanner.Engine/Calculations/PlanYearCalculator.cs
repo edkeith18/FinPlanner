@@ -6,7 +6,6 @@ internal static class PlanYearCalculator
     private const decimal InterestRate = 0.0017m;
     private const decimal DivQRate = 0.0094m;
     private const decimal DivUQRate = 0.0005m;
-    private const decimal BrokerageEarnedRate = InterestRate + DivQRate + DivUQRate;
 
 
     /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
@@ -215,22 +214,6 @@ internal static class PlanYearCalculator
 
     internal static bool HasBrokerageEquityIncome(Account account)
         => account.Type == AccountType.Brokerage && account.Holdings == AccountHoldings.Equities;
-
-    internal static decimal GetEarnedRate(Account account)
-    {
-        if (HasBrokerageEquityIncome(account))
-        {
-            return BrokerageEarnedRate;
-        }
-        if (account.Type == AccountType.Brokerage && account.Holdings == AccountHoldings.Bonds)
-        {
-            return Math.Max(0m, account.AppreciationRate);
-        }
-        return 0m;
-    }
-
-    internal static decimal GetTotalReturn(Account account)
-        => account.AppreciationRate + GetEarnedRate(account);
 
     /// <summary>Executes RMDs first, followed by scheduled account-to-account transfers.</summary>
     internal static void ApplyRmdsAndScheduledTransfers(PlanYear year)
