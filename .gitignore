@@ -367,3 +367,4 @@ FodyWeavers.xsd
 
 # Ignore user input and program output files
 *.xlsx
+/investigation

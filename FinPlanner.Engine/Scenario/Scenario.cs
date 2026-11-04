@@ -118,7 +118,6 @@ public class Scenario
 
     public string Serialize()
     {
-        NormalizeWithdrawalPriorities();
         return JsonSerializer.Serialize(this, SerializerOptions);
     }
 
@@ -127,8 +126,6 @@ public class Scenario
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
-
-        NormalizeWithdrawalPriorities();
 
         await JsonSerializer.SerializeAsync(
             stream,
@@ -170,7 +167,6 @@ public class Scenario
             ?? throw new JsonException(
                 "The JSON did not contain a valid scenario.");
 
-        scenario.NormalizeWithdrawalPriorities();
         scenario.UpdateCurrentAge();
 
         // If current age is greater than life expectancy, the scenario is invalid. This can happen if the user changes their date of birth or life expectancy in the UI.
@@ -186,6 +182,12 @@ public class Scenario
             throw new ArgumentException(
                 "Scenario must contain at least one account.",
                 nameof(scenario));
+        }
+
+        foreach (var account in scenario.Accounts)
+        {
+            if (account.Type == AccountType.Brokerage && !account.HasBasis)
+                throw new JsonException($"Brokerage account '{account.Name}' requires a Basis value (zero is allowed).");
         }
 
         return scenario;
@@ -326,8 +328,8 @@ public class Scenario
     }
 
     /// <summary>
-    /// Synchronizes each account's persisted withdrawal priority with its
-    /// position in <see cref="Accounts"/>. Account-list order is authoritative.
+    /// Explicitly assigns priorities from account-list order after a user reorders accounts.
+    /// Loading and saving preserve the existing priority values.
     /// </summary>
     public void NormalizeWithdrawalPriorities()
     {
@@ -345,10 +347,10 @@ public class Scenario
             Type = type,
             Holdings = holdings,
             BeginningBalance = balance,
+            WithdrawalPriority = Accounts.Count == 0 ? 1 : Accounts.Max(account => account.WithdrawalPriority) + 1,
             LastUpdated = DateTime.Now
         });
 
-        NormalizeWithdrawalPriorities();
         NotifyStateChanged();
     }
 
@@ -373,7 +375,7 @@ public class Scenario
         NotifyStateChanged();
     }
 
-    public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, string fromAccountName, string toAccountName, decimal annualRateOfIncrease, bool useInflationValue = true)
+    public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, decimal annualRateOfIncrease, bool useInflationValue = true)
     {
         Transfers.Add(new ScheduledTransfer
         {
@@ -381,8 +383,6 @@ public class Scenario
             Amount = amount,
             AgeStart = ageStart,
             AgeEnd = ageEnd,
-            FromAccountName = fromAccountName,
-            ToAccountName = toAccountName,
             AnnualRateOfIncrease = annualRateOfIncrease,
             UseInflationValue = useInflationValue
         });

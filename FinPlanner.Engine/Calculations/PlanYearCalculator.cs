@@ -4,8 +4,8 @@ namespace FinPlanner.Engine;
 internal static class PlanYearCalculator
 {
     private const decimal InterestRate = 0.0017m;
-    private const decimal DivQRate = 0.0094m;
-    private const decimal DivUQRate = 0.0005m;
+    private const decimal DivQRate = 0.0005m;
+    private const decimal DivUQRate = 0.0094m;
 
 
     /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
@@ -159,9 +159,8 @@ internal static class PlanYearCalculator
         {
             var amount = ForecastTransferAmount(instruction, scenario.CurrentAge, year.StartingAge, scenario.AnnualInflationRate / 100m);
             if (amount <= 0m) continue;
-            var from = FindTransferAccount(year, instruction.FromAccountName);
-            var to = FindTransferAccount(year, instruction.ToAccountName);
-            year.Transfers.Add(new AccountTransfer(instruction.Name, from, to, amount, TransferReason.Scheduled));
+            var to = FindTransferAccount(year, instruction.Name);
+            year.Transfers.Add(new AccountTransfer(instruction.Name, null, to, amount, TransferReason.Scheduled));
         }
     }
 
@@ -222,12 +221,30 @@ internal static class PlanYearCalculator
         foreach (var transfer in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Rmd))
             ApplyTransfer(transfer);
 
-        // Explicit account-to-account instructions are separate from expense
-        // funding. Required distributions take precedence over these movements.
-        foreach (var transfer in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Scheduled))
+        // Expand each instruction into funded movements after RMDs have executed.
+        // Each source keeps its own tax treatment and basis calculation.
+        foreach (var instruction in year.Transfers.Where(transfer => transfer.Reason == TransferReason.Scheduled).ToList())
         {
-            ApplyTransfer(transfer);
-            year.UnfundedTransfers += transfer.RequestedAmount - transfer.Amount;
+            year.Transfers.Remove(instruction);
+            var remaining = instruction.RequestedAmount;
+            foreach (var source in year.Accounts.Where(account => account.Id != instruction.ToAccount!.Id)
+                .OrderBy(account => account.WithdrawalPriority))
+            {
+                if (remaining <= 0m) break;
+                var amount = Math.Min(remaining, Math.Max(0m, source.EndingBalance));
+                if (amount <= 0m) continue;
+                var movement = new AccountTransfer(instruction.Name, source, instruction.ToAccount,
+                    amount, TransferReason.Scheduled);
+                remaining -= ApplyTransfer(movement);
+                year.Transfers.Add(movement);
+            }
+            if (remaining > 0m)
+            {
+                // A zero-funded ledger entry preserves the outstanding request without creating cash.
+                year.Transfers.Add(new AccountTransfer(instruction.Name, null, instruction.ToAccount,
+                    remaining, TransferReason.Scheduled) { Amount = 0m });
+                year.UnfundedTransfers += remaining;
+            }
         }
     }
 
@@ -236,8 +253,27 @@ internal static class PlanYearCalculator
     {
         transfer.Amount = transfer.FromAccount is null ? transfer.RequestedAmount
             : Math.Min(transfer.RequestedAmount, Math.Max(0m, transfer.FromAccount.EndingBalance));
-        if (transfer.FromAccount is not null) transfer.FromAccount.EndingBalance -= transfer.Amount;
-        if (transfer.ToAccount is not null) transfer.ToAccount.EndingBalance += transfer.Amount;
+        if (transfer.FromAccount is { } source)
+        {
+            if (source.Type == AccountType.Brokerage)
+            {
+                var basis = source.Basis;
+                var basisRemoved = source.EndingBalance > 0m
+                    ? transfer.Amount == source.EndingBalance ? basis : (basis / source.EndingBalance) * transfer.Amount
+                    : 0m;
+                transfer.RealizedGain = Math.Max(0m, transfer.Amount - basisRemoved);
+                source.Basis = basis - basisRemoved;
+            }
+            source.EndingBalance -= transfer.Amount;
+        }
+        if (transfer.ToAccount is { } destination)
+        {
+            if (destination.Type == AccountType.Brokerage)
+            {
+                destination.Basis += transfer.Amount;
+            }
+            destination.EndingBalance += transfer.Amount;
+        }
         return transfer.Amount;
     }
 
@@ -285,11 +321,16 @@ internal static class PlanYearCalculator
     private static void ApplyTaxesAndExpenses(PlanYear year, TaxInfo taxInfo)
     {
         var balances = year.Accounts.Select(account => account.EndingBalance).ToArray();
+        var bases = year.Accounts.Select(account => account.Basis).ToArray();
         var transferCount = year.Transfers.Count;
         var taxExpense = year.Expenses.Single(expense => expense.Type == ExpenseType.Tax);
         for (var iteration = 0; iteration < 100; iteration++)
         {
-            for (var i = 0; i < balances.Length; i++) year.Accounts[i].EndingBalance = balances[i];
+            for (var i = 0; i < balances.Length; i++)
+            {
+                year.Accounts[i].EndingBalance = balances[i];
+                year.Accounts[i].Basis = bases[i];
+            }
             year.Transfers.RemoveRange(transferCount, year.Transfers.Count - transferCount);
             FundExpenses(year);
             var taxes = TaxCalculator.Calculate(year, taxInfo);

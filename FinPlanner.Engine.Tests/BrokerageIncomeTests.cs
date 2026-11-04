@@ -58,7 +58,7 @@ public class BrokerageIncomeTests
               "FirstYearAnnualExpenses": 5000,
               "BondsAnnualRateOfReturn": 4.48,
               "SecuritiesAnnualRateOfReturn": 7,
-              "Accounts": [{ "Type": "Brokerage", "Holdings": "Bonds", "Balance": 100000 }]
+              "Accounts": [{ "Type": "Brokerage", "Holdings": "Bonds", "Basis": 100000, "Balance": 100000 }]
             }
             """);
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];

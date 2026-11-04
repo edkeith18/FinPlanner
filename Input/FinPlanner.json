@@ -5,7 +5,7 @@
       "Name": "Schwab Inherited IRA - equities",
       "Type": "Inherited",
       "Holdings": "Equities",
-      "Balance": 2844813,
+      "Balance": 2636672.48,
       "LastUpdated": "2026-04-18T22:54:11.933-07:00",
       "WithdrawalPriority": 2
     },
@@ -14,7 +14,8 @@
       "Name": "IBonds",
       "Type": "Brokerage",
       "Holdings": "Bonds",
-      "Balance": 46904,
+      "Basis" : 40000,
+      "Balance": 47036,
       "LastUpdated": "2026-06-09T12:11:34.718-07:00",
       "WithdrawalPriority": 3
     },
@@ -23,7 +24,7 @@
       "Name": "Schwab Inherited IRA - bonds",
       "Type": "Inherited",
       "Holdings": "Bonds",
-      "Balance": 1525189,
+      "Balance": 1599872.55,
       "LastUpdated": "2026-04-18T22:54:29.734-07:00",
       "WithdrawalPriority": 4
     },
@@ -32,7 +33,7 @@
       "Name": "Lisa\u0027s Traditional IRA",
       "Type": "Retirement",
       "Holdings": "Equities",
-      "Balance": 66301,
+      "Balance": 43494.41,
       "LastUpdated": "2026-04-18T22:48:35.841-07:00",
       "WithdrawalPriority": 5
     },
@@ -41,7 +42,7 @@
       "Name": "Ed\u0027s Microsoft 401(k)",
       "Type": "Retirement",
       "Holdings": "Equities",
-      "Balance": 3546360,
+      "Balance": 3465794.99,
       "LastUpdated": "2026-04-18T22:51:36.82-07:00",
       "WithdrawalPriority": 6
     },
@@ -50,7 +51,7 @@
       "Name": "Ed\u0027s Roth IRA",
       "Type": "RetirementRoth",
       "Holdings": "Equities",
-      "Balance": 979640,
+      "Balance": 922912.12,
       "LastUpdated": "2026-04-18T22:52:08.971-07:00",
       "WithdrawalPriority": 7
     },
@@ -59,7 +60,7 @@
       "Name": "Lisa\u0027s Roth IRA",
       "Type": "RetirementRoth",
       "Holdings": "Equities",
-      "Balance": 714255,
+      "Balance": 696583.47,
       "LastUpdated": "2026-04-18T22:48:19.079-07:00",
       "WithdrawalPriority": 8
     },
@@ -68,7 +69,7 @@
       "Name": "HSA",
       "Type": "Hsa",
       "Holdings": "Equities",
-      "Balance": 61038,
+      "Balance": 60510.84,
       "LastUpdated": "2026-04-18T22:52:40.383-07:00",
       "WithdrawalPriority": 9
     },
@@ -77,7 +78,8 @@
       "Name": "Keith Savings",
       "Type": "Brokerage",
       "Holdings": "Bonds",
-      "Balance": 235980,
+      "Basis" : 72633.97,
+      "Balance": 215540.3,
       "LastUpdated": "2026-04-18T22:46:47.414-07:00",
       "WithdrawalPriority": 10
     },
@@ -86,7 +88,8 @@
       "Name": "Keith Revocable Living Trust",
       "Type": "Brokerage",
       "Holdings": "Equities",
-      "Balance": 6383775,
+      "Basis" : 2838411.93,
+      "Balance": 6285864.24,
       "LastUpdated": "2026-04-18T22:53:19.532-07:00",
       "WithdrawalPriority": 11
     }
@@ -103,7 +106,7 @@
   "Expenses": [
     {
       "Name": "Healthcare",
-      "Amount": 39492,
+      "Amount": 37704.8,
       "AgeStart": 57,
       "AgeEnd": 64,
       "AnnualRateOfIncrease": 17.6,
@@ -141,8 +144,6 @@
   "Transfers": [
     {
       "Name": "HSA",
-      "FromAccountName": "Keith Savings",
-      "ToAccountName": "HSA",
       "AgeStart": 57,
       "AgeEnd": 65,
       "Amount": 9750,
@@ -151,10 +152,10 @@
     }
   ],
   "SecuritiesAnnualRateOfReturn": 7,
-  "BondsAnnualRateOfReturn": 4.53,
+  "BondsAnnualRateOfReturn": 4.58,
   "AnnualInflationRate": 4,
   "DateOfBirth": "10/21/1968",
   "LifeExpectancy": 100,
-  "FirstYearAnnualExpenses": 348942.94,
+  "FirstYearAnnualExpenses": 371898.52,
   "FirstYearTaxExpense": 36958
 }
