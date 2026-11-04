@@ -4,8 +4,8 @@ namespace FinPlanner.Engine;
 internal static class PlanYearCalculator
 {
     private const decimal InterestRate = 0.0017m;
-    private const decimal DivQRate = 0.0094m;
-    private const decimal DivUQRate = 0.0005m;
+    private const decimal DivQRate = 0.0005m;
+    private const decimal DivUQRate = 0.0094m;
 
 
     /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
