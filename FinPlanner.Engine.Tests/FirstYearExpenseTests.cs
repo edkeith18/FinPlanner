@@ -107,7 +107,7 @@ public class FirstYearExpenseTests
     }
 
     [Fact]
-    public void SpendingSearchesKeepSuppliedTaxesFixedAndCoverNamedExpenses()
+    public void SpendingSearchesCalculateTaxesAndCoverNamedExpenses()
     {
         var scenario = CreateScenario();
         scenario.Accounts = [new Account { Type = AccountType.Brokerage, BeginningBalance = 10000000m }];
@@ -117,12 +117,79 @@ public class FirstYearExpenseTests
         foreach (var plan in new[] { calculator.CalculateMaximumSpend(scenario), calculator.CalculatePerpetualSpend(scenario) })
         {
             Assert.True(plan.IsSuccessful);
-            Assert.True(plan.AnnualExpenses >= 32000m);
-            Assert.Equal(12000m, plan.PlanYears[0].TaxExpense);
-            Assert.Null(plan.PlanYears[0].Taxes);
-            Assert.Equal(plan.AnnualExpenses, plan.PlanYears[0].TotalExpenses);
+            var first = plan.PlanYears[0];
+            Assert.NotNull(first.Taxes);
+            Assert.Equal(decimal.Round(first.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), first.TaxExpense);
+            Assert.Equal(plan.AnnualExpenses, first.TotalExpenses);
+            Assert.True(first.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount >= 0m);
+            Assert.Equal(first.TotalExpenses - first.TaxExpense - 20000m,
+                first.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount);
             Assert.NotNull(plan.PlanYears[1].Taxes);
         }
         Assert.Equal(original, scenario.Serialize());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SearchBudgetsAndTaxesDoNotDependOnSuppliedActualTax(bool perpetual)
+    {
+        var scenario = CreateScenario();
+        scenario.SecuritiesAnnualRateOfReturn = 0.1m;
+        scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
+        var calculator = new PlanCalculator();
+        Plan Search() => perpetual ? calculator.CalculatePerpetualSpend(scenario) : calculator.CalculateMaximumSpend(scenario);
+        var expected = Search();
+        Assert.True(expected.IsSuccessful);
+        // An actual tax larger than any feasible budget must not set the search's lower bound.
+        scenario.FirstYearTaxExpense = 10000000m;
+        var original = scenario.Serialize();
+        var actual = Search();
+        Assert.True(actual.IsSuccessful);
+        Assert.Equal(expected.AnnualExpenses, actual.AnnualExpenses);
+        Assert.Equal(expected.PlanYears[0].TaxExpense, actual.PlanYears[0].TaxExpense);
+        Assert.True(actual.PlanYears[0].TaxExpense > 0m);
+        Assert.Equal(original, scenario.Serialize());
+        Assert.Equal(expected.AnnualExpenses, Search().AnnualExpenses);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void FirstYearSearchTaxUsesTheFundedCandidateWithdrawals(bool perpetual)
+    {
+        var scenario = CreateScenario();
+        scenario.SecuritiesAnnualRateOfReturn = 0.1m;
+        scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
+        var calculator = new PlanCalculator();
+        var plan = perpetual ? calculator.CalculatePerpetualSpend(scenario) : calculator.CalculateMaximumSpend(scenario);
+        Assert.True(plan.IsSuccessful);
+        var first = plan.PlanYears[0];
+        // All first-year cash comes from a traditional IRA in this scenario.
+        Assert.Equal(plan.AnnualExpenses, first.TotalCashFlow);
+        Assert.Equal(plan.AnnualExpenses, first.Taxes!.OrdinaryIncome);
+        Assert.Equal(TaxCalculator.Calculate(first, scenario.TaxInfo).TotalTax, first.Taxes.TotalTax);
+        Assert.Equal(decimal.Round(first.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), first.TaxExpense);
+        var discretionary = first.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount;
+        Assert.Equal(discretionary, plan.PlanYears[1].Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public void SearchKeepsBudgetExactWhenNamedExpensesRoundSeparately(bool perpetual)
+    {
+        var scenario = CreateScenario();
+        scenario.SecuritiesAnnualRateOfReturn = 0.1m;
+        scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
+        scenario.Expenses[0].Amount = 20000.4m;
+        scenario.Expenses.Add(new Expense { Name = "Other", Amount = 1000.4m, AgeStart = 58, AgeEnd = 60 });
+        var calculator = new PlanCalculator();
+        var plan = perpetual ? calculator.CalculatePerpetualSpend(scenario) : calculator.CalculateMaximumSpend(scenario);
+        Assert.True(plan.IsSuccessful);
+        var first = plan.PlanYears[0];
+        Assert.Equal(plan.AnnualExpenses, first.TotalExpenses);
+        Assert.Equal(plan.AnnualExpenses, first.TotalCashFlow);
+        Assert.Equal(plan.AnnualExpenses, first.Taxes!.OrdinaryIncome);
     }
 }

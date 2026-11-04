@@ -86,9 +86,11 @@ public class TaxFundingTests
         scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
         var plan = new PlanCalculator().CalculateMaximumSpend(scenario);
         Assert.True(plan.IsSuccessful);
-        Assert.Null(plan.PlanYears[0].Taxes);
-        Assert.Equal(scenario.FirstYearTaxExpense, plan.PlanYears[0].TaxExpense);
-        Assert.All(plan.PlanYears.Skip(1), year => Assert.NotNull(year.Taxes));
+        Assert.All(plan.PlanYears, year =>
+        {
+            Assert.NotNull(year.Taxes);
+            Assert.Equal(decimal.Round(year.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), year.TaxExpense);
+        });
     }
 
     [Fact]
@@ -115,8 +117,10 @@ public class TaxFundingTests
         Assert.Contains("final forecast year", plan.CalculationNote);
         Assert.Contains("does not prove indefinite sustainability", plan.CalculationNote);
         Assert.Equal(scenario.LifeExpectancy - scenario.CurrentAge, plan.PlanYears.Count);
-        Assert.Null(plan.PlanYears[0].Taxes);
-        Assert.Equal(scenario.FirstYearTaxExpense, plan.PlanYears[0].TaxExpense);
-        Assert.All(plan.PlanYears.Skip(1), year => Assert.NotNull(year.Taxes));
+        Assert.All(plan.PlanYears, year =>
+        {
+            Assert.NotNull(year.Taxes);
+            Assert.Equal(decimal.Round(year.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), year.TaxExpense);
+        });
     }
 }

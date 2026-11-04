@@ -26,6 +26,19 @@ internal static class PlanYearCalculator
         year.AnnualExpenses = year.TotalExpenses;
     }
 
+    // Establish the search floor without discretionary spending. Surplus cash is
+    // irrelevant to this first-year cost calculation and needs no deposit account.
+    internal static decimal CalculateMinimumFirstYearBudget(Scenario scenario)
+    {
+        var year = FromScenario(scenario, 0m);
+        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = 0m;
+        AppreciateAccounts(year);
+        CalculateEarnings(year);
+        ApplyRmdsAndScheduledTransfers(year);
+        ApplyTaxesAndExpenses(year, scenario.TaxInfo, reinvestSurplus: false);
+        return year.TotalExpenses;
+    }
+
     internal static PlanYear FromScenario(
         Scenario scenario,
         decimal uncategorizedExpenseAmount)
@@ -318,7 +331,7 @@ internal static class PlanYearCalculator
     }
     // Trial withdrawals are rolled back before every iteration. Taxes are calculated
     // from the trial ledger, so only the converged attempt changes the year's result.
-    private static void ApplyTaxesAndExpenses(PlanYear year, TaxInfo taxInfo)
+    private static void ApplyTaxesAndExpenses(PlanYear year, TaxInfo taxInfo, bool reinvestSurplus = true)
     {
         var balances = year.Accounts.Select(account => account.EndingBalance).ToArray();
         var bases = year.Accounts.Select(account => account.Basis).ToArray();
@@ -337,7 +350,7 @@ internal static class PlanYearCalculator
             var nextTax = Round(taxes.TotalTax);
             if (taxExpense.Amount == nextTax)
             {
-                DepositSurplus(year);
+                if (reinvestSurplus) DepositSurplus(year);
                 year.Taxes = TaxCalculator.Calculate(year, taxInfo);
                 return;
             }
