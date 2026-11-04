@@ -157,7 +157,8 @@ public class AccountBasisTests
             StartYear = 2026,
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
             LifeExpectancy = 61,
-            FirstYearAnnualExpenses = 200000m,
+            // Keep realized gains above the zero-rate band with the corrected dividend mix.
+            FirstYearAnnualExpenses = 300000m,
             Accounts = [new Account { BeginningBalance = 2000000m, Basis = 1000000m }]
         };
         var json = scenario.Serialize();

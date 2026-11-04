@@ -78,8 +78,8 @@ public class TaxCalculatorTests
             AccountEarnings = [PlanYearCalculator.CalculateAccountEarnings(account)] };
         var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(1700m, taxes.Interest);
-        Assert.Equal(500m, taxes.UnqualifiedDividends);
-        Assert.Equal(9400m, taxes.QualifiedDividends);
+        Assert.Equal(9400m, taxes.UnqualifiedDividends);
+        Assert.Equal(500m, taxes.QualifiedDividends);
         Assert.Equal(11600m, taxes.AGI);
     }
 

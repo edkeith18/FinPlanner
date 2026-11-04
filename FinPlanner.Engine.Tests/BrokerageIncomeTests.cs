@@ -122,15 +122,15 @@ public class BrokerageIncomeTests
         });
 
         Assert.Equal(170m, income.Interest);
-        Assert.Equal(940m, income.DivQ);
-        Assert.Equal(50m, income.DivUQ);
+        Assert.Equal(50m, income.DivQ);
+        Assert.Equal(940m, income.DivUQ);
         Assert.Equal(0m, PlanYearCalculator.CreateRmdTransfer(income.Account, 58).MandatoryAmount);
         Assert.Equal(1160m, income.Amount);
         Assert.Equal(1160m, income.Amount);
     }
 
     [Theory]
-    [InlineData(1000, 2, 9, 1)]
+    [InlineData(1000, 2, 1, 9)]
     [InlineData(0, 0, 0, 0)]
     [InlineData(-1000, 0, 0, 0)]
     public void ComponentsUseWholeDollarRoundingAndNonnegativeBalances(
@@ -173,8 +173,8 @@ public class BrokerageIncomeTests
         Assert.Equal(109160m, first.EndingBalance);
         var next = plan.PlanYears[1].AccountEarnings[0];
         Assert.Equal(186m, next.Interest);
-        Assert.Equal(1026m, next.DivQ);
-        Assert.Equal(55m, next.DivUQ);
+        Assert.Equal(55m, next.DivQ);
+        Assert.Equal(1026m, next.DivUQ);
         Assert.Equal(1267m, next.Amount);
     }
 
