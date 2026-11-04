@@ -11,6 +11,19 @@ public class Account
     public AccountHoldings Holdings { get; set; } = AccountHoldings.Equities;
     [JsonPropertyName("Balance")]
     public decimal BeginningBalance { get; set; }
+    private decimal basis;
+    internal bool HasBasis { get; private set; }
+
+    /// <summary>Remaining aggregate cost basis; required in brokerage account JSON.</summary>
+    public decimal Basis
+    {
+        get => basis;
+        set
+        {
+            basis = value;
+            HasBasis = true;
+        }
+    }
     public decimal EndingBalance { get; set; }
     [JsonIgnore]
     public decimal AppreciationRate { get; set; }
@@ -31,6 +44,7 @@ public class Account
         Name = sourceAccount.Name;
         Type = sourceAccount.Type;
         Holdings = sourceAccount.Holdings;
+        Basis = sourceAccount.Basis;
         BeginningBalance = decimal.Round(
             sourceAccount.BeginningBalance,
             0,

@@ -236,8 +236,27 @@ internal static class PlanYearCalculator
     {
         transfer.Amount = transfer.FromAccount is null ? transfer.RequestedAmount
             : Math.Min(transfer.RequestedAmount, Math.Max(0m, transfer.FromAccount.EndingBalance));
-        if (transfer.FromAccount is not null) transfer.FromAccount.EndingBalance -= transfer.Amount;
-        if (transfer.ToAccount is not null) transfer.ToAccount.EndingBalance += transfer.Amount;
+        if (transfer.FromAccount is { } source)
+        {
+            if (source.Type == AccountType.Brokerage)
+            {
+                var basis = source.Basis;
+                var basisRemoved = source.EndingBalance > 0m
+                    ? transfer.Amount == source.EndingBalance ? basis : (basis / source.EndingBalance) * transfer.Amount
+                    : 0m;
+                transfer.RealizedGain = Math.Max(0m, transfer.Amount - basisRemoved);
+                source.Basis = basis - basisRemoved;
+            }
+            source.EndingBalance -= transfer.Amount;
+        }
+        if (transfer.ToAccount is { } destination)
+        {
+            if (destination.Type == AccountType.Brokerage)
+            {
+                destination.Basis += transfer.Amount;
+            }
+            destination.EndingBalance += transfer.Amount;
+        }
         return transfer.Amount;
     }
 
@@ -285,11 +304,16 @@ internal static class PlanYearCalculator
     private static void ApplyTaxesAndExpenses(PlanYear year, TaxInfo taxInfo)
     {
         var balances = year.Accounts.Select(account => account.EndingBalance).ToArray();
+        var bases = year.Accounts.Select(account => account.Basis).ToArray();
         var transferCount = year.Transfers.Count;
         var taxExpense = year.Expenses.Single(expense => expense.Type == ExpenseType.Tax);
         for (var iteration = 0; iteration < 100; iteration++)
         {
-            for (var i = 0; i < balances.Length; i++) year.Accounts[i].EndingBalance = balances[i];
+            for (var i = 0; i < balances.Length; i++)
+            {
+                year.Accounts[i].EndingBalance = balances[i];
+                year.Accounts[i].Basis = bases[i];
+            }
             year.Transfers.RemoveRange(transferCount, year.Transfers.Count - transferCount);
             FundExpenses(year);
             var taxes = TaxCalculator.Calculate(year, taxInfo);

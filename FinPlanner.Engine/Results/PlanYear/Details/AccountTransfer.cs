@@ -18,6 +18,8 @@ public class AccountTransfer
     public IncomeType TaxType { get; internal set; } = IncomeType.Ordinary;
     public decimal RequestedAmount { get; }
     public decimal Amount { get; internal set; }
+    /// <summary>Gain realized by an executed brokerage withdrawal; null before execution.</summary>
+    public decimal? RealizedGain { get; internal set; }
     public decimal MandatoryAmount => Reason == TransferReason.Rmd ? Amount : 0m;
     public decimal VoluntaryAmount => Reason == TransferReason.ExpenseWithdrawal ? Amount : 0m;
 

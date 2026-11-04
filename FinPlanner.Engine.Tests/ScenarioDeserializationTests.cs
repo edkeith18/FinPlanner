@@ -113,7 +113,7 @@ public class ScenarioDeserializationTests
             DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58).ToString("MM/dd/yyyy"),
             LifeExpectancy = lifeExpectancy,
             Accounts = includeAccounts
-                ? new[] { new { Id = Guid.NewGuid(), Name = "Savings", Balance = 1000m, WithdrawalPriority = 9 } }
+                ? new[] { new { Id = Guid.NewGuid(), Name = "Savings", Balance = 1000m, Basis = 0m, WithdrawalPriority = 9 } }
                 : []
         });
     }

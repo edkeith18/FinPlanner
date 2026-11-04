@@ -53,9 +53,12 @@ public static class TaxCalculator
                     ordinary += transfer.Amount;
                     break;
                 case AccountType.Brokerage when source.Holdings == AccountHoldings.Equities:
-                    ltcg += transfer.Amount;
+                    ltcg += transfer.RealizedGain ?? transfer.Amount;
                     break;
-                // Bond principal, qualified HSA withdrawals, and Roth withdrawals are tax-free.
+                case AccountType.Brokerage when source.Holdings == AccountHoldings.Bonds:
+                    ordinary += transfer.RealizedGain ?? 0m;
+                    break;
+                // Return of basis, qualified HSA withdrawals, and Roth withdrawals are tax-free.
             }
         }
         decimal healthcare = 0m, charity = 0m, salt = 0m;

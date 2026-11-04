@@ -188,6 +188,12 @@ public class Scenario
                 nameof(scenario));
         }
 
+        foreach (var account in scenario.Accounts)
+        {
+            if (account.Type == AccountType.Brokerage && !account.HasBasis)
+                throw new JsonException($"Brokerage account '{account.Name}' requires a Basis value (zero is allowed).");
+        }
+
         return scenario;
     }
 

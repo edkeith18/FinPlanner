@@ -14,6 +14,7 @@
       "Name": "IBonds",
       "Type": "Brokerage",
       "Holdings": "Bonds",
+      "Basis" : 40000,
       "Balance": 46904,
       "LastUpdated": "2026-06-09T12:11:34.718-07:00",
       "WithdrawalPriority": 3
@@ -77,6 +78,7 @@
       "Name": "Keith Savings",
       "Type": "Brokerage",
       "Holdings": "Bonds",
+      "Basis" : 85104.75,
       "Balance": 235980,
       "LastUpdated": "2026-04-18T22:46:47.414-07:00",
       "WithdrawalPriority": 10
@@ -86,6 +88,7 @@
       "Name": "Keith Revocable Living Trust",
       "Type": "Brokerage",
       "Holdings": "Equities",
+      "Basis" : 2840764.08,
       "Balance": 6383775,
       "LastUpdated": "2026-04-18T22:53:19.532-07:00",
       "WithdrawalPriority": 11
