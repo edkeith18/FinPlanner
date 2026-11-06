@@ -50,6 +50,7 @@ buildCommand.SetAction(parseResult =>
             if (!perpetualSpendPlan.IsSuccessful)
                 Console.WriteLine($"Perpetual plan: {perpetualSpendPlan.FailureReason}");
 
+        // Write all the successful plans to an Excel file beside the scenario file.
         var plans = new List<Plan> { plan };
         if (maximumSpendPlan.IsSuccessful)
         {
@@ -61,7 +62,6 @@ buildCommand.SetAction(parseResult =>
             plans.Add(perpetualSpendPlan);
         }
 
-        // Write the plan to an Excel workbook
         var outputPath = PlanXlsxExporter.Write(
             plans,
             file);
