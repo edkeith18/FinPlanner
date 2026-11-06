@@ -118,9 +118,8 @@ public class PlanCalculator
         if (bestPlan is null)
             return new Plan(scenario, name, [], false,
                 $"No spending budget achieved at least {scenario.AnnualInflationRate}% total account balance growth in the final forecast year.");
-        var note = $"Spending targets at least {scenario.AnnualInflationRate}% total account balance growth in the final forecast year, in $1,000 budget increments. This forecast criterion does not prove indefinite sustainability.";
         scenario.FirstYearAnnualExpenses = bestPlan.AnnualExpenses;
-        return new Plan(scenario, name, bestPlan.PlanYears.ToList(), true, calculationNote: note);
+        return new Plan(scenario, name, bestPlan.PlanYears.ToList(), true);
     }
 
     private static Plan NoSustainablePlan(Scenario scenario, string name)
