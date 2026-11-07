@@ -11,7 +11,7 @@ public class IncomeTests
     public void IncomeJsonReadsBothAmountNamesAndWritesPercentageRates(string amountName)
     {
         var scenario = Scenario.Deserialize($$"""
-            { "Accounts": [{"Basis": 0}], "Income": [{ "Name": "Social Security", "{{amountName}}": 71208,
+            { "LifeExpectancy": 100, "Accounts": [{"Basis": 0}], "Income": [{ "Name": "Social Security", "{{amountName}}": 71208,
               "AgeStart": 67, "AnnualRateOfIncrease": 4.8 }] }
             """);
         var income = Assert.Single(scenario.Income);

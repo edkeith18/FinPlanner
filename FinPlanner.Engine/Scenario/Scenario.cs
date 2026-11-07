@@ -40,7 +40,7 @@ public class Scenario
     [JsonIgnore] 
     public int StartYear { get; set; } = DateTime.Now.Year;
     [JsonIgnore]
-    public int EndYear => StartYear + Math.Max(0, LifeExpectancy - CurrentAge);
+    public int EndYear => StartYear + LifeExpectancy - CurrentAge;
     [JsonConverter(typeof(PercentageJsonConverter))]
     public decimal SecuritiesAnnualRateOfReturn { get; set; }
     public decimal AnnualInflationRate { get; set; }
@@ -118,6 +118,7 @@ public class Scenario
 
     public string Serialize()
     {
+        ValidateLifeExpectancy();
         return JsonSerializer.Serialize(this, SerializerOptions);
     }
 
@@ -126,6 +127,8 @@ public class Scenario
         CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(stream);
+
+        ValidateLifeExpectancy();
 
         await JsonSerializer.SerializeAsync(
             stream,
@@ -167,15 +170,7 @@ public class Scenario
             ?? throw new JsonException(
                 "The JSON did not contain a valid scenario.");
 
-        scenario.UpdateCurrentAge();
-
-        // If current age is greater than life expectancy, the scenario is invalid. This can happen if the user changes their date of birth or life expectancy in the UI.
-        if (scenario.CurrentAge > scenario.LifeExpectancy)
-        {
-            throw new ArgumentException(
-                "Current age cannot be greater than life expectancy.",
-                nameof(scenario));
-        }
+        scenario.ValidateLifeExpectancy();
 
         if (scenario.Accounts.Count == 0)
         {
@@ -191,6 +186,16 @@ public class Scenario
         }
 
         return scenario;
+    }
+
+    private void ValidateLifeExpectancy()
+    {
+        UpdateCurrentAge();
+        if (LifeExpectancy <= CurrentAge)
+        {
+            throw new ArgumentException(
+                "Life expectancy must be greater than current age.");
+        }
     }
 
     public static async Task<Scenario> DeserializeAsync(

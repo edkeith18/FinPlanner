@@ -11,12 +11,12 @@ var scenarioPathArgument = new Argument<FileInfo>("path")
 };
 
 // Build a plan and write its yearly account balances and expenses beside the scenario file.
-
 var buildCommand = new Command("build")
 {
     Description = "Build a financial plan from a scenario file."
 };
 
+// Add an option for the tax info file, which is optional and defaults to "TaxInfo.json" in the same directory as the scenario file.
 var taxInfoOption = new Option<FileInfo?>("--tax-info")
 {
     Description = "Tax settings JSON file (defaults to TaxInfo.json beside the scenario)."
@@ -24,6 +24,7 @@ var taxInfoOption = new Option<FileInfo?>("--tax-info")
 buildCommand.Options.Add(taxInfoOption);
 buildCommand.Arguments.Add(scenarioPathArgument);
 
+// Set the action for the build command.
 buildCommand.SetAction(parseResult =>
 {
     var file = parseResult.GetValue(scenarioPathArgument)!;
@@ -34,14 +35,22 @@ buildCommand.SetAction(parseResult =>
         var taxFile = parseResult.GetValue(taxInfoOption)
             ?? new FileInfo(Path.Combine(file.DirectoryName!, "TaxInfo.json"));
         scenario.TaxInfo = GetTaxInfo(taxFile);
+
+        //  Instantiate the plan calculator
         var calculator = new PlanCalculator();
-        var plan = calculator.CalculateCurrentTrajectory(scenario);
-        var maximumSpendPlan = calculator.CalculateMaximumSpend(scenario);
-        var perpetualSpendPlan = calculator.CalculatePerpetualSpend(scenario);
-        if (perpetualSpendPlan.CalculationNote is not null)
-            Console.WriteLine(perpetualSpendPlan.CalculationNote);
-        if (!perpetualSpendPlan.IsSuccessful)
-            Console.WriteLine($"Perpetual plan: {perpetualSpendPlan.FailureReason}");
+
+            // Calculate the current trajectory
+            var plan = calculator.CalculateCurrentTrajectory(scenario);
+
+            // Calculate the maximum spend plan
+            var maximumSpendPlan = calculator.CalculateMaximumSpend(scenario);
+
+            // Calculate the perpetual spend plan
+            var perpetualSpendPlan = calculator.CalculatePerpetualSpend(scenario);
+            if (!perpetualSpendPlan.IsSuccessful)
+                Console.WriteLine($"Perpetual plan: {perpetualSpendPlan.FailureReason}");
+
+        // Write all the successful plans to an Excel file beside the scenario file.
         var plans = new List<Plan> { plan };
         if (maximumSpendPlan.IsSuccessful)
         {
@@ -53,7 +62,6 @@ buildCommand.SetAction(parseResult =>
             plans.Add(perpetualSpendPlan);
         }
 
-        // Write the plan to an Excel workbook
         var outputPath = PlanXlsxExporter.Write(
             plans,
             file);
@@ -68,56 +76,7 @@ buildCommand.SetAction(parseResult =>
 
 });
 
-// Rewrite a scenario using the current JSON schema while retaining a backup.
-
-var upgradeCommand = new Command("upgrade")
-{
-    Description =
-        "Load a scenario using the current schema and write it back to the same file."
-};
-
-upgradeCommand.Arguments.Add(scenarioPathArgument);
-
-upgradeCommand.SetAction(parseResult =>
-{
-    var file = parseResult.GetValue(scenarioPathArgument)!;
-    var scenario = GetScenario(file);
-
-    try
-    {
-        var backupPath = file.FullName + ".bak";
-        var temporaryPath = file.FullName + ".tmp";
-
-        // Write through a temporary file so the original remains intact until
-        // the upgraded scenario has been serialized successfully.
-        File.Copy(
-            sourceFileName: file.FullName,
-            destFileName: backupPath,
-            overwrite: true);
-
-        File.WriteAllText(
-            temporaryPath,
-            scenario.Serialize());
-
-        File.Move(
-            sourceFileName: temporaryPath,
-            destFileName: file.FullName,
-            overwrite: true);
-
-        Console.WriteLine($"Upgraded '{file.FullName}'");
-        Console.WriteLine($"Backup  : '{backupPath}'");
-
-        return 0;
-    }
-    catch (Exception ex)
-    {
-        Console.Error.WriteLine($"Unable to upgrade scenario: {ex.Message}");
-        return 5;
-    }
-});
-
 rootCommand.Subcommands.Add(buildCommand);
-rootCommand.Subcommands.Add(upgradeCommand);
 
 return rootCommand.Parse(args).Invoke();
 

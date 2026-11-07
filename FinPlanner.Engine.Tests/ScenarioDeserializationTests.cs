@@ -7,7 +7,8 @@ namespace FinPlanner.Engine.Tests;
 public class ScenarioDeserializationTests
 {
     [Theory]
-    [InlineData(57, true, "Current age cannot be greater than life expectancy.")]
+    [InlineData(57, true, "Life expectancy must be greater than current age.")]
+    [InlineData(58, true, "Life expectancy must be greater than current age.")]
     [InlineData(100, false, "Scenario must contain at least one account.")]
     public async Task BothLoadersRejectInvalidScenarios(
         int lifeExpectancy, bool includeAccounts, string expectedMessage)
@@ -21,7 +22,40 @@ public class ScenarioDeserializationTests
 
         Assert.StartsWith(expectedMessage, syncError.Message);
         Assert.Equal(syncError.Message, asyncError.Message);
-        Assert.Equal("scenario", asyncError.ParamName);
+        Assert.Equal(includeAccounts ? null : "scenario", asyncError.ParamName);
+    }
+
+    [Theory]
+    [InlineData(57)]
+    [InlineData(58)]
+    public async Task BothSerializersRejectLifeExpectancyAtOrBelowCurrentAge(int lifeExpectancy)
+    {
+        var scenario = new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-58),
+            LifeExpectancy = lifeExpectancy
+        };
+        using var stream = new MemoryStream();
+
+        var syncError = Assert.Throws<ArgumentException>(() => scenario.Serialize());
+        var asyncError = await Assert.ThrowsAsync<ArgumentException>(() => scenario.SerializeAsync(stream));
+
+        Assert.StartsWith("Life expectancy must be greater than current age.", syncError.Message);
+        Assert.Equal(syncError.Message, asyncError.Message);
+        Assert.Equal(0, stream.Length);
+    }
+
+    [Fact]
+    public async Task BothSerializersPreserveValidScenario()
+    {
+        var scenario = Scenario.Deserialize(CreateJson(59, includeAccounts: true));
+        using var stream = new MemoryStream();
+
+        var json = scenario.Serialize();
+        await scenario.SerializeAsync(stream);
+
+        Assert.Equal(json, Encoding.UTF8.GetString(stream.ToArray()));
+        Assert.Equal(59, Scenario.Deserialize(json).LifeExpectancy);
     }
 
     [Fact]
@@ -37,7 +71,7 @@ public class ScenarioDeserializationTests
     }
 
     [Theory]
-    [InlineData(58)]
+    [InlineData(59)]
     [InlineData(100)]
     public async Task BothLoadersPreserveValidScenarioPriorities(int lifeExpectancy)
     {
