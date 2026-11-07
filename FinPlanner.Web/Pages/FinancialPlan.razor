@@ -8,12 +8,7 @@
 
 <h1>Financial Plan</h1>
 
-@if (scenario.CurrentAge > scenario.LifeExpectancy)
-{
-    <p class="text-muted mb-3">No plan rows to display because Current age is greater than Life expectancy.</p>
-}
-else
-{
+@{
     var plan = planBuilder.Build(scenario);
     var expenseNames = plan.PlanYears
         .SelectMany(row => row.Expenses)

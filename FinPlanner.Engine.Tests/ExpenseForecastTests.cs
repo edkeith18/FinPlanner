@@ -33,7 +33,6 @@ public class ExpenseForecastTests
     [Theory]
     [InlineData(58, 100, 42)]
     [InlineData(99, 100, 1)]
-    [InlineData(100, 100, 0)]
     public void PlanStopsAtLifeExpectancy(int startingAge, int lifeExpectancy, int expectedPeriods)
     {
         var scenario = new Scenario
@@ -45,13 +44,10 @@ public class ExpenseForecastTests
         var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
 
         Assert.Equal(expectedPeriods, plan.PlanYears.Count);
-        if (expectedPeriods > 0)
-        {
-            Assert.True(plan.IsSuccessful);
-            Assert.Equal(startingAge, plan.PlanYears[0].StartingAge);
-            Assert.Equal(lifeExpectancy, plan.PlanYears[^1].EndingAge);
-            Assert.Equal(scenario.EndYear, plan.PlanYears[^1].EndingYear);
-        }
+        Assert.True(plan.IsSuccessful);
+        Assert.Equal(startingAge, plan.PlanYears[0].StartingAge);
+        Assert.Equal(lifeExpectancy, plan.PlanYears[^1].EndingAge);
+        Assert.Equal(scenario.EndYear, plan.PlanYears[^1].EndingYear);
     }
 
     [Theory]

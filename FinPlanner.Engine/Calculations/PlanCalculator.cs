@@ -20,11 +20,6 @@ public class PlanCalculator
         scenario = new Scenario(scenario);
         const string PlanName = "Maximum Spend Plan";
 
-        if (scenario.EndYear <= scenario.StartYear)
-        {
-            return Build(scenario, PlanName);
-        }
-
         Plan? bestPlan = null;
         bool CanSustain(decimal expenseSteps)
         {
@@ -81,8 +76,6 @@ public class PlanCalculator
 
     private Plan CalculatePerpetualSpend_Simple(Scenario scenario, string name)
     {
-        if (scenario.EndYear <= scenario.StartYear) return Build(scenario, name);
-
         // The amount of annual expenses to test is incremented in $1,000 steps.
         var ExpenseStep = 1_000m;
 
@@ -144,12 +137,6 @@ public class PlanCalculator
     private static Plan Build(Scenario scenario, string name, bool calculateFirstYearTaxes = false)
     {
         var years = new List<PlanYear>();
-        if (scenario.EndYear <= scenario.StartYear)
-        {
-            return new Plan(scenario, name, years, false,
-                "There are no remaining 12-month periods before life expectancy.");
-        }
-
         var uncategorizedExpenses = scenario.FirstYearAnnualExpenses
             - scenario.FirstYearTaxExpense - StartingNamedExpenses(scenario);
         if (uncategorizedExpenses < 0m)

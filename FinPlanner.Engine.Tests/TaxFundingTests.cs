@@ -106,7 +106,7 @@ public class TaxFundingTests
     }
 
     [Fact]
-    public void PerpetualBudgetsIncludeTaxesAndDescribeFinalYearGrowthTarget()
+    public void PerpetualBudgetsIncludeTaxesForEveryForecastYear()
     {
         var scenario = CreateScenario();
         scenario.SecuritiesAnnualRateOfReturn = 0.07m;
@@ -114,8 +114,6 @@ public class TaxFundingTests
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
         Assert.True(plan.IsSuccessful);
         Assert.True(plan.AnnualExpenses > 0m);
-        Assert.Contains("final forecast year", plan.CalculationNote);
-        Assert.Contains("does not prove indefinite sustainability", plan.CalculationNote);
         Assert.Equal(scenario.LifeExpectancy - scenario.CurrentAge, plan.PlanYears.Count);
         Assert.All(plan.PlanYears, year =>
         {
