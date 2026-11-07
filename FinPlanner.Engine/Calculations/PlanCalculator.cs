@@ -2,45 +2,91 @@ namespace FinPlanner.Engine;
 
 public class PlanCalculator
 {
+    private enum SpendingTarget
+    {
+        Maximum,
+        Perpetual
+    }
+
     /// <summary>
-    /// Calculates the plan using the data from the scenario
+    /// Calculates the plan using the data from the candidateScenario
     /// </summary>
     public Plan CalculateCurrentTrajectory(Scenario scenario)
         => Build(new Scenario(scenario), "Financial Plan");
 
     /// <summary>
-    /// Finds the highest sustainable initial annual expenses,
+    /// Finds the highest initial annual expenses fully funded through life expectancy,
     /// keeping named expenses fixed and recalculating first-year taxes for each budget.
     /// </summary>
     public Plan CalculateMaximumSpend(Scenario scenario)
     {
-        // The amount of annual expenses to test is incremented in $1,000 steps.
-        var ExpenseStep = 1_000m;
+        return FindHighestSpendingPlan(new Scenario(scenario), "Maximum Spend Plan", SpendingTarget.Maximum);
+    }
 
-        scenario = new Scenario(scenario);
-        const string PlanName = "Maximum Spend Plan";
+    /// <summary>
+    /// Finds the highest initial annual expenses whose final
+    /// forecast year increases total account balances by at least the candidateScenario inflation rate.
+    /// First-year taxes are recalculated for each candidate budget.
+    /// With fewer than two forecast years, uses maximum-spend rules while retaining the perpetual plan name.
+    /// </summary>
+    public Plan CalculatePerpetualSpend(Scenario scenario)
+    {
+
+        // If the candidateScenario has fewer than two forecast years, a perpetual plan collapses down to a maximum-spend plan.
+        var spendingTarget = scenario.LifeExpectancy <= scenario.CurrentAge + 1
+            ? SpendingTarget.Maximum
+            : SpendingTarget.Perpetual;
+
+        return FindHighestSpendingPlan(new Scenario(scenario), "Perpetual Spend Plan", spendingTarget);
+    }
+
+    private static Plan FindHighestSpendingPlan(
+        Scenario scenario, string planName, SpendingTarget target)
+    {
+        // The amount of annual expenses to test is incremented in $1,000 steps.
+        const decimal ExpenseStep = 1_000m;
 
         Plan? bestPlan = null;
-        bool CanSustain(decimal expenseSteps)
+
+        bool MeetsTarget(decimal expenseStepCount)
         {
-            var trialPlan = BuildSearchCandidate(scenario, expenseSteps * ExpenseStep, PlanName);
-            var isSustainable = trialPlan.IsSuccessful
-                && (decimal.Truncate(trialPlan.PlanYears[^1].EndingBalance) > 0m
-                    || trialPlan.PlanYears[^1].ExternalIncome > 0m);
-            if (isSustainable)
+            var trial = BuildSearchCandidate(scenario, expenseStepCount * ExpenseStep, planName);
+
+            // If the trial plan is not successful, it cannot meet the target.
+            if (!trial.IsSuccessful) return false;
+
+            // Check the target conditions for the trial plan.
+            switch (target)
             {
-                bestPlan = trialPlan;
+                case SpendingTarget.Maximum:
+                    // A fully funded forecast may finish with no remaining assets, so just return true since the plan is successful.
+                    break;
+
+                case SpendingTarget.Perpetual:
+                    // The final year's balance growth must meet the candidateScenario inflation rate.
+                    var previousBalance = trial.PlanYears[^2].EndingBalance;
+
+                    if (previousBalance <= 0m
+                        || trial.PlanYears[^1].EndingBalance < previousBalance * (1m + scenario.AnnualInflationRate / 100m))
+                        return false;
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(target));
             }
-            return isSustainable;
+
+            bestPlan = trial;
+            return true;
         }
 
         // Candidates must cover named expenses and the calculated taxes to fund them.
         var lowerBound = Math.Max(0m, decimal.Ceiling(
             PlanYearCalculator.CalculateMinimumFirstYearBudget(scenario) / ExpenseStep));
+
         var upperBound = Math.Max(lowerBound, Math.Max(1m, decimal.Ceiling(
             scenario.Accounts.Sum(account => account.BeginningBalance) / ExpenseStep)));
 
-        while (CanSustain(upperBound))
+        while (MeetsTarget(upperBound))
         {
             lowerBound = upperBound + 1;
             upperBound *= 2;
@@ -49,7 +95,7 @@ public class PlanCalculator
         while (lowerBound <= upperBound)
         {
             var midpoint = lowerBound + decimal.Floor((upperBound - lowerBound) / 2);
-            if (CanSustain(midpoint))
+            if (MeetsTarget(midpoint))
             {
                 lowerBound = midpoint + 1;
             }
@@ -59,81 +105,30 @@ public class PlanCalculator
             }
         }
 
-        return bestPlan ?? NoSustainablePlan(scenario, PlanName);
-    }
-
-    /// <summary>
-    /// Finds the highest initial annual expenses in $1,000 increments whose final
-    /// forecast year increases total account balances by at least the scenario inflation rate.
-    /// First-year taxes are recalculated for each candidate budget.
-    /// </summary>
-    public Plan CalculatePerpetualSpend(Scenario scenario)
-    {
-        scenario = new Scenario(scenario);
-        const string Name = "Perpetual Spend Plan";
-        return CalculatePerpetualSpend_Simple(scenario, Name);
-    }
-
-    private Plan CalculatePerpetualSpend_Simple(Scenario scenario, string name)
-    {
-        // The amount of annual expenses to test is incremented in $1,000 steps.
-        var ExpenseStep = 1_000m;
-
-        Plan? bestPlan = null;
-        bool MeetsGrowthTarget(decimal steps)
-        {
-            Plan trial;
-            try
-            {
-                trial = BuildSearchCandidate(scenario, steps * ExpenseStep, name);
-            }
-            catch (OverflowException)
-            {
-                return false;
-            }
-            if (!trial.IsSuccessful) return false;
-            var previousBalance = trial.PlanYears.Count > 1
-                ? trial.PlanYears[^2].EndingBalance
-                : scenario.Accounts.Sum(account => account.BeginningBalance);
-            if (previousBalance <= 0m || trial.PlanYears[^1].EndingBalance < previousBalance * (1m + scenario.AnnualInflationRate / 100m))
-                return false;
-            bestPlan = trial;
-            return true;
-        }
-
-        var lower = Math.Max(0m, decimal.Ceiling(
-            PlanYearCalculator.CalculateMinimumFirstYearBudget(scenario) / ExpenseStep));
-        var upper = Math.Max(lower, Math.Max(1m, decimal.Ceiling(
-            scenario.Accounts.Sum(account => account.BeginningBalance) / ExpenseStep)));
-        while (MeetsGrowthTarget(upper)) { lower = upper + 1; upper *= 2; }
-        while (lower <= upper)
-        {
-            var middle = lower + decimal.Floor((upper - lower) / 2);
-            if (MeetsGrowthTarget(middle)) lower = middle + 1;
-            else upper = middle - 1;
-        }
-
-        if (bestPlan is null)
-            return new Plan(scenario, name, [], false,
-                $"No spending budget achieved at least {scenario.AnnualInflationRate}% total account balance growth in the final forecast year.");
-        scenario.FirstYearAnnualExpenses = bestPlan.AnnualExpenses;
-        return new Plan(scenario, name, bestPlan.PlanYears.ToList(), true);
-    }
-
-    private static Plan NoSustainablePlan(Scenario scenario, string name)
-    {
-        scenario.FirstYearAnnualExpenses = 0m;
-        return new Plan(scenario, name, [], false, "No sustainable spending plan was found.");
+        // Return the best plan found, or a failure plan if no sustainable plan was found.
+        return bestPlan ?? new Plan(scenario, planName, [], false, "No sustainable spending plan was found.");
     }
 
     private static Plan BuildSearchCandidate(Scenario scenario, decimal budget, string name)
     {
-        scenario = new Scenario(scenario);
-        scenario.FirstYearAnnualExpenses = budget;
-        scenario.FirstYearTaxExpense = 0m;
-        return Build(scenario, name, calculateFirstYearTaxes: true);
+        // Create a copy of the scenario that was passed in, so that the original scenario is not modified by the search.
+        var candidateScenario = new Scenario(scenario);
+
+        candidateScenario.FirstYearAnnualExpenses = budget;
+        candidateScenario.FirstYearTaxExpense = 0m;
+
+        // Set calculateFirstYearTaxes to true so that the first-year taxes are recalculated for each candidate budget
+        // instead of using the original candidateScenario's FirstYearTaxExpense. This ensures that the plan is built with the correct tax calculations for the given budget.
+        return Build(candidateScenario, name, calculateFirstYearTaxes: true);
     }
 
+    /// <summary>
+    /// Builds a plan from the scenario
+    /// </summary>
+    /// <param name="scenario"></param>
+    /// <param name="name"></param>
+    /// <param name="calculateFirstYearTaxes"></param>
+    /// <returns></returns>
     private static Plan Build(Scenario scenario, string name, bool calculateFirstYearTaxes = false)
     {
         var years = new List<PlanYear>();
@@ -145,15 +140,19 @@ public class PlanCalculator
         }
 
         var currentYear = PlanYearCalculator.FromScenario(scenario, uncategorizedExpenses);
+
+        // If calculateFirstYearTaxes is true, the first-year taxes will be recalculated based on the candidate budget.
+        // This is necessary for the maximum-spend and perpetual-spend calculations, where the first-year budget is being adjusted to find the highest sustainable spending plan.
         if (calculateFirstYearTaxes)
         {
             // Named expenses are rounded individually when creating the year.
             // Put the rounding remainder in discretionary spending so the funded
             // candidate budget stays exact.
-            var discretionary = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized);
-            discretionary.Amount = scenario.FirstYearAnnualExpenses
-                - currentYear.Expenses.Where(expense => expense != discretionary).Sum(expense => expense.Amount);
+            var uncategorizedExpense = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized);
+            uncategorizedExpense.Amount = scenario.FirstYearAnnualExpenses
+                - currentYear.Expenses.Where(expense => expense != uncategorizedExpense).Sum(expense => expense.Amount);
         }
+
         while (true)
         {
             years.Add(currentYear);
@@ -165,10 +164,10 @@ public class PlanCalculator
                 // on top or changing the withdrawals that produced it.
                 currentYear.Taxes = TaxCalculator.Calculate(currentYear, scenario.TaxInfo);
                 var calculatedTax = decimal.Round(currentYear.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero);
-                var discretionary = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized);
-                discretionary.Amount -= calculatedTax;
+                var uncategorizedExpense = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized);
+                uncategorizedExpense.Amount -= calculatedTax;
                 currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = calculatedTax;
-                if (discretionary.Amount < 0m)
+                if (uncategorizedExpense.Amount < 0m)
                     return new Plan(scenario, name, years, false, "First-year tax and named expenses exceed FirstYearAnnualExpenses.");
             }
             if (currentYear.YearsInFuture == 0)
