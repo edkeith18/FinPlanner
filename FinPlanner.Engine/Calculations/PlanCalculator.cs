@@ -2,31 +2,33 @@ namespace FinPlanner.Engine;
 
 public class PlanCalculator
 {
-    private const decimal ExpenseStep = 1_000m;
-
     /// <summary>
-    /// Calculates the plan using the supplied annual expenses and other assumptions.
+    /// Calculates the plan using the data from the scenario
     /// </summary>
     public Plan CalculateCurrentTrajectory(Scenario scenario)
         => Build(new Scenario(scenario), "Financial Plan");
 
     /// <summary>
-    /// Finds the highest sustainable initial annual expenses in $1,000 increments,
+    /// Finds the highest sustainable initial annual expenses,
     /// keeping named expenses fixed and recalculating first-year taxes for each budget.
     /// </summary>
     public Plan CalculateMaximumSpend(Scenario scenario)
     {
+        // The amount of annual expenses to test is incremented in $1,000 steps.
+        var ExpenseStep = 1_000m;
+
         scenario = new Scenario(scenario);
-        const string Name = "Maximum Spend Plan";
+        const string PlanName = "Maximum Spend Plan";
+
         if (scenario.EndYear <= scenario.StartYear)
         {
-            return Build(scenario, Name);
+            return Build(scenario, PlanName);
         }
 
         Plan? bestPlan = null;
         bool CanSustain(decimal expenseSteps)
         {
-            var trialPlan = BuildSearchCandidate(scenario, expenseSteps * ExpenseStep, Name);
+            var trialPlan = BuildSearchCandidate(scenario, expenseSteps * ExpenseStep, PlanName);
             var isSustainable = trialPlan.IsSuccessful
                 && (decimal.Truncate(trialPlan.PlanYears[^1].EndingBalance) > 0m
                     || trialPlan.PlanYears[^1].ExternalIncome > 0m);
@@ -62,7 +64,7 @@ public class PlanCalculator
             }
         }
 
-        return bestPlan ?? NoSustainablePlan(scenario, Name);
+        return bestPlan ?? NoSustainablePlan(scenario, PlanName);
     }
 
     /// <summary>
@@ -80,6 +82,9 @@ public class PlanCalculator
     private Plan CalculatePerpetualSpend_Simple(Scenario scenario, string name)
     {
         if (scenario.EndYear <= scenario.StartYear) return Build(scenario, name);
+
+        // The amount of annual expenses to test is incremented in $1,000 steps.
+        var ExpenseStep = 1_000m;
 
         Plan? bestPlan = null;
         bool MeetsGrowthTarget(decimal steps)
