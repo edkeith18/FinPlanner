@@ -187,10 +187,10 @@ public class AccountIncomeTests
                 new Account { Type = AccountType.Inherited, BeginningBalance = 1000m, WithdrawalPriority = 2 }
             ]
         };
-        var first = PlanYearCalculator.FromScenario(scenario, 300m);
+        var first = PlanYearCalculator.FromScenario(scenario, PlanYearCalculator.CreateExpenses(scenario, 300m));
         Apply(first);
 
-        var next = PlanYearCalculator.ForecastFrom(first, scenario, 300m);
+        var next = PlanYearCalculator.ForecastFrom(first, scenario, PlanYearCalculator.CreateExpenses(scenario, 300m));
         PlanYearCalculator.CalculateEarnings(next);
 
         Assert.Equal(2, next.AccountEarnings.Count);
@@ -246,7 +246,7 @@ public class AccountIncomeTests
             FirstYearAnnualExpenses = annualExpenses,
             Accounts = accounts.ToList()
         };
-        return PlanYearCalculator.FromScenario(scenario, annualExpenses);
+        return PlanYearCalculator.FromScenario(scenario, PlanYearCalculator.CreateExpenses(scenario, annualExpenses));
     }
 
     private static void Apply(PlanYear year)

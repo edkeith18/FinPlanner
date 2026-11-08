@@ -83,11 +83,6 @@ internal static class PlanXlsxExporter
         sheet.SheetView.FreezeRows(1);
         sheet.SheetView.FreezeColumns(2);
         sheet.Range(1, 1, row - 1, headers.Length).SetAutoFilter();
-        if (plan.CalculationNote is not null)
-        {
-            sheet.Range(row + 1, 1, row + 2, 8).Merge().Value = plan.CalculationNote;
-            sheet.Range(row + 1, 1, row + 2, 8).Style.Alignment.WrapText = true;
-        }
     }
 
     private static void WriteTransfersSheet(XLWorkbook workbook, Plan plan)

@@ -20,7 +20,8 @@ public class FirstYearExpenseTests
     {
         var scenario = CreateScenario();
         var uncategorized = scenario.FirstYearAnnualExpenses - scenario.FirstYearTaxExpense - 20000m;
-        var first = PlanYearCalculator.FromScenario(scenario, uncategorized);
+        var baselineExpenses = PlanYearCalculator.CreateExpenses(scenario, uncategorized);
+        var first = PlanYearCalculator.FromScenario(scenario, baselineExpenses);
         Assert.Equal(12000m, first.TaxExpense);
         Assert.Equal(0, first.YearsInFuture);
 
@@ -31,15 +32,37 @@ public class FirstYearExpenseTests
         Assert.Null(first.Taxes);
         Assert.Equal(100000m, first.TotalExpenses);
 
-        var second = PlanYearCalculator.ForecastFrom(first, scenario, uncategorized);
+        var second = PlanYearCalculator.ForecastFrom(first, scenario, baselineExpenses);
         Assert.Equal(0m, second.TaxExpense);
         Assert.Equal(1, second.YearsInFuture);
         PlanYearCalculator.Calculate(second, TaxInfo.Default);
         Assert.NotNull(second.Taxes);
         Assert.Equal(decimal.Round(second.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), second.TaxExpense);
-        var third = PlanYearCalculator.ForecastFrom(second, scenario, uncategorized);
+        var third = PlanYearCalculator.ForecastFrom(second, scenario, baselineExpenses);
         Assert.Equal(2, third.YearsInFuture);
         Assert.Equal(first.StartingYear + 2, third.StartingYear);
+    }
+
+    [Fact]
+    public void BaselineExpensesAreIndependentOfScenarioAndYearCopies()
+    {
+        var scenario = CreateScenario();
+        scenario.AnnualInflationRate = 2m;
+        var baselineExpenses = PlanYearCalculator.CreateExpenses(scenario, 68000m);
+        var first = PlanYearCalculator.FromScenario(scenario, baselineExpenses);
+
+        scenario.Expenses[0].Amount = 1m;
+        first.Expenses.Single(expense => expense.Name == "Living").Amount = 2m;
+        // A finalized first-year budget can update the baseline without changing past years.
+        baselineExpenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount = 60000m;
+        var second = PlanYearCalculator.ForecastFrom(first, scenario, baselineExpenses);
+        var third = PlanYearCalculator.ForecastFrom(second, scenario, baselineExpenses);
+
+        Assert.Equal(20000m, second.Expenses.Single(expense => expense.Name == "Living").Amount);
+        Assert.Equal(68000m, first.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount);
+        Assert.Equal(61200m, second.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount);
+        Assert.Equal(62424m, third.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount);
+        Assert.Single(scenario.Expenses);
     }
 
     [Theory]
@@ -70,6 +93,26 @@ public class FirstYearExpenseTests
         Assert.NotNull(second.Taxes);
         Assert.Equal(decimal.Round(second.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), second.TaxExpense);
         Assert.Equal(second.TotalExpenses, second.AnnualExpenses);
+        Assert.Equal(original, scenario.Serialize());
+    }
+
+    [Fact]
+    public void CurrentTrajectoryPreservesFirstYearBudgetExpenseAndTaxCents()
+    {
+        var scenario = CreateScenario();
+        scenario.FirstYearAnnualExpenses = 100000.37m;
+        scenario.FirstYearTaxExpense = 12000.23m;
+        scenario.Expenses[0].Amount = 20000.41m;
+        var original = scenario.Serialize();
+
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(scenario);
+        var first = plan.PlanYears[0];
+
+        Assert.True(plan.IsSuccessful);
+        Assert.Equal(100000.37m, first.TotalExpenses);
+        Assert.Equal(12000.23m, first.TaxExpense);
+        Assert.Equal(20000.41m, first.Expenses.Single(expense => expense.Name == "Living").Amount);
+        Assert.Equal(67999.73m, first.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount);
         Assert.Equal(original, scenario.Serialize());
     }
 
@@ -177,7 +220,7 @@ public class FirstYearExpenseTests
     [Theory]
     [InlineData(false)]
     [InlineData(true)]
-    public void SearchKeepsBudgetExactWhenNamedExpensesRoundSeparately(bool perpetual)
+    public void SearchPreservesNamedExpenseCentsAndReclassifiesTaxesWithinBudget(bool perpetual)
     {
         var scenario = CreateScenario();
         scenario.SecuritiesAnnualRateOfReturn = 0.1m;
@@ -191,5 +234,10 @@ public class FirstYearExpenseTests
         Assert.Equal(plan.AnnualExpenses, first.TotalExpenses);
         Assert.Equal(plan.AnnualExpenses, first.TotalCashFlow);
         Assert.Equal(plan.AnnualExpenses, first.Taxes!.OrdinaryIncome);
+        Assert.Equal(20000.4m, first.Expenses.Single(expense => expense.Name == "Living").Amount);
+        Assert.Equal(1000.4m, first.Expenses.Single(expense => expense.Name == "Other").Amount);
+        Assert.Equal(plan.AnnualExpenses - 21000.8m - first.TaxExpense,
+            first.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount);
+        Assert.Equal(decimal.Round(first.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), first.TaxExpense);
     }
 }

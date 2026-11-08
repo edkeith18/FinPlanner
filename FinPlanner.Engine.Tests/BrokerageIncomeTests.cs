@@ -70,7 +70,7 @@ public class BrokerageIncomeTests
         Assert.Equal(520m, year.VoluntaryFrom(0));
         Assert.Equal(103960m, year.EndingBalance);
 
-        var next = PlanYearCalculator.ForecastFrom(year, scenario, scenario.FirstYearAnnualExpenses);
+        var next = PlanYearCalculator.ForecastFrom(year, scenario, PlanYearCalculator.CreateExpenses(scenario, scenario.FirstYearAnnualExpenses));
         PlanYearCalculator.CalculateEarnings(next);
         Assert.Equal(0.0448m, next.Accounts[0].AppreciationRate);
         Assert.Equal(4657m, next.AccountEarnings[0].Interest);

@@ -117,9 +117,9 @@ public class PlanCalculator
         candidateScenario.FirstYearAnnualExpenses = budget;
         candidateScenario.FirstYearTaxExpense = 0m;
 
-        // Set calculateFirstYearTaxes to true so that the first-year taxes are recalculated for each candidate budget
+        // Set isPerformingSpendingSearch to true so that the first-year taxes are recalculated for each candidate budget
         // instead of using the original candidateScenario's FirstYearTaxExpense. This ensures that the plan is built with the correct tax calculations for the given budget.
-        return Build(candidateScenario, name, calculateFirstYearTaxes: true);
+        return Build(candidateScenario, name, isPerformingSpendingSearch: true);
     }
 
     /// <summary>
@@ -127,37 +127,34 @@ public class PlanCalculator
     /// </summary>
     /// <param name="scenario"></param>
     /// <param name="name"></param>
-    /// <param name="calculateFirstYearTaxes"></param>
+    /// <param name="isPerformingSpendingSearch"></param>
     /// <returns></returns>
-    private static Plan Build(Scenario scenario, string name, bool calculateFirstYearTaxes = false)
+    private static Plan Build(Scenario scenario, string name, bool isPerformingSpendingSearch = false)
     {
         var years = new List<PlanYear>();
-        var uncategorizedExpenses = scenario.FirstYearAnnualExpenses
-            - scenario.FirstYearTaxExpense - StartingNamedExpenses(scenario);
-        if (uncategorizedExpenses < 0m)
+
+        // Figure out how much of the first-year expenses is uncategorized, after subtracting named expenses and the first-year tax expense.
+        var uncategorizedAmount = scenario.FirstYearAnnualExpenses - StartingNamedExpenses(scenario) - scenario.FirstYearTaxExpense;
+
+        // Verify that plan does not start with negative uncategorized expenses, which would indicate that the first-year budget is insufficient to cover named expenses and taxes.
+        if (uncategorizedAmount < 0m)
         {
             return new Plan(scenario, name, years, false, "First-year tax and named expenses exceed FirstYearAnnualExpenses.");
         }
 
-        var currentYear = PlanYearCalculator.FromScenario(scenario, uncategorizedExpenses);
+        // Create expenses List, adding uncategorized to named expenses
+        var expenses = PlanYearCalculator.CreateExpenses(scenario, uncategorizedAmount);
 
-        // If calculateFirstYearTaxes is true, the first-year taxes will be recalculated based on the candidate budget.
-        // This is necessary for the maximum-spend and perpetual-spend calculations, where the first-year budget is being adjusted to find the highest sustainable spending plan.
-        if (calculateFirstYearTaxes)
-        {
-            // Named expenses are rounded individually when creating the year.
-            // Put the rounding remainder in discretionary spending so the funded
-            // candidate budget stays exact.
-            var uncategorizedExpense = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized);
-            uncategorizedExpense.Amount = scenario.FirstYearAnnualExpenses
-                - currentYear.Expenses.Where(expense => expense != uncategorizedExpense).Sum(expense => expense.Amount);
-        }
+        // Create the first plan year from the scenario and expenses. This will be the starting point for the plan calculation
+        var currentYear = PlanYearCalculator.FromScenario(scenario, expenses);
 
         while (true)
         {
             years.Add(currentYear);
             PlanYearCalculator.Calculate(currentYear, scenario.TaxInfo);
-            if (currentYear.YearsInFuture == 0 && calculateFirstYearTaxes)
+
+            // For the first year, if taxes need to be calculated, do it here, then adjust the uncategorized expense to account for the taxes
+            if (currentYear.YearsInFuture == 0 && isPerformingSpendingSearch)
             {
                 // Withdrawals were funded at the candidate's fixed total budget.
                 // Reclassify part of that budget as tax, rather than adding tax
@@ -170,8 +167,14 @@ public class PlanCalculator
                 if (uncategorizedExpense.Amount < 0m)
                     return new Plan(scenario, name, years, false, "First-year tax and named expenses exceed FirstYearAnnualExpenses.");
             }
+
+            // Preserve finalized first-year spending as the inflation baseline for future years.
             if (currentYear.YearsInFuture == 0)
-                uncategorizedExpenses = currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount;
+            {
+                expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount =
+                    currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount;
+            }
+
             if (!currentYear.IsFullyFunded)
             {
                 return new Plan(scenario, name, years, false,
@@ -185,7 +188,7 @@ public class PlanCalculator
                 return new Plan(scenario, name, years, true);
             }
 
-            currentYear = PlanYearCalculator.ForecastFrom(currentYear, scenario, uncategorizedExpenses);
+            currentYear = PlanYearCalculator.ForecastFrom(currentYear, scenario, expenses);
         }
     }
 

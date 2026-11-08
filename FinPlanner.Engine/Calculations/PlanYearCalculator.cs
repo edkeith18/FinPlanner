@@ -30,7 +30,7 @@ internal static class PlanYearCalculator
     // irrelevant to this first-year cost calculation and needs no deposit account.
     internal static decimal CalculateMinimumFirstYearBudget(Scenario scenario)
     {
-        var year = FromScenario(scenario, 0m);
+        var year = FromScenario(scenario, CreateExpenses(scenario, 0m));
         year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = 0m;
         AppreciateAccounts(year);
         CalculateEarnings(year);
@@ -41,7 +41,7 @@ internal static class PlanYearCalculator
 
     internal static PlanYear FromScenario(
         Scenario scenario,
-        decimal uncategorizedExpenseAmount)
+        IReadOnlyCollection<Expense> baselineExpenses)
     {
         var year = new PlanYear
         {
@@ -62,7 +62,7 @@ internal static class PlanYearCalculator
                     return newAccount;
                 })
                 .ToList(),
-            Expenses = ForecastExpenses(scenario, uncategorizedExpenseAmount, scenario.CurrentAge)
+            Expenses = ForecastExpenses(scenario, baselineExpenses, scenario.CurrentAge)
         };
         year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = scenario.FirstYearTaxExpense;
         BuildTransfers(year, scenario);
@@ -70,7 +70,7 @@ internal static class PlanYearCalculator
     }
 
     internal static PlanYear ForecastFrom(PlanYear previousYear, Scenario scenario,
-        decimal uncategorizedExpenseAmount)
+        IReadOnlyCollection<Expense> baselineExpenses)
     {
         var year = new PlanYear
         {
@@ -89,15 +89,16 @@ internal static class PlanYearCalculator
                     return newAccount;
                 })
                 .ToList(),
-            Expenses = ForecastExpenses(scenario, uncategorizedExpenseAmount, previousYear.EndingAge)
+            Expenses = ForecastExpenses(scenario, baselineExpenses, previousYear.EndingAge)
         };
         BuildTransfers(year, scenario);
         return year;
     }
 
-    private static List<Expense> ForecastExpenses(Scenario scenario, decimal uncategorizedAmount, int age)
+    /// <summary>Copies scenario expenses into a plan-owned collection and appends the uncategorized baseline.</summary>
+    internal static List<Expense> CreateExpenses(Scenario scenario, decimal uncategorizedAmount)
     {
-        var uncategorized = new Expense
+        var uncategorizedExpense = new Expense
         {
             Name = "Uncategorized Expenses",
             Type = ExpenseType.Uncategorized,
@@ -107,13 +108,18 @@ internal static class PlanYearCalculator
             AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m,
             UseInflationValue = true
         };
-        var expenses = scenario.Expenses.Append(uncategorized)
+        return scenario.Expenses.Select(expense => new Expense(expense)).Append(uncategorizedExpense).ToList();
+    }
+
+    private static List<Expense> ForecastExpenses(Scenario scenario, IReadOnlyCollection<Expense> baselineExpenses, int age)
+    {
+        var expenses = baselineExpenses
             .Select(expense => ForecastExpense(expense, scenario.CurrentAge, age)).ToList();
         expenses.Add(new Expense { Name = "Taxes", Type = ExpenseType.Tax, AgeStart = scenario.CurrentAge, AgeEnd = scenario.LifeExpectancy });
         return expenses;
     }
 
-    /// <summary>Forecasts a copy from the original expense, rounding only at the target age.</summary>
+    /// <summary>Preserves first-year amounts and rounds future forecasts from the original expense.</summary>
     internal static Expense ForecastExpense(Expense source, int planStartAge, int age)
     {
         ArgumentNullException.ThrowIfNull(source);
@@ -122,7 +128,8 @@ internal static class PlanYearCalculator
         return new Expense(source)
         {
             Amount = source.IsActiveAtAge(age)
-                ? ForecastAmount(source.Amount, source.AnnualRateOfIncrease, planStartAge, age)
+                ? age == planStartAge ? source.Amount
+                    : ForecastAmount(source.Amount, source.AnnualRateOfIncrease, planStartAge, age)
                 : 0m
         };
     }

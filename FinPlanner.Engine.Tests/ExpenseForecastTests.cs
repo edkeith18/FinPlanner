@@ -87,14 +87,14 @@ public class ExpenseForecastTests
     }
 
     [Fact]
-    public void InitialForecastPreservesFractionalBaselineBeforeFinalRounding()
+    public void InitialForecastPreservesCentsAndFutureForecastsRoundAtTargetAge()
     {
         var expense = new Expense(new Expense
         {
             Amount = 100.49m, AgeStart = 60, AgeEnd = 90, AnnualRateOfIncrease = 0.01m
         });
 
-        Assert.Equal(100m, Forecast(expense, 60).Amount);
+        Assert.Equal(100.49m, Forecast(expense, 60).Amount);
         Assert.Equal(103m, Forecast(expense, 62).Amount);
     }
 
@@ -157,8 +157,8 @@ public class ExpenseForecastTests
             ]
         };
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
-        Assert.Equal(348943m, year.TotalExpenses);
-        Assert.Equal(265124m, year.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount);
+        Assert.Equal(348942.94m, year.TotalExpenses);
+        Assert.Equal(265123.94m, year.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount);
         Assert.Equal(0m, year.Expenses[1].Amount);
     }
 
@@ -199,7 +199,7 @@ public class ExpenseForecastTests
     }
 
     [Fact]
-    public void AnnualForecastsUseOriginalNamedAmountsAndTheRoundedFirstYearSpendingBaseline()
+    public void AnnualForecastsUseOriginalNamedAmountsAndExactFirstYearSpendingBaseline()
     {
         var scenario = new Scenario
         {
@@ -220,7 +220,7 @@ public class ExpenseForecastTests
         Assert.True(plan.IsSuccessful);
         Assert.Equal(new[] { 0m, 0m, 103m, 104m },
             plan.PlanYears.Select(year => year.Expenses[0].Amount));
-        Assert.Equal(new[] { 100m, 101m, 102m, 103m },
+        Assert.Equal(new[] { 100.49m, 101m, 103m, 104m },
             plan.PlanYears.Select(year => year.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount));
         Assert.Equal(original, scenario.Serialize());
     }
