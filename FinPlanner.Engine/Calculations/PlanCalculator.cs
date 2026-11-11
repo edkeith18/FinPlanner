@@ -150,12 +150,12 @@ public class PlanCalculator
             years.Add(currentYear);
             PlanYearCalculator.Calculate(currentYear, scenario.TaxInfo);
 
-            // FirstYearTaxExpense is null when the plan is being built as part of a spending search,
-            // so the first-year taxes must be calculated and reclassified from uncategorized expenses.
-            if (scenario.FirstYearTaxExpense is null)
+            // First year only
+            if (currentYear.YearsInFuture == 0)
             {
-                // First year only
-                if (currentYear.YearsInFuture == 0)
+                // FirstYearTaxExpense is null when the plan is being built as part of a spending search,
+                // so the first-year taxes must be calculated and reclassified from uncategorized expenses.
+                if (scenario.FirstYearTaxExpense is null)
                 {
                     // Withdrawals were funded at the candidate's fixed total budget.
                     // Reclassify part of that budget as tax, rather than adding tax
@@ -168,15 +168,13 @@ public class PlanCalculator
                     if (uncategorizedExpense.Amount < 0m)
                         return new Plan(scenario, name, years, false, "First-year tax and named expenses exceed FirstYearAnnualExpenses.");
                 }
-            }
 
-            // Preserve finalized first-year spending as the inflation baseline for future years.
-            if (currentYear.YearsInFuture == 0)
-            {
+                // Preserve finalized first-year spending as the inflation baseline for future years.
                 expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount =
                     currentYear.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount;
             }
 
+            // Plan fails if the current year is not fully funded, which means that the withdrawals and transfers cannot be fully funded from the available account balances.
             if (!currentYear.IsFullyFunded)
             {
                 return new Plan(scenario, name, years, false,
@@ -185,6 +183,7 @@ public class PlanCalculator
                         : $"Plan fails at year {currentYear.StartingYear}.");
             }
 
+            // We are done with the plan if the current year is the last year of the plan.
             if (currentYear.EndingYear >= scenario.EndYear)
             {
                 return new Plan(scenario, name, years, true);
