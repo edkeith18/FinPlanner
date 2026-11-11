@@ -10,6 +10,7 @@ namespace FinPlanner.Engine;
 /// </summary>
 public sealed class DateOfBirthJsonConverter : JsonConverter<DateOnly>
 {
+    /// <summary>Reads a supported date-of-birth string and rejects invalid or future dates.</summary>
     public override DateOnly Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
@@ -30,6 +31,7 @@ public sealed class DateOfBirthJsonConverter : JsonConverter<DateOnly>
         return dateOfBirth;
     }
 
+    /// <summary>Writes the date of birth in invariant MM/dd/yyyy format.</summary>
     public override void Write(
         Utf8JsonWriter writer,
         DateOnly value,

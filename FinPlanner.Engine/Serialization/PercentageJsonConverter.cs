@@ -9,6 +9,7 @@ namespace FinPlanner.Engine;
 /// </summary>
 public sealed class PercentageJsonConverter : JsonConverter<decimal>
 {
+    /// <summary>Converts a JSON percentage number into a fractional decimal rate.</summary>
     public override decimal Read(
         ref Utf8JsonReader reader,
         Type typeToConvert,
@@ -17,6 +18,7 @@ public sealed class PercentageJsonConverter : JsonConverter<decimal>
         return reader.GetDecimal() / 100m;
     }
 
+    /// <summary>Converts a fractional decimal rate into a JSON percentage number.</summary>
     public override void Write(
         Utf8JsonWriter writer,
         decimal value,

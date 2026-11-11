@@ -48,6 +48,7 @@ public static class RmdCalculator
         _ => null
     };
 
+    /// <summary>Calculates the rounded required withdrawal from the starting balance and applicable age divisor.</summary>
     public static decimal Calculate(AccountType type, decimal startingBalance, int startingAge)
         => GetDivisor(type, startingAge) is decimal divisor
             ? decimal.Round(Math.Max(0m, startingBalance) / divisor,

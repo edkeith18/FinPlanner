@@ -13,8 +13,10 @@ public class ScheduledTransfer
     public decimal AnnualRateOfIncrease { get; set; }
     public bool UseInflationValue { get; set; } = true;
 
+    /// <summary>Creates a scheduled transfer with default values and inflation-based growth enabled.</summary>
     public ScheduledTransfer() { }
 
+    /// <summary>Copies the destination name, amount, age boundaries, and growth settings from an existing transfer.</summary>
     public ScheduledTransfer(ScheduledTransfer source)
     {
         Name = source.Name;

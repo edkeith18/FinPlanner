@@ -9,7 +9,7 @@ public class PlanCalculator
     }
 
     /// <summary>
-    /// Calculates the plan using the data from the candidateScenario
+    /// Calculates the current trajectory using a copy of the supplied scenario.
     /// </summary>
     public Plan CalculateCurrentTrajectory(Scenario scenario)
         => Build(new Scenario(scenario), "Financial Plan");
@@ -40,6 +40,7 @@ public class PlanCalculator
         return FindHighestSpendingPlan(new Scenario(scenario), "Perpetual Spend Plan", spendingTarget);
     }
 
+    /// <summary>Searches budgets in constant increments for the highest plan meeting the selected spending target.</summary>
     private static Plan FindHighestSpendingPlan(
         Scenario scenario, string planName, SpendingTarget target)
     {
@@ -48,6 +49,7 @@ public class PlanCalculator
 
         Plan? bestPlan = null;
 
+        // Builds a trial budget and retains it when it meets the funding and balance growth requirements.
         bool MeetsTarget(decimal expenseStepCount)
         {
             var trial = BuildSearchCandidate(scenario, expenseStepCount * ExpenseStep, planName);
@@ -109,6 +111,7 @@ public class PlanCalculator
         return bestPlan ?? new Plan(scenario, planName, [], false, "No sustainable spending plan was found.");
     }
 
+    /// <summary>Copies the scenario and applies a trial budget with calculated first-year taxes.</summary>
     private static Plan BuildSearchCandidate(Scenario scenario, decimal budget, string name)
     {
         // Create a copy of the scenario that was passed in, so that the original scenario is not modified by the search.
@@ -120,7 +123,7 @@ public class PlanCalculator
     }
 
     /// <summary>
-    /// Builds a plan from the scenario
+    /// Builds annual forecast periods until the planning horizon ends or funding fails.
     /// </summary>
     /// <param name="scenario"></param>
     /// <param name="name"></param>

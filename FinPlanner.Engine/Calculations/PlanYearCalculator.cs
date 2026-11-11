@@ -39,6 +39,7 @@ internal static class PlanYearCalculator
         return year.TotalExpenses;
     }
 
+    /// <summary>Creates the first forecast period with copied accounts, forecast expenses, and transfer requests.</summary>
     internal static PlanYear FromScenario(
         Scenario scenario,
         IReadOnlyCollection<Expense> baselineExpenses)
@@ -69,6 +70,7 @@ internal static class PlanYearCalculator
         return year;
     }
 
+    /// <summary>Creates the next forecast period from prior ending balances and the original expense baselines.</summary>
     internal static PlanYear ForecastFrom(PlanYear previousYear, Scenario scenario,
         IReadOnlyCollection<Expense> baselineExpenses)
     {
@@ -111,6 +113,7 @@ internal static class PlanYearCalculator
         return scenario.Expenses.Select(expense => new Expense(expense)).Append(uncategorizedExpense).ToList();
     }
 
+    /// <summary>Forecasts each baseline expense at the requested age and adds the period's tax expense.</summary>
     private static List<Expense> ForecastExpenses(Scenario scenario, IReadOnlyCollection<Expense> baselineExpenses, int age)
     {
         var expenses = baselineExpenses
@@ -149,6 +152,7 @@ internal static class PlanYearCalculator
         => age < source.AgeStart ? 0m
             : Math.Max(0m, ForecastAmount(source.InitialAmount, source.AnnualRateOfIncrease, planStartAge, age));
 
+    /// <summary>Compounds an amount annually from the plan's starting age and rounds it to whole dollars.</summary>
     private static decimal ForecastAmount(decimal amount, decimal rate, int planStartAge, int age)
     {
         var factor = 1m;
@@ -161,6 +165,7 @@ internal static class PlanYearCalculator
         => new("RMD", account, null,
             RmdCalculator.Calculate(account.Type, account.BeginningBalance, startingAge), TransferReason.Rmd);
 
+    /// <summary>Creates the period's RMD, external income, and scheduled transfer requests.</summary>
     private static void BuildTransfers(PlanYear year, Scenario scenario)
     {
         year.Transfers = year.Accounts.Select(account => CreateRmdTransfer(account, year.StartingAge))
@@ -184,6 +189,7 @@ internal static class PlanYearCalculator
         }
     }
 
+    /// <summary>Finds the unique account matching a transfer destination name or reports an invalid destination.</summary>
     private static Account FindTransferAccount(PlanYear year, string name)
     {
         var matches = year.Accounts.Where(account => account.Name == name).ToList();
@@ -228,9 +234,11 @@ internal static class PlanYearCalculator
         return new AccountEarnings(account, 0m, 0m, 0m);
     }
 
+    /// <summary>Rounds an amount to whole dollars with midpoint values rounded away from zero.</summary>
     private static decimal Round(decimal amount)
         => decimal.Round(amount, 0, MidpointRounding.AwayFromZero);
 
+    /// <summary>Checks whether an account holds brokerage equities that generate interest and dividends.</summary>
     internal static bool HasBrokerageEquityIncome(Account account)
         => account.Type == AccountType.Brokerage && account.Holdings == AccountHoldings.Equities;
 
@@ -297,6 +305,7 @@ internal static class PlanYearCalculator
         return transfer.Amount;
     }
 
+    /// <summary>Selects the first brokerage account by withdrawal priority when mandatory cash exceeds expenses.</summary>
     private static Account? FindSurplusDestination(PlanYear year, decimal cash)
     {
         return cash > year.TotalExpenses

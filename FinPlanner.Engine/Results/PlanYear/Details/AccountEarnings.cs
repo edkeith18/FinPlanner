@@ -20,6 +20,7 @@ public class AccountEarnings
     public decimal EarnedAmount => Interest + DivQ + DivUQ;
     public decimal Amount => EarnedAmount;
 
+    /// <summary>Stores an account's interest and dividend components after validating the account reference.</summary>
     internal AccountEarnings(Account account, decimal interest, decimal divQ, decimal divUQ)
     {
         ArgumentNullException.ThrowIfNull(account);
