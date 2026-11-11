@@ -356,7 +356,7 @@ public class Scenario
     /// <summary>Adds a named income source with its initial amount and notifies subscribers of the change.</summary>
     public void AddIncome(string name, decimal amount)
     {
-        Income.Add(new Income { Name = name, Amount = amount, LastUpdated = DateTime.Now });
+        Income.Add(new Income { Name = name, InitialAmount = amount, LastUpdated = DateTime.Now });
         NotifyStateChanged();
     }
 

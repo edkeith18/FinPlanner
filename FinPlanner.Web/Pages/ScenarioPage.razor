@@ -461,13 +461,13 @@
                         <td class="item-value">
                             @if (IsEditing(income))
                             {
-                                <InputNumber @bind-Value="income.Amount"
+                                <InputNumber @bind-Value="income.InitialAmount"
                                              class="form-control form-control-sm number-input-no-spinner"
                                              @onkeydown="(e) => OnItemValueKeyDown(income, e)" />
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(income)">@income.Amount.ToString("C")</span>
+                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(income)">@income.InitialAmount.ToString("C")</span>
                             }
                         </td>
                         <td class="item-actions">
@@ -1507,7 +1507,7 @@
         return item switch
         {
             Account account => account.Balance,
-            Income income => income.Amount,
+            Income income => income.InitialAmount,
             Expense expense => expense.Amount,
             ScheduledTransfer transfer => transfer.Amount,
             _ => 0m
@@ -1522,7 +1522,7 @@
                 account.Balance = value;
                 break;
             case Income income:
-                income.Amount = value;
+                income.InitialAmount = value;
                 break;
             case Expense expense:
                 expense.Amount = value;
