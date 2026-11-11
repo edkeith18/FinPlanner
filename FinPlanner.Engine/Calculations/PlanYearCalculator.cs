@@ -23,7 +23,6 @@ internal static class PlanYearCalculator
         }
         else
             ApplyTaxesAndExpenses(year, taxInfo);
-        year.AnnualExpenses = year.TotalExpenses;
     }
 
     // Establish the search floor without discretionary spending. Surplus cash is
@@ -368,6 +367,7 @@ internal static class PlanYearCalculator
             if (taxExpense.Amount == nextTax)
             {
                 if (reinvestSurplus) DepositSurplus(year);
+                year.Taxes = taxes;
                 return;
             }
             taxExpense.Amount = nextTax;
