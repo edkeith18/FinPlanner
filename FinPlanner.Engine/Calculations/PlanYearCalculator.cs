@@ -18,7 +18,7 @@ internal static class PlanYearCalculator
         {
             FundExpenses(year);
             DepositSurplus(year);
-            // The supplied tax amount is authoritative; no calculated detail is claimed.
+            // First-year tax detail is calculated after funding only when the scenario requests it.
             year.Taxes = null;
         }
         else
@@ -64,7 +64,7 @@ internal static class PlanYearCalculator
                 .ToList(),
             Expenses = ForecastExpenses(scenario, baselineExpenses, scenario.CurrentAge)
         };
-        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = scenario.FirstYearTaxExpense;
+        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = scenario.FirstYearTaxExpense.GetValueOrDefault();
         BuildTransfers(year, scenario);
         return year;
     }

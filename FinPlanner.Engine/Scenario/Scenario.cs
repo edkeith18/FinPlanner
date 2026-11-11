@@ -70,8 +70,8 @@ public class Scenario
     public int LifeExpectancy { get; set; }
     /// <summary>Total first-year budget, including named expenses and the supplied tax expense.</summary>
     public decimal FirstYearAnnualExpenses { get; set; }
-    /// <summary>Known tax expense funded in the first year; later years calculate taxes.</summary>
-    public decimal FirstYearTaxExpense { get; set; }
+    /// <summary>Known first-year tax expense, or null to calculate it within the first-year budget.</summary>
+    public decimal? FirstYearTaxExpense { get; set; } = 0m;
     [JsonConverter(typeof(PercentageJsonConverter))]
     public decimal BondsAnnualRateOfReturn { get; set; }
 

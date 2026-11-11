@@ -19,7 +19,7 @@ public class FirstYearExpenseTests
     public void FirstYearCopiesTaxExpenseBeforeCalculationAndPreservesItAfterScenarioEdits()
     {
         var scenario = CreateScenario();
-        var uncategorized = scenario.FirstYearAnnualExpenses - scenario.FirstYearTaxExpense - 20000m;
+        var uncategorized = scenario.FirstYearAnnualExpenses - scenario.FirstYearTaxExpense.GetValueOrDefault() - 20000m;
         var baselineExpenses = PlanYearCalculator.CreateExpenses(scenario, uncategorized);
         var first = PlanYearCalculator.FromScenario(scenario, baselineExpenses);
         Assert.Equal(12000m, first.TaxExpense);
@@ -94,6 +94,22 @@ public class FirstYearExpenseTests
         Assert.Equal(decimal.Round(second.Taxes.TotalTax, 0, MidpointRounding.AwayFromZero), second.TaxExpense);
         Assert.Equal(second.TotalExpenses, second.AnnualExpenses);
         Assert.Equal(original, scenario.Serialize());
+    }
+
+    [Fact]
+    public void NullFirstYearTaxCalculatesTaxWithinTheCurrentTrajectoryBudget()
+    {
+        var scenario = CreateScenario();
+        scenario.FirstYearTaxExpense = null;
+        var plan = new PlanCalculator().CalculateCurrentTrajectory(Scenario.Deserialize(scenario.Serialize()));
+        var first = plan.PlanYears[0];
+
+        Assert.True(plan.IsSuccessful);
+        Assert.NotNull(first.Taxes);
+        Assert.True(first.TaxExpense > 0m);
+        Assert.Equal(100000m, first.TotalExpenses);
+        Assert.Equal(80000m - first.TaxExpense,
+            first.Expenses.Single(expense => expense.Type == ExpenseType.Uncategorized).Amount);
     }
 
     [Fact]

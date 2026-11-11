@@ -4,10 +4,10 @@ The engine ports the active formulas in `TaxCalculator`, `Account.AddIncome`, an
 
 ## Scenario inputs
 
-The first year funds the supplied `FirstYearTaxExpense`; subsequent years calculate and fund taxes.
+The first year uses the supplied `FirstYearTaxExpense` or calculates taxes within the first-year budget when the value is null. Subsequent years calculate and fund taxes.
 
 - `FirstYearAnnualExpenses`: the total first-year budget, including taxes and active named expenses.
-- `FirstYearTaxExpense`: the known first-year tax amount (defaults to zero when omitted). This is fixed even when first-year withdrawals change.
+- `FirstYearTaxExpense`: the known first-year tax amount, including zero (the default when omitted). Use null to calculate taxes from first-year withdrawals.
 
 - `Income.Type`: Ordinary (default), SocialSecurity, DivQ, DivUQ, Interest, Ltcg, Stcg, or TaxFree. An Ordinary income named Social Security uses SocialSecurity treatment for compatibility with the existing JSON.
 - `Expense.Type`: General, Healthcare, Charity, Salt, or HsaContribution. General expenses named Healthcare/Medicare, Charitable giving, SALT/State and local taxes, or HSA Contribution are classified for compatibility with existing inputs. Uncategorized and Tax are reserved for generated annual results.
@@ -22,7 +22,7 @@ Account `WithdrawalPriority` values are preserved when loading, saving, and copy
 
 Initial Uncategorized Expenses equals `FirstYearAnnualExpenses - FirstYearTaxExpense - active named expenses`. A budget below the sum of first-year taxes and active named expenses is rejected. Both JSON readers reject negative numeric values anywhere in the input before deserializing, including nested and unknown fields. This validation does not inspect numeric strings and requires numbers to fit the decimal range. Future and expired named expenses do not reduce the initial budget.
 
-The supplied tax amount is funded in the first year without calculating tax detail. `PlanYear.Taxes` is null for that year; `PlanYear.TaxExpense` contains the supplied amount. The first-year non-tax uncategorized amount is the baseline for later inflation adjustments. Maximum and perpetual spending searches vary the first-year total budget while keeping the supplied first-year tax amount fixed. `PlanYear.AnnualExpenses` reports each year's total modeled expenses; `Plan.AnnualExpenses` reports the selected initial budget.
+The supplied tax amount is funded in the first year without calculating tax detail. `PlanYear.Taxes` is null for that year; `PlanYear.TaxExpense` contains the supplied amount. The first-year non-tax uncategorized amount is the baseline for later inflation adjustments. Maximum and perpetual spending searches calculate first-year tax from the funded withdrawals for each candidate budget and move that amount from Uncategorized Expenses to Taxes. `PlanYear.AnnualExpenses` reports each year's total modeled expenses; `Plan.AnnualExpenses` reports the selected initial budget.
 
 Later years preserve that non-tax spending and withdraw additional funds to cover tax. Each trial resets balances and cost basis and removes trial expense withdrawals, then recalculates taxes from actual funded movements. Only a stable trial is retained. The tax expense is rounded to whole dollars, matching the plan's monetary forecast granularity. Tax component results retain four decimal places. A 100-iteration limit reports non-convergence rather than silently committing a partial trial.
 

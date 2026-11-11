@@ -136,7 +136,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearTaxExpense)">@scenario.FirstYearTaxExpense.ToString("C")</span>
+                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearTaxExpense)">@(scenario.FirstYearTaxExpense?.ToString("C") ?? "Calculated")</span>
                         }
                     </td>
                     <td class="item-actions">
@@ -838,7 +838,7 @@
     private readonly HashSet<ScheduledTransfer> editingTransferStartAgeRows = new();
     private readonly HashSet<ScheduledTransfer> editingTransferEndAgeRows = new();
     private readonly HashSet<ScheduledTransfer> editingTransferAnnualRateRows = new();
-    private readonly Dictionary<ParameterField, decimal> originalParameterValues = new();
+    private readonly Dictionary<ParameterField, decimal?> originalParameterValues = new();
     private readonly HashSet<ParameterField> editingParameters = new();
     private string dateOfBirthInput = string.Empty;
     private string dateOfBirthValidationMessage = string.Empty;
@@ -1564,7 +1564,7 @@
         }
     }
 
-    private decimal GetParameterValue(ParameterField parameter)
+    private decimal? GetParameterValue(ParameterField parameter)
     {
         return parameter switch
         {
@@ -1578,8 +1578,9 @@
         };
     }
 
-    private void SetParameterValue(ParameterField parameter, decimal value)
+    private void SetParameterValue(ParameterField parameter, decimal? originalValue)
     {
+        var value = originalValue.GetValueOrDefault();
         switch (parameter)
         {
             case ParameterField.LifeExpectancy:
@@ -1589,7 +1590,7 @@
                 scenario.FirstYearAnnualExpenses = value;
                 break;
             case ParameterField.FirstYearTaxExpense:
-                scenario.FirstYearTaxExpense = value;
+                scenario.FirstYearTaxExpense = originalValue;
                 break;
             case ParameterField.SecuritiesAnnualRateOfReturn:
                 scenario.SecuritiesAnnualRateOfReturn = value;
