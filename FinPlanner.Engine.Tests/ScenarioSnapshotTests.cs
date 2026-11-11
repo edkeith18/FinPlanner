@@ -20,7 +20,7 @@ public class ScenarioSnapshotTests
             Accounts = [new Account { Name = "Savings", BeginningBalance = 100000m }],
             Expenses = [new Expense
             {
-                Name = "Healthcare", Amount = 100m, AgeStart = 58, AgeEnd = 100,
+                Name = "Healthcare", Type = ExpenseType.Healthcare, Amount = 100m, AgeStart = 58, AgeEnd = 100,
                 AnnualRateOfIncrease = 0.01m
             }]
         };

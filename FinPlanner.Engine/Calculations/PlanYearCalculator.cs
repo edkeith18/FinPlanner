@@ -173,8 +173,7 @@ internal static class PlanYearCalculator
             if (amount > 0m)
                 year.Transfers.Add(new AccountTransfer(income.Name, null, null, amount, TransferReason.ExternalIncome)
                 {
-                    TaxType = income.Type == IncomeType.Ordinary && income.Name.Equals("Social Security", StringComparison.OrdinalIgnoreCase)
-                        ? IncomeType.SocialSecurity : income.Type
+                    TaxType = income.Type
                 });
         }
         foreach (var instruction in scenario.Transfers)

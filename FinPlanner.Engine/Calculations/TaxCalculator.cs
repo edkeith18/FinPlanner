@@ -82,7 +82,7 @@ public static class TaxCalculator
         decimal healthcare = 0m, charity = 0m, salt = 0m;
         foreach (var expense in year.Expenses)
         {
-            switch (GetExpenseType(expense))
+            switch (expense.Type)
             {
                 case ExpenseType.Healthcare: healthcare += expense.Amount; break;
                 case ExpenseType.Charity: charity += expense.Amount; break;
@@ -193,15 +193,4 @@ public static class TaxCalculator
         return factor;
     }
 
-    /// <summary>Returns the explicit expense type or infers a tax deduction category from a legacy expense name.</summary>
-    internal static ExpenseType GetExpenseType(Expense expense)
-    {
-        if (expense.Type != ExpenseType.General) return expense.Type;
-        var name = expense.Name.ToLowerInvariant();
-        if (name.Contains("healthcare") || name.Contains("medicare")) return ExpenseType.Healthcare;
-        if (name.Contains("charitable giving")) return ExpenseType.Charity;
-        if (name.Contains("salt") || name.Contains("state and local tax")) return ExpenseType.Salt;
-        if (name.Contains("hsa") && name.Contains("contribution")) return ExpenseType.HsaContribution;
-        return ExpenseType.General;
-    }
 }

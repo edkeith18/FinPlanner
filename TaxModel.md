@@ -9,8 +9,8 @@ The first year uses the supplied `FirstYearTaxExpense` or calculates taxes withi
 - `FirstYearAnnualExpenses`: the total first-year budget, including taxes and active named expenses.
 - `FirstYearTaxExpense`: the known first-year tax amount, including zero (the default when omitted). Use null to calculate taxes from first-year withdrawals.
 
-- `Income.Type`: Ordinary (default), SocialSecurity, DivQ, DivUQ, Interest, Ltcg, Stcg, or TaxFree. An Ordinary income named Social Security uses SocialSecurity treatment for compatibility with the existing JSON.
-- `Expense.Type`: General, Healthcare, Charity, Salt, or HsaContribution. General expenses named Healthcare/Medicare, Charitable giving, SALT/State and local taxes, or HSA Contribution are classified for compatibility with existing inputs. Uncategorized and Tax are reserved for generated annual results.
+- `Income.Type`: Ordinary (default), SocialSecurity, DivQ, DivUQ, Interest, Ltcg, Stcg, or TaxFree. Set Type explicitly to select the tax treatment; the income name is only a display label.
+- `Expense.Type`: General, Healthcare, Charity, Salt, or HsaContribution. Set Type explicitly to select the deduction category; omitted types default to General and expense names are only display labels. Uncategorized and Tax are reserved for generated annual results.
 - Scheduled transfers identify their destination by `Name`, which must exactly match one existing account for each active instruction. JSON no longer contains source or destination account fields. After RMDs, each instruction draws from accounts in ascending `WithdrawalPriority`, excluding the destination and skipping empty accounts. Multiple source movements preserve individual tax treatment and cost basis. Only a shortfall across all eligible sources fails the transfer; unfunded amounts do not create deposits or HSA deductions.
 - Actual scheduled transfers into an HSA from another account are deductible contributions. An explicit HsaContribution expense represents an additional contribution; do not record the same contribution in both places.
 

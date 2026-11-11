@@ -150,10 +150,10 @@ public class ExpenseForecastTests
             Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000000m }],
             Expenses =
             [
-                new Expense { Name = "Healthcare", Amount = 39492m, AgeStart = 57, AgeEnd = 64 },
-                new Expense { Name = "Medicare", Amount = 8820m, AgeStart = 65, AgeEnd = 100 },
-                new Expense { Name = "Charity", Amount = 29952m, AgeStart = 57, AgeEnd = 100 },
-                new Expense { Name = "SALT", Amount = 14375m, AgeStart = 57, AgeEnd = 100 }
+                new Expense { Name = "Healthcare", Type = ExpenseType.Healthcare, Amount = 39492m, AgeStart = 57, AgeEnd = 64 },
+                new Expense { Name = "Medicare", Type = ExpenseType.Healthcare, Amount = 8820m, AgeStart = 65, AgeEnd = 100 },
+                new Expense { Name = "Charity", Type = ExpenseType.Charity, Amount = 29952m, AgeStart = 57, AgeEnd = 100 },
+                new Expense { Name = "SALT", Type = ExpenseType.Salt, Amount = 14375m, AgeStart = 57, AgeEnd = 100 }
             ]
         };
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
@@ -249,6 +249,7 @@ public class ExpenseForecastTests
     private static Expense CreateExpense(int ageStart, int ageEnd) => new()
     {
         Name = "Healthcare",
+        Type = ExpenseType.Healthcare,
         Amount = 100m,
         AgeStart = ageStart,
         AgeEnd = ageEnd,
