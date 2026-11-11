@@ -28,9 +28,6 @@ public sealed record TaxInfo
     });
     public static TaxInfo Default => DefaultValue.Value;
 
-    /// <summary>Reads tax settings from a JSON file and validates them.</summary>
-    public static TaxInfo Load(string path) => Deserialize(File.ReadAllText(path));
-
     /// <summary>Deserializes tax settings, rejects unknown fields, and validates the resulting values.</summary>
     public static TaxInfo Deserialize(string json)
     {

@@ -25,6 +25,4 @@ public sealed class TaxResult
     public decimal NIIT { get; init; }
     public decimal TotalTax => StandardTax + AMT + NIIT;
     public decimal EffectiveTaxRate => AGI > 0m ? TotalTax / AGI : 0m;
-    /// <summary>The VBA calls this marginal, but computes total tax divided by AGI.</summary>
-    public decimal MarginalTaxRate => EffectiveTaxRate;
 }

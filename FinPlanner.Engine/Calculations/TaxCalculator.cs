@@ -173,7 +173,7 @@ public static class TaxCalculator
     }
 
     /// <summary>Applies descending tax brackets to an income amount using the projected threshold multiplier.</summary>
-    private static decimal BracketTax(decimal amount, decimal[] thresholds, decimal[] rates, decimal multiplier = 1m)
+    private static decimal BracketTax(decimal amount, decimal[] thresholds, decimal[] rates, decimal multiplier)
     {
         decimal tax = 0m;
         for (var i = 0; i < thresholds.Length; i++)

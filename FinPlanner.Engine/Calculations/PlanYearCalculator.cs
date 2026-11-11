@@ -49,7 +49,6 @@ internal static class PlanYearCalculator
             StartingAge = scenario.CurrentAge,
             StartingYear = scenario.StartYear,
             YearsInFuture = 0,
-            AnnualExpenses = scenario.FirstYearAnnualExpenses,
             Accounts = scenario.Accounts
                 .Select(account =>
                 {
@@ -79,7 +78,6 @@ internal static class PlanYearCalculator
             StartingAge = previousYear.EndingAge,
             StartingYear = previousYear.EndingYear,
             YearsInFuture = previousYear.YearsInFuture + 1,
-            AnnualExpenses = previousYear.AnnualExpenses,
             Accounts = previousYear.Accounts
                 .Select(account =>
                 {
@@ -364,10 +362,12 @@ internal static class PlanYearCalculator
             FundExpenses(year);
             var taxes = TaxCalculator.Calculate(year, taxInfo);
             var nextTax = Round(taxes.TotalTax);
+
+            // When calculated tax matches the amount funded, withdrawals and taxes have converged.
+            // Reinvest any surplus if requested, then finish the year's expense funding.
             if (taxExpense.Amount == nextTax)
             {
                 if (reinvestSurplus) DepositSurplus(year);
-                year.Taxes = TaxCalculator.Calculate(year, taxInfo);
                 return;
             }
             taxExpense.Amount = nextTax;
