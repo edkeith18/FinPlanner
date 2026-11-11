@@ -35,7 +35,7 @@ public class AccountIncomeTests
             Assert.All(plan.PlanYears, year => Assert.Equal(year.Accounts.Count, year.AccountEarnings.Count));
             Assert.Equal(116m, plan.PlanYears[0].AccountEarnings[0].Amount);
             Assert.Equal(353m, plan.PlanYears[0].MandatoryFrom(1));
-            Assert.Equal(20000m + plan.PlanYears.Sum(year => year.AccountEarnings.Sum(income => income.EarnedAmount))
+            Assert.Equal(20000m + plan.PlanYears.Sum(year => year.AccountEarnings.Sum(income => income.Amount))
                 - plan.PlanYears.Sum(year => year.TotalExpenses),
                 plan.PlanYears[^1].EndingBalance);
         }
