@@ -6,6 +6,7 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using Microsoft.AspNetCore.Components.Web
 
+@inject FinPlanner.Web.Services.SpendingSummary SpendingSummary
 @inject Scenario scenario
 @inject IJSRuntime JS
 
@@ -17,9 +18,14 @@
 
 <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
     <label for="scenarioFileInput" class="btn btn-secondary mb-0">Load scenario</label>
-    <InputFile id="scenarioFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" />
+    <InputFile id="scenarioFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" disabled="@loadingPlans" />
     <button class="@SaveScenarioButtonClass" @onclick="Save" disabled="@(!isDirty)">Download scenario</button>
 </div>
+
+@if (loadingPlans)
+{
+    <div role="status" aria-live="polite">Loading your scenario and calculating your plans...</div>
+}
 
 @if (scenario.Accounts.Count == 0)
 {
@@ -898,13 +904,16 @@
     }
 
     private string? fileError;
+    private bool loadingPlans;
 
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
         fileError = null;
+        loadingPlans = true;
         try { await LoadScenarioFile(e); }
         catch (Exception ex) when (ex is JsonException or ArgumentException or IOException or InvalidOperationException)
         { fileError = $"Could not load scenario: {ex.Message}"; }
+        finally { loadingPlans = false; }
     }
 
     private async Task LoadScenarioFile(InputFileChangeEventArgs e)
@@ -959,6 +968,7 @@
 
         baselineSnapshot = JsonSerializer.Serialize(scenario);
         UpdateDirtyState();
+        SpendingSummary.Calculate();
     }
 
     private static bool HasCustomAnnualRate(JsonElement itemElement, decimal annualInflationRate)
