@@ -9,10 +9,10 @@
     </nav>
     <div class="nav-footer">
         <dl class="spending-summary" aria-live="polite">
-            <dt>Maximum Spend</dt>
-            <dd>@(SpendingSummary.MaximumSpend?.ToString("C0") ?? " - ")</dd>
             <dt>Perpetual Spend</dt>
             <dd>@(SpendingSummary.PerpetualSpend?.ToString("C0") ?? " - ")</dd>
+            <dt>Maximum Spend</dt>
+            <dd>@(SpendingSummary.MaximumSpend?.ToString("C0") ?? " - ")</dd>
         </dl>
         <div class="build-info">@BuildVersioningInfo.Version<br />@BuildVersioningInfo.Branch</div>
     </div>

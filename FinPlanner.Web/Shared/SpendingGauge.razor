@@ -10,20 +10,22 @@
             <div><dt><span class="swatch safe"></span>Perpetual Spend</dt><dd>@Money(Summary.PerpetualSpend)</dd></div>
             <div><dt><span class="swatch good"></span>Maximum Spend</dt><dd>@Money(Summary.MaximumSpend)</dd></div>
         </dl>
-        <p class="gauge-note">@(Ready ? "Teal: within perpetual. Gold: above perpetual, within maximum. Terracotta: above maximum." : "Spending limits appear after your plans have been calculated.")</p>
+        @if (!Ready)
+        {
+            <p class="gauge-note">Spending limits appear after your plans have been calculated.</p>
+        }
     </div>
     <div class="gauge-visual">
         <svg viewBox="80 0 470 295" role="img" aria-label="@AccessibleDescription">
             <title>@AccessibleDescription</title>
             @if (Ready)
             {
-                <path d="@Sector(0, PerpetualFraction)" class="gauge-sector safe" />
-                <path d="@Sector(PerpetualFraction, MaximumFraction)" class="gauge-sector good" />
-                <path d="@Sector(MaximumFraction, 1)" class="gauge-sector warning" />
-                <path d="@Tick(PerpetualFraction)" class="limit-tick" />
-                <path d="@Tick(MaximumFraction)" class="limit-tick" />
-                <g transform="translate(@Point(PerpetualFraction, 190))" class="limit-label"><text y="-6">@Compact(Summary.PerpetualSpend!.Value)</text><text y="9" class="limit-caption">Perpetual</text></g>
-                <g transform="translate(@Point(MaximumFraction, 190))" class="limit-label"><text y="-6">@Compact(Summary.MaximumSpend!.Value)</text><text y="9" class="limit-caption">Maximum</text></g>
+                <path d="@Sector(0, BudgetArcEnd)" class="gauge-sector safe" />
+                <path d="@Sector(BudgetArcEnd, PerpetualRatio)" class="gauge-sector good" />
+                <path d="@Sector(PerpetualRatio, MaximumRatio)" class="gauge-sector warning" />
+                <path d="@Tick(PerpetualRatio)" class="limit-tick" />
+                <path d="@Tick(MaximumRatio)" class="limit-tick" />
+                <g transform="translate(@Point(PerpetualRatio, 190))" class="limit-label"><text y="-6">@Compact(Summary.PerpetualSpend!.Value)</text><text y="9" class="limit-caption">Perpetual</text></g>
                 <path d="@Needle" class="gauge-needle" />
                 <circle cx="300" cy="230" r="7" class="needle-hub" />
             }
@@ -34,10 +36,10 @@
             <text x="300" y="30" text-anchor="middle" class="budget-number">@Compact(Budget)</text>
             <text x="300" y="49" text-anchor="middle" class="budget-caption">FIRST-YEAR BUDGET</text>
             <text x="145" y="251" text-anchor="middle" class="endpoint">$0</text>
-            <text x="455" y="251" text-anchor="middle" class="endpoint">@(Ready ? Compact(Scale) : " - ")</text>
+            <text x="455" y="251" text-anchor="middle" class="endpoint">@(Ready ? Compact(Summary.MaximumSpend!.Value) : " - ")</text>
             <text x="300" y="281" text-anchor="middle" class="gauge-ratio">@(Summary.PerpetualSpend is > 0m ? $"{Budget / Summary.PerpetualSpend.Value:P0} of perpetual" : " -  of perpetual")</text>
         </svg>
-        @if (Ready && Budget > Scale)
+        @if (Ready && Budget > Summary.MaximumSpend)
         {
             <p class="over-scale">Budget exceeds the displayed scale.</p>
         }
@@ -47,11 +49,15 @@
 @code {
     [Parameter] public decimal Budget { get; set; }
 
-    private bool Ready => Summary.MaximumSpend is > 0m && Summary.PerpetualSpend is >= 0m
+    private bool Ready => Summary.MaximumSpend is > 0m && Summary.PerpetualSpend is > 0m
         && Summary.PerpetualSpend <= Summary.MaximumSpend;
-    private decimal Scale => Summary.MaximumSpend.GetValueOrDefault() * 1.2m;
-    private double PerpetualFraction => (double)(Summary.PerpetualSpend.GetValueOrDefault() / Scale);
-    private double MaximumFraction => (double)(Summary.MaximumSpend.GetValueOrDefault() / Scale);
+    // All values share the perpetual denominator. The maximum ratio defines the
+    // right endpoint of the semicircle; the budget and perpetual ratios mark its arcs.
+    private double BudgetRatio => Ready ? (double)(Budget / Summary.PerpetualSpend!.Value) : 0;
+    private const double PerpetualRatio = 1;
+    private double MaximumRatio => Ready
+        ? (double)(Summary.MaximumSpend!.Value / Summary.PerpetualSpend!.Value) : 1;
+    private double BudgetArcEnd => Math.Clamp(BudgetRatio, 0, PerpetualRatio);
     private string AccessibleDescription => Ready
         ? $"First-year budget {Budget:C0}; perpetual spend {Summary.PerpetualSpend:C0}; maximum spend {Summary.MaximumSpend:C0}."
         : $"First-year budget {Budget:C0}. Spending limits have not been calculated or are unavailable.";
@@ -59,15 +65,16 @@
     private static string Money(decimal? amount) => amount?.ToString("C0") ?? " - ";
     private static string Compact(decimal amount)
         => $"${decimal.Round(amount / 1000m, 0, MidpointRounding.AwayFromZero):N0}K";
-    private static string Point(double fraction, double radius)
+    private string Point(double ratio, double radius)
     {
+        var fraction = Math.Clamp(ratio / MaximumRatio, 0, 1);
         var angle = Math.PI * (1 - fraction);
         return FormattableString.Invariant($"{300 + radius * Math.Cos(angle):F2},{230 - radius * Math.Sin(angle):F2}");
     }
-    private static string Sector(double start, double end)
+    private string Sector(double start, double end)
         => $"M 300,230 L {Point(start, 155)} A 155,155 0 0,1 {Point(end, 155)} Z";
-    private static string Tick(double fraction) => $"M {Point(fraction, 147)} L {Point(fraction, 164)}";
-    private string Needle => $"M 300,230 L {Point(Math.Clamp((double)(Budget / Scale), 0, 1), 168)}";
+    private string Tick(double fraction) => $"M {Point(fraction, 147)} L {Point(fraction, 164)}";
+    private string Needle => $"M 300,230 L {Point(BudgetRatio, 168)}";
 
     protected override void OnInitialized() => Summary.Changed += Refresh;
     private void Refresh() => _ = InvokeAsync(StateHasChanged);
