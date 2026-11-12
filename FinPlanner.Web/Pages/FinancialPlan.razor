@@ -2,6 +2,7 @@
 @using FinPlanner.Engine
 @inject Scenario scenario
 @inject PlanCalculator Calculator
+@inject FinPlanner.Web.Services.SpendingSummary SpendingSummary
 <PageTitle>Plan explorer | FinPlanner</PageTitle>
 <div class="page-heading"><div><p class="eyebrow">YOUR FINANCIAL FUTURE</p><h1>Plan explorer</h1><p class="page-description">Explore your trajectory and find a spending level that works for you.</p></div><a class="btn btn-outline-primary" href="financial-scenario">Edit scenario</a></div>
 <div class="plan-toolbar" aria-label="Plan type">
@@ -61,6 +62,7 @@ else
     {
         if (!firstRender) return;
 
+        SpendingSummary.Clear();
         // Show the loading state before running the synchronous engine calculations.
         await Task.Yield();
         try
@@ -86,6 +88,7 @@ else
         { Array.Fill(errors, ex.Message); }
         finally
         {
+            SpendingSummary.Update(plans[1], plans[2]);
             busy = false;
             SelectMode(mode);
             StateHasChanged();

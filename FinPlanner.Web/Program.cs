@@ -12,5 +12,6 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 // Keep editable inputs and calculations scoped to this browser session.
 builder.Services.AddScoped(_ => new Scenario { LifeExpectancy = 100 });
 builder.Services.AddScoped<PlanCalculator>();
+builder.Services.AddScoped<FinPlanner.Web.Services.SpendingSummary>();
 
 await builder.Build().RunAsync();

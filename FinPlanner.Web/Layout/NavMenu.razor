@@ -1,3 +1,5 @@
+@implements IDisposable
+@inject FinPlanner.Web.Services.SpendingSummary SpendingSummary
 <div class="brand-row"><a class="brand" href="">Fin<span>Planner</span><small>Clarity for what comes next.</small></a><button class="menu-toggle" @onclick="Toggle" aria-label="Toggle navigation" aria-expanded="@open">Menu</button></div>
 <div class="navigation @(open ? "is-open" : "")">
     <p class="nav-caption">WORKSPACE</p>
@@ -5,10 +7,21 @@
         <NavLink href="financial-scenario" @onclick="Close">Financial scenario</NavLink>
         <NavLink href="financial-plan" @onclick="Close">Plan explorer</NavLink>
     </nav>
-    <div class="nav-footer"><p>Make room for your future.</p><small>Adjust your assumptions. Explore the possibilities.</small><div class="build-info">@BuildVersioningInfo.Version<br />@BuildVersioningInfo.Branch</div></div>
+    <div class="nav-footer">
+        <dl class="spending-summary" aria-live="polite">
+            <dt>Maximum Spend</dt>
+            <dd>@(SpendingSummary.MaximumSpend?.ToString("C0") ?? " - ")</dd>
+            <dt>Perpetual Spend</dt>
+            <dd>@(SpendingSummary.PerpetualSpend?.ToString("C0") ?? " - ")</dd>
+        </dl>
+        <div class="build-info">@BuildVersioningInfo.Version<br />@BuildVersioningInfo.Branch</div>
+    </div>
 </div>
 @code {
     private bool open;
     private void Toggle() => open = !open;
     private void Close() => open = false;
+    protected override void OnInitialized() => SpendingSummary.Changed += OnSummaryChanged;
+    private void OnSummaryChanged() => _ = InvokeAsync(StateHasChanged);
+    public void Dispose() => SpendingSummary.Changed -= OnSummaryChanged;
 }

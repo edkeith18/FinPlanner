@@ -13,3 +13,7 @@ nav ::deep a.active { color:#fff; background:#2e5654; box-shadow:inset 3px 0 #b4
 .build-info { font-size:.6rem; margin-top:24px; opacity:.65; overflow-wrap:anywhere; }
 .menu-toggle { display:none; background:transparent; border:1px solid #63827a; color:white; border-radius:6px; padding:6px 12px; }
 @media(max-width:640px) { .brand-row { padding:18px 20px; } .brand small { display:none; } .menu-toggle { display:block; } .navigation { display:none; height:auto; padding:0 16px 16px; } .navigation.is-open { display:block; } .nav-footer { display:none; } }
+
+.spending-summary { margin:0; }
+.spending-summary dt { font-size:.75rem; font-weight:400; color:#b8ceca; }
+.spending-summary dd { margin:5px 0 20px; font-size:1.35rem; font-weight:600; color:#e5efe9; font-variant-numeric:tabular-nums; }
