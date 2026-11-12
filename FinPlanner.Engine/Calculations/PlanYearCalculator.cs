@@ -151,11 +151,7 @@ internal static class PlanYearCalculator
 
     /// <summary>Compounds an amount annually from the plan's starting age and rounds it to whole dollars.</summary>
     private static decimal ForecastAmount(decimal amount, decimal rate, int planStartAge, int age)
-    {
-        var factor = 1m;
-        for (var current = planStartAge; current < age; current++) factor *= 1m + rate;
-        return Round(amount * factor);
-    }
+        => Round(amount * CompoundGrowth.Factor(rate, age - planStartAge));
 
     /// <summary>Creates the RMD request from the account's beginning balance and starting age.</summary>
     internal static AccountTransfer CreateRmdTransfer(Account account, int startingAge)

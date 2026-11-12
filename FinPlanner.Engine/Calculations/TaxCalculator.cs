@@ -110,7 +110,7 @@ public static class TaxCalculator
             salt = Math.Min(salt, saltMaximum - taxInfo.SaltDeduction.PhaseoutPercentage * (agi - saltThreshold));
 
             // Standard deduction is increased by its annual rate of increase, but not below zero.
-            var standardDeduction = taxInfo.StandardDeduction.Amount * Growth(taxInfo.StandardDeduction.AnnualRateOfIncrease, year.YearsInFuture);
+            var standardDeduction = taxInfo.StandardDeduction.Amount * CompoundGrowth.Factor(taxInfo.StandardDeduction.AnnualRateOfIncrease, year.YearsInFuture);
 
             // Deductions are the maximum of the standard deduction and the sum of itemized deductions, which may be negative.
             var deductions = Math.Max(standardDeduction, healthcare + charity + salt);
@@ -127,21 +127,21 @@ public static class TaxCalculator
             // Calculate ordinary tax.
             var ordinaryTax = BracketTax(taxableOrdinary,
                 taxInfo.OrdinaryIncomeTax.Brackets.Reverse().Select(b => b.Threshold).ToArray(),
-                taxInfo.OrdinaryIncomeTax.Brackets.Reverse().Select(b => b.Rate).ToArray(), Growth(taxInfo.OrdinaryIncomeTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture));
+                taxInfo.OrdinaryIncomeTax.Brackets.Reverse().Select(b => b.Rate).ToArray(), CompoundGrowth.Factor(taxInfo.OrdinaryIncomeTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture));
         
             // Calculate capital gains tax
             // Subtract ordinary income before multiplying thresholds.
             var gainsTax = BracketTax(taxableGains,
                 taxInfo.CapitalGainsTax.Brackets.Reverse().Select(b => Math.Max(0m, b.Threshold - taxableOrdinary)).ToArray(),
                 taxInfo.CapitalGainsTax.Brackets.Reverse().Select(b => b.Rate).ToArray(),
-                Growth(taxInfo.CapitalGainsTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture));
+                CompoundGrowth.Factor(taxInfo.CapitalGainsTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture));
 
             // Calculate NIIT
             var niit = taxInfo.NetInvestmentIncomeTax.Rate * Math.Max(0m, Math.Min(interest + divQ + divUQ + ltcg + stcg, agi - taxInfo.NetInvestmentIncomeTax.AgiThreshold));
 
             // Calculate AMT
-            var amtBase = Math.Max(0m, agi - healthcare - charity - taxInfo.AlternativeMinimumTax.ExemptionAmount * Growth(taxInfo.AlternativeMinimumTax.ExemptionAnnualRateOfIncrease, year.YearsInFuture));
-            var amtThreshold = taxInfo.AlternativeMinimumTax.Threshold * Growth(taxInfo.AlternativeMinimumTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture);
+            var amtBase = Math.Max(0m, agi - healthcare - charity - taxInfo.AlternativeMinimumTax.ExemptionAmount * CompoundGrowth.Factor(taxInfo.AlternativeMinimumTax.ExemptionAnnualRateOfIncrease, year.YearsInFuture));
+            var amtThreshold = taxInfo.AlternativeMinimumTax.Threshold * CompoundGrowth.Factor(taxInfo.AlternativeMinimumTax.ThresholdAnnualRateOfIncrease, year.YearsInFuture);
 
             var tentativeAmt = (Math.Max(0m, (amtBase - amtThreshold) * taxInfo.AlternativeMinimumTax.UpperRate)
                 + Math.Min(amtBase, amtThreshold)) * taxInfo.AlternativeMinimumTax.LowerRate;
@@ -183,14 +183,6 @@ public static class TaxCalculator
             amount -= slice;
         }
         return tax;
-    }
-
-    /// <summary>Calculates an annual compound growth factor for the specified number of years.</summary>
-    internal static decimal Growth(decimal rate, int years)
-    {
-        var factor = 1m;
-        for (var i = 0; i < years; i++) factor *= 1m + rate;
-        return factor;
     }
 
 }
