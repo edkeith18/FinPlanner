@@ -8,12 +8,15 @@
     <button class="@(mode == 0 ? "selected" : "")" @onclick="() => SelectMode(0)">Financial plan</button>
     <button class="@(mode == 1 ? "selected" : "")" @onclick="() => SelectMode(1)">Maximum spend</button>
     <button class="@(mode == 2 ? "selected" : "")" @onclick="() => SelectMode(2)">Perpetual spend</button>
-    <button class="btn btn-primary ms-auto" @onclick="Generate" disabled="@busy">@(busy ? "Calculating..." : "Calculate plan")</button>
 </div>
 @if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
-@if (plan is null)
+@if (busy)
 {
-    <section class="empty-state"><h2>Your next chapter, in numbers.</h2><p>Add your accounts and assumptions, then calculate a plan to explore your annual forecast.</p><a class="btn btn-outline-primary" href="financial-scenario">Review scenario</a></section>
+    <section class="empty-state" role="status" aria-live="polite"><h2>Calculating your plans...</h2><p>Preparing your financial, maximum spend, and perpetual spend forecasts.</p></section>
+}
+else if (plan is null)
+{
+    <section class="empty-state"><h2>Your next chapter, in numbers.</h2><p>Review your accounts and assumptions, then return here to explore your annual forecast.</p><a class="btn btn-outline-primary" href="financial-scenario">Review scenario</a></section>
 }
 else
 {
@@ -38,28 +41,54 @@ else
     </div>
 }
 @code {
-    private Plan? plan;
+    private readonly Plan?[] plans = new Plan?[3];
+    private readonly string?[] errors = new string?[3];
+    private Plan? plan => plans[mode];
+    private string? error => errors[mode];
     private int mode;
-    private bool busy;
+    private bool busy = true;
     private bool showDetails;
-    private string? error;
     private List<string> expenseNames = [];
-    private void SelectMode(int value) { mode = value; plan = null; error = null; }
-    private async Task Generate()
+
+    private void SelectMode(int value)
     {
-        busy = true;
-        error = null;
-        plan = null;
-        await Task.Delay(1);
+        mode = value;
+        expenseNames = plan?.PlanYears.SelectMany(y => y.Expenses)
+            .Where(e => e.Type != ExpenseType.Tax).Select(e => e.Name).Distinct().ToList() ?? [];
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        // Show the loading state before running the synchronous engine calculations.
+        await Task.Yield();
         try
         {
             if (scenario.Accounts.Count == 0) throw new InvalidOperationException("Add at least one account in your scenario before calculating a plan.");
             if (scenario.LifeExpectancy <= scenario.CurrentAge) throw new InvalidOperationException("Life expectancy must be greater than your current age.");
-            plan = mode switch { 1 => Calculator.CalculateMaximumSpend(scenario), 2 => Calculator.CalculatePerpetualSpend(scenario), _ => Calculator.CalculateCurrentTrajectory(scenario) };
-            expenseNames = plan.PlanYears.SelectMany(y => y.Expenses).Where(e => e.Type != ExpenseType.Tax).Select(e => e.Name).Distinct().ToList();
+            for (var index = 0; index < plans.Length; index++)
+            {
+                try
+                {
+                    plans[index] = index switch
+                    {
+                        1 => Calculator.CalculateMaximumSpend(scenario),
+                        2 => Calculator.CalculatePerpetualSpend(scenario),
+                        _ => Calculator.CalculateCurrentTrajectory(scenario)
+                    };
+                }
+                catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException or OverflowException)
+                { errors[index] = ex.Message; }
+            }
         }
         catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException or OverflowException)
-        { error = ex.Message; }
-        finally { busy = false; }
+        { Array.Fill(errors, ex.Message); }
+        finally
+        {
+            busy = false;
+            SelectMode(mode);
+            StateHasChanged();
+        }
     }
 }
