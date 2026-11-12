@@ -83,7 +83,7 @@ public class PlanCalculator
 
         // Candidates must cover named expenses and the calculated taxes to fund them.
         var lowerBound = Math.Max(0m, decimal.Ceiling(
-            PlanYearCalculator.CalculateMinimumFirstYearBudget(scenario) / ExpenseStep));
+            PlanYearCalculator.DetermineInitialExpenseFloor(scenario) / ExpenseStep));
 
         var upperBound = Math.Max(lowerBound, Math.Max(1m, decimal.Ceiling(
             scenario.Accounts.Sum(account => account.BeginningBalance) / ExpenseStep)));

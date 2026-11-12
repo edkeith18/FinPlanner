@@ -7,17 +7,33 @@ internal static class PlanYearCalculator
     private const decimal DivQRate = 0.0005m;
     private const decimal DivUQRate = 0.0094m;
 
+    // Establish the search floor without discretionary spending. Surplus cash is
+    // irrelevant to this first-year cost calculation and needs no deposit account.
+    internal static decimal DetermineInitialExpenseFloor(Scenario scenario)
+    {
+        // Create a temporary plan year with zero expenses to calculate the first-year tax expense.
+        var year = FromScenario(scenario, CreateExpenses(scenario, 0m));
+
+        // Initialize the tax expense to zero so that the first-year tax calculation is not double-counted.
+        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = 0m;
+
+        // Prepare the year by applying appreciation, earnings, and scheduled transfers before funding expenses.
+        PrepareYear(year);
+        ApplyTaxesAndExpenses(year, scenario.TaxInfo, reinvestSurplus: false);
+        return year.TotalExpenses;
+    }
 
     /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
     internal static void Calculate(PlanYear year, TaxInfo taxInfo)
     {
-        AppreciateAccounts(year);
-        CalculateEarnings(year);
-        ApplyRmdsAndScheduledTransfers(year);
+        // Prepare the year by applying appreciation, earnings, and scheduled transfers before funding expenses.
+        PrepareYear(year);
+
         if (year.YearsInFuture == 0)
         {
             FundExpenses(year);
             DepositSurplus(year);
+
             // First-year tax detail is calculated after funding only when the scenario requests it.
             year.Taxes = null;
         }
@@ -25,17 +41,12 @@ internal static class PlanYearCalculator
             ApplyTaxesAndExpenses(year, taxInfo);
     }
 
-    // Establish the search floor without discretionary spending. Surplus cash is
-    // irrelevant to this first-year cost calculation and needs no deposit account.
-    internal static decimal CalculateMinimumFirstYearBudget(Scenario scenario)
+    /// <summary>Applies appreciation, earnings, and mandatory and scheduled transfers before expense funding.</summary>
+    private static void PrepareYear(PlanYear year)
     {
-        var year = FromScenario(scenario, CreateExpenses(scenario, 0m));
-        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = 0m;
         AppreciateAccounts(year);
         CalculateEarnings(year);
         ApplyRmdsAndScheduledTransfers(year);
-        ApplyTaxesAndExpenses(year, scenario.TaxInfo, reinvestSurplus: false);
-        return year.TotalExpenses;
     }
 
     /// <summary>Creates the first forecast period with copied accounts, forecast expenses, and transfer requests.</summary>
