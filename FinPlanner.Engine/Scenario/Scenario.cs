@@ -88,7 +88,8 @@ public class Scenario
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        TaxInfo = source.TaxInfo;
+        // Reuse the source's already-validated, immutable tax settings instead of re-reading and re-validating from JSON
+        taxInfo = source.taxInfo;
         StartYear = source.StartYear;
         dateOfBirth = source.dateOfBirth;
         CurrentAge = source.CurrentAge;
