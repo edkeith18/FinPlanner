@@ -1,71 +1,14 @@
-﻿@using FinPlanner.Engine
-@implements IDisposable
-@inject Scenario scenario
-
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">FinPlanner</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-    </div>
+<div class="brand-row"><a class="brand" href="">Fin<span>Planner</span><small>Clarity for what comes next.</small></a><button class="menu-toggle" @onclick="Toggle" aria-label="Toggle navigation" aria-expanded="@open">Menu</button></div>
+<div class="navigation @(open ? "is-open" : "")">
+    <p class="nav-caption">WORKSPACE</p>
+    <nav aria-label="Main navigation">
+        <NavLink href="financial-scenario" @onclick="Close">Financial scenario</NavLink>
+        <NavLink href="financial-plan" @onclick="Close">Plan explorer</NavLink>
+    </nav>
+    <div class="nav-footer"><p>Make room for your future.</p><small>Adjust your assumptions. Explore the possibilities.</small><div class="build-info">@BuildVersioningInfo.Version<br />@BuildVersioningInfo.Branch</div></div>
 </div>
-
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <div class="nav-shell">
-        <nav class="nav d-flex flex-column">
-            <div class="nav-item px-3 ">
-                <NavLink class="nav-link" href="financial-scenario">
-                    <span class="bi bi-clipboard2-data-fill-nav-menu" aria-hidden="true"></span> Financial Scenario
-                </NavLink>
-            </div>
-            <div class="nav-item px-3 ">
-                <NavLink class="nav-link" href="financial-plan">
-                    <span class="bi bi-rocket-takeoff-nav-menu" aria-hidden="true"></span> Financial Plan
-                </NavLink>
-            </div>
-        </nav>
-
-        <div class="nav-footer">
-            <section class="quick-plan-panel" aria-label="Quick plan">
-                <h3 class="quick-plan-title">Quick plan</h3>
-                <p class="quick-plan-label">Maximum annual expenses</p>
-                <p class="quick-plan-label-detail">(for $0 at end of plan)</p>
-                <p class="quick-plan-value">@MaximumAnnualExpensesDisplay</p>
-            </section>
-
-            <div class="build-version-text">
-                <p>@BuildVersioningInfo.Version</p>
-                <p>@BuildVersioningInfo.Branch</p>
-            </div>
-        </div>
-    </div>
-</div>
-
 @code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private string MaximumAnnualExpensesDisplay = "Not yet implemented";
-
-    protected override void OnInitialized()
-    {
-        scenario.Changed += OnScenarioChanged;
-    }
-
-    private void OnScenarioChanged()
-    {
-        _ = InvokeAsync(StateHasChanged);
-    }
-
-    private void ToggleNavMenu()
-    {
-        collapseNavMenu = !collapseNavMenu;
-    }
-
-    public void Dispose()
-    {
-        scenario.Changed -= OnScenarioChanged;
-    }
+    private bool open;
+    private void Toggle() => open = !open;
+    private void Close() => open = false;
 }

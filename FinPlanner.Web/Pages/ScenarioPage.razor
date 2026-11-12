@@ -11,19 +11,25 @@
 
 <PageTitle>Financial Scenario</PageTitle>
 
-<h1>Financial Scenario</h1>
+<div class="page-heading"><div><p class="eyebrow">BUILD YOUR FOUNDATION</p><h1>Financial scenario</h1><p class="page-description">Your accounts, income, and assumptions. One clear picture.</p></div><a class="btn btn-primary" href="financial-plan">Explore plans</a></div>
+<div class="metric-grid"><section class="metric-card"><span>Starting portfolio</span><strong>@scenario.Accounts.Sum(a => a.BeginningBalance).ToString("C0")</strong><small>@scenario.Accounts.Count accounts</small></section><section class="metric-card"><span>First-year budget</span><strong>@scenario.FirstYearAnnualExpenses.ToString("C0")</strong><small>Including named expenses and taxes</small></section><section class="metric-card"><span>Planning horizon</span><strong>@Math.Max(0, scenario.LifeExpectancy - scenario.CurrentAge) years</strong><small>Age @scenario.CurrentAge to @scenario.LifeExpectancy</small></section></div>
+@if (fileError is not null) { <div class="alert alert-danger" role="alert">@fileError</div> }
 
-<div class="d-flex gap-2 align-items-center mb-3">
+<div class="d-flex flex-wrap gap-2 align-items-center mb-3">
     <label for="scenarioFileInput" class="btn btn-secondary mb-0">Load scenario</label>
     <InputFile id="scenarioFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" />
-    <button class="@SaveScenarioButtonClass" @onclick="Save" disabled="@(!isDirty)">Save scenario (download)</button>
+    <button class="@SaveScenarioButtonClass" @onclick="Save" disabled="@(!isDirty)">Download scenario</button>
 </div>
 
+@if (scenario.Accounts.Count == 0)
+{
+    <div class="setup-note">Start by loading your scenario JSON, or set your date of birth and add your accounts below. Click any underlined value to edit it.</div>
+}
 <div class="financial-scenario-layout">
     <div class="@FinancialScenarioPanelClass">
         <h5>Parameters</h5>
         <h6 class="parameter-subgroup-heading">Personal</h6>
-        <table class="@ScenarioTableClasses">
+        <div class="editor-table-scroll parameter-table" tabindex="0" role="region" aria-label="Scenario inputs"><table class="@ScenarioTableClasses">
             <tbody>
                 <tr class="@(IsEditingParameter(ParameterField.DateOfBirth) ? "edit-mode-row" : null)">
                     <td class="item-name">Date of birth</td>
@@ -42,7 +48,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.DateOfBirth)">@scenario.DateOfBirth.ToString("MM/dd/yyyy")</span>
+                            <button type="button" tabindex="1" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.DateOfBirth)">@scenario.DateOfBirth.ToString("MM/dd/yyyy")</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -74,7 +80,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="2" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@scenario.LifeExpectancy</span>
+                            <button type="button" tabindex="2" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.LifeExpectancy)">@scenario.LifeExpectancy</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -105,7 +111,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearAnnualExpenses)">@scenario.FirstYearAnnualExpenses.ToString("C")</span>
+                            <button type="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearAnnualExpenses)">@scenario.FirstYearAnnualExpenses.ToString("C")</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -136,7 +142,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearTaxExpense)">@(scenario.FirstYearTaxExpense?.ToString("C") ?? "Calculated")</span>
+                            <button type="button" tabindex="3" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.FirstYearTaxExpense)">@(scenario.FirstYearTaxExpense?.ToString("C") ?? "Calculated")</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -156,24 +162,24 @@
                     </td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
 
         <h6 class="parameter-subgroup-heading mt-2">Economic</h6>
-        <table class="@ScenarioTableClasses">
+        <div class="editor-table-scroll parameter-table" tabindex="0" role="region" aria-label="Scenario inputs"><table class="@ScenarioTableClasses">
             <tbody>
                 <tr class="@(IsEditingParameter(ParameterField.SecuritiesAnnualRateOfReturn) ? "edit-mode-row" : null)">
                     <td class="item-name">Securities annual rate of return</td>
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.SecuritiesAnnualRateOfReturn))
                         {
-                            <InputNumber @bind-Value="scenario.SecuritiesAnnualRateOfReturn"
+                            <PercentageInput @bind-Value="scenario.SecuritiesAnnualRateOfReturn"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="4"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.SecuritiesAnnualRateOfReturn, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="4" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualRateOfReturn)">@($"{scenario.SecuritiesAnnualRateOfReturn}%")</span>
+                            <button type="button" tabindex="4" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.SecuritiesAnnualRateOfReturn)">@scenario.SecuritiesAnnualRateOfReturn.ToString("P2")</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -204,7 +210,7 @@
                         }
                         else
                         {
-                            <span role="button" tabindex="5" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{scenario.AnnualInflationRate}%")</span>
+                            <button type="button" tabindex="5" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.AnnualInflationRate)">@($"{scenario.AnnualInflationRate}%")</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -228,14 +234,14 @@
                     <td class="item-value">
                         @if (IsEditingParameter(ParameterField.BondsAnnualRateOfReturn))
                         {
-                            <InputNumber @bind-Value="scenario.BondsAnnualRateOfReturn"
+                            <PercentageInput @bind-Value="scenario.BondsAnnualRateOfReturn"
                                          class="form-control form-control-sm number-input-no-spinner"
                                          tabindex="6"
                                          @onkeydown="(e) => OnParameterKeyDown(ParameterField.BondsAnnualRateOfReturn, e)" />
                         }
                         else
                         {
-                            <span role="button" tabindex="6" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@($"{scenario.BondsAnnualRateOfReturn}%")</span>
+                            <button type="button" tabindex="6" class="clickable-value" @onclick="() => StartEditingParameter(ParameterField.BondsAnnualRateOfReturn)">@scenario.BondsAnnualRateOfReturn.ToString("P2")</button>
                         }
                     </td>
                     <td class="item-actions">
@@ -255,7 +261,7 @@
                     </td>
                 </tr>
             </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -268,7 +274,7 @@
                 <i class="bi bi-plus-square"></i>
             </button>
         </div>
-        <table class="@ScenarioTableClasses">
+        <div class="editor-table-scroll" tabindex="0" role="region" aria-label="Scenario inputs"><table class="@ScenarioTableClasses">
             @if (scenario.Accounts.Count > 0)
             {
                 <thead>
@@ -276,7 +282,7 @@
                         <th class="item-name">Name</th>
                         <th class="item-type">Type</th>
                         <th class="item-holdings">Holdings</th>
-                        <th class="item-value">Balance</th>
+                        <th class="item-value">Balance</th><th class="item-value">Cost basis</th>
                         <th class="item-actions"></th>
                     </tr>
                 </thead>
@@ -305,7 +311,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</span>
+                                    <button type="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(account)">@account.Name</button>
                                 }
                             </div>
                         </td>
@@ -323,7 +329,7 @@
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingType(account)">@account.Type.ToDisplayLabel()</span>
+                                <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingType(account)">@account.Type.ToDisplayLabel()</button>
                             }
                         </td>
                         <td class="item-holdings">
@@ -340,20 +346,27 @@
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingHoldings(account)">@account.Holdings.ToDisplayLabel()</span>
+                                <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingHoldings(account)">@account.Holdings.ToDisplayLabel()</button>
                             }
                         </td>
                         <td class="item-value">
                             @if (IsEditing(account))
                             {
-                                <InputNumber @bind-Value="account.Balance"
+                                <InputNumber @bind-Value="account.BeginningBalance"
                                              class="form-control form-control-sm number-input-no-spinner"
                                              @onkeydown="(e) => OnItemValueKeyDown(account, e)" />
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(account)">@account.Balance.ToString("C")</span>
+                                <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(account)">@account.BeginningBalance.ToString("C")</button>
                             }
+                        </td>
+                        <td class="item-value">
+                            @if (account.Type == AccountType.Brokerage)
+                            {
+                                <InputNumber Value="account.Basis" ValueChanged="@((decimal value) => SetAccountBasis(account, value))" ValueExpression="@(() => account.Basis)" class="form-control form-control-sm" aria-label="@($"Cost basis for {account.Name}")" min="0" />
+                            }
+                            else { <span class="text-muted">N/A</span> }
                         </td>
                         <td class="item-actions">
                             @if (IsAccountRowEditing(account))
@@ -371,6 +384,8 @@
                             }
                             else
                             {
+                                <button class="btn btn-link p-0" disabled="@(scenario.Accounts.IndexOf(account) == 0)" @onclick="() => MoveAccount(account, -1)" aria-label="Move @account.Name up">&#8593;</button>
+                                <button class="btn btn-link p-0" disabled="@(scenario.Accounts.IndexOf(account) == scenario.Accounts.Count - 1)" @onclick="() => MoveAccount(account, 1)" aria-label="Move @account.Name down">&#8595;</button>
                                 <button class="btn btn-link text-danger p-0" @onclick="() => DeleteAccount(account)" aria-label="Delete @account.Name">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -413,7 +428,7 @@
                                          class="form-control form-control-sm number-input-no-spinner"
                                          @onkeydown="OnAddInputKeyDown" />
                         </td>
-                        <td class="item-actions">
+                        <td class="item-value"><small>Set after adding</small></td><td class="item-actions">
                             <button class="btn btn-link text-success p-0 me-2"
                                     @onclick="SaveNewItem"
                                     aria-label="Commit new account">
@@ -428,7 +443,7 @@
                     </tr>
                 }
             </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -441,7 +456,7 @@
                 <i class="bi bi-plus-square"></i>
             </button>
         </div>
-        <table class="@ScenarioTableClasses">
+        <div class="editor-table-scroll" tabindex="0" role="region" aria-label="Scenario inputs"><table class="@ScenarioTableClasses">
             <tbody>
                 @foreach (var income in scenario.Income.OrderBy(i => i.Name, StringComparer.CurrentCultureIgnoreCase))
                 {
@@ -455,7 +470,7 @@
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(income)">@income.Name</span>
+                                <button type="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(income)">@income.Name</button>
                             }
                         </td>
                         <td class="item-value">
@@ -467,7 +482,7 @@
                             }
                             else
                             {
-                                <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(income)">@income.InitialAmount.ToString("C")</span>
+                                <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(income)">@income.InitialAmount.ToString("C")</button>
                             }
                         </td>
                         <td class="item-actions">
@@ -523,7 +538,7 @@
                     </tr>
                 }
             </tbody>
-        </table>
+        </table></div>
 
         <hr />
 
@@ -537,7 +552,7 @@
             </button>
         </div>
         <div class="expenses-table-wrapper">
-            <table class="@ScenarioTableClasses">
+            <div class="editor-table-scroll" tabindex="0" role="region" aria-label="Scenario inputs"><table class="@ScenarioTableClasses">
                 @if (scenario.Expenses.Count > 0 || activeAddType == AddItemType.Expense)
                 {
                     <thead>
@@ -562,7 +577,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(expense)">@expense.Name</span>
+                                    <button type="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(expense)">@expense.Name</button>
                                 }
                             </td>
                             <td class="item-value">
@@ -572,7 +587,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartAge(expense)">@expense.AgeStart</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseStartAge(expense)">@expense.AgeStart</button>
                                 }
                             </td>
                             <td class="item-value">
@@ -582,7 +597,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndAge(expense)">@expense.AgeEnd</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseEndAge(expense)">@expense.AgeEnd</button>
                                 }
                             </td>
                             <td class="item-value">
@@ -592,14 +607,14 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(expense)">@expense.Amount.ToString("C")</button>
                                 }
                             </td>
                             <td class="item-value">
                                 @if (IsEditingExpenseAnnualRate(expense))
                                 {
                                     <div class="expense-rate-edit">
-                                        <InputNumber @bind-Value="expense.AnnualRateOfIncrease"
+                                        <PercentageInput @bind-Value="expense.AnnualRateOfIncrease"
                                                      class="form-control form-control-sm number-input-no-spinner"
                                                      disabled="@expense.UseInflationValue"
                                                      @onkeydown="(e) => OnExpenseFieldKeyDown(expense, e)" />
@@ -614,7 +629,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@FormatExpenseAnnualRate(expense)</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingExpenseAnnualRate(expense)">@FormatExpenseAnnualRate(expense)</button>
                                 }
                             </td>
                             <td class="item-actions">
@@ -640,7 +655,7 @@
                             <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                             <td class="item-value">
                                 <div class="expense-rate-edit">
-                                    <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
+                                    <PercentageInput @bind-Value="newExpenseAnnualRateOfIncrease"
                                                  class="form-control form-control-sm number-input-no-spinner"
                                                  disabled="@newExpenseUseInflationValue"
                                                  @onkeydown="OnAddInputKeyDown" />
@@ -660,7 +675,7 @@
                         </tr>
                     }
                 </tbody>
-            </table>
+            </table></div>
         </div>
 
         <hr />
@@ -679,7 +694,7 @@
             <p class="text-muted mb-2">Add an account before creating transfers.</p>
         }
         <div class="expenses-table-wrapper">
-            <table class="@ScenarioTableClasses">
+            <div class="editor-table-scroll" tabindex="0" role="region" aria-label="Scenario inputs"><table class="@ScenarioTableClasses">
                 @if (scenario.Transfers.Count > 0 || activeAddType == AddItemType.Transfer)
                 {
                     <thead>
@@ -704,7 +719,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(transfer)">@transfer.Name</span>
+                                    <button type="button" tabindex="0" class="clickable-name" @onclick="() => StartEditingName(transfer)">@transfer.Name</button>
                                 }
                             </td>
                             <td class="item-value">
@@ -714,7 +729,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferStartAge(transfer)">@transfer.AgeStart</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferStartAge(transfer)">@transfer.AgeStart</button>
                                 }
                             </td>
                             <td class="item-value">
@@ -724,7 +739,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferEndAge(transfer)">@transfer.AgeEnd</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferEndAge(transfer)">@transfer.AgeEnd</button>
                                 }
                             </td>
                             <td class="item-value">
@@ -734,14 +749,14 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(transfer)">@transfer.Amount.ToString("C")</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditing(transfer)">@transfer.Amount.ToString("C")</button>
                                 }
                             </td>
                             <td class="item-value">
                                 @if (IsEditingTransferAnnualRate(transfer))
                                 {
                                     <div class="expense-rate-edit">
-                                        <InputNumber @bind-Value="transfer.AnnualRateOfIncrease"
+                                        <PercentageInput @bind-Value="transfer.AnnualRateOfIncrease"
                                                      class="form-control form-control-sm number-input-no-spinner"
                                                      disabled="@transfer.UseInflationValue"
                                                      @onkeydown="(e) => OnTransferFieldKeyDown(transfer, e)" />
@@ -756,7 +771,7 @@
                                 }
                                 else
                                 {
-                                    <span role="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferAnnualRate(transfer)">@FormatTransferAnnualRate(transfer)</span>
+                                    <button type="button" tabindex="0" class="clickable-value" @onclick="() => StartEditingTransferAnnualRate(transfer)">@FormatTransferAnnualRate(transfer)</button>
                                 }
                             </td>
                             <td class="item-actions">
@@ -782,7 +797,7 @@
                             <td class="item-value"><InputNumber @bind-Value="newItemValue" class="form-control form-control-sm number-input-no-spinner" @onkeydown="OnAddInputKeyDown" /></td>
                             <td class="item-value">
                                 <div class="expense-rate-edit">
-                                    <InputNumber @bind-Value="newExpenseAnnualRateOfIncrease"
+                                    <PercentageInput @bind-Value="newExpenseAnnualRateOfIncrease"
                                                  class="form-control form-control-sm number-input-no-spinner"
                                                  disabled="@newExpenseUseInflationValue"
                                                  @onkeydown="OnAddInputKeyDown" />
@@ -802,7 +817,7 @@
                         </tr>
                     }
                 </tbody>
-            </table>
+            </table></div>
         </div>
     </div>
 </div>
@@ -858,14 +873,41 @@
     private bool pendingFocusNewRow;
     private const string ScenarioTableClasses =
         "table table-bordered align-middle table-sm scenario-table mb-0";
-    private string SaveScenarioButtonClass => isDirty ? "btn btn-danger" : "btn btn-secondary";
+    private string SaveScenarioButtonClass => isDirty ? "btn btn-primary" : "btn btn-outline-secondary";
 
     protected override void OnInitialized()
     {
-        baselineSnapshot = scenario.Serialize();
+        baselineSnapshot = JsonSerializer.Serialize(scenario);
     }
 
+    private void MoveAccount(Account account, int direction)
+    {
+        var index = scenario.Accounts.IndexOf(account);
+        var target = index + direction;
+        if (index < 0 || target < 0 || target >= scenario.Accounts.Count) return;
+        scenario.Accounts.RemoveAt(index);
+        scenario.Accounts.Insert(target, account);
+        scenario.NormalizeWithdrawalPriorities();
+        UpdateDirtyState();
+    }
+
+    private void SetAccountBasis(Account account, decimal value)
+    {
+        account.Basis = Math.Max(0m, value);
+        UpdateDirtyState();
+    }
+
+    private string? fileError;
+
     private async Task LoadFile(InputFileChangeEventArgs e)
+    {
+        fileError = null;
+        try { await LoadScenarioFile(e); }
+        catch (Exception ex) when (ex is JsonException or ArgumentException or IOException or InvalidOperationException)
+        { fileError = $"Could not load scenario: {ex.Message}"; }
+    }
+
+    private async Task LoadScenarioFile(InputFileChangeEventArgs e)
     {
         var file = e.File;
 
@@ -915,7 +957,7 @@
         dateOfBirthValidationMessage = string.Empty;
         activeAddType = null;
 
-        baselineSnapshot = scenario.Serialize();
+        baselineSnapshot = JsonSerializer.Serialize(scenario);
         UpdateDirtyState();
     }
 
@@ -932,10 +974,15 @@
 
     private async Task Save()
     {
-        var json = scenario.Serialize();
-        await SaveFileAsync("FinPlanner.json", json);
-        baselineSnapshot = scenario.Serialize();
-        UpdateDirtyState();
+        fileError = null;
+        try
+        {
+            var json = scenario.Serialize();
+            await SaveFileAsync("FinPlanner.json", json);
+            baselineSnapshot = JsonSerializer.Serialize(scenario);
+            UpdateDirtyState();
+        }
+        catch (ArgumentException ex) { fileError = ex.Message; }
     }
 
     private async Task SaveFileAsync(string filename, string json)
@@ -1506,7 +1553,7 @@
     {
         return item switch
         {
-            Account account => account.Balance,
+            Account account => account.BeginningBalance,
             Income income => income.InitialAmount,
             Expense expense => expense.Amount,
             ScheduledTransfer transfer => transfer.Amount,
@@ -1519,7 +1566,7 @@
         switch (item)
         {
             case Account account:
-                account.Balance = value;
+                account.BeginningBalance = value;
                 break;
             case Income income:
                 income.InitialAmount = value;
@@ -1606,7 +1653,7 @@
 
     private void UpdateDirtyState()
     {
-        isDirty = scenario.Serialize() != baselineSnapshot;
+        isDirty = JsonSerializer.Serialize(scenario) != baselineSnapshot;
         scenario.NotifyStateChanged();
     }
 
@@ -1705,7 +1752,7 @@
     private static string FormatAnnualRate(decimal annualRateOfIncrease, bool useInflationValue)
     {
         var suffix = useInflationValue ? " (inflation)" : string.Empty;
-        return $"{annualRateOfIncrease}%{suffix}";
+        return $"{annualRateOfIncrease:P2}{suffix}";
     }
 
     private void NormalizeLoadedExpenses(IEnumerable<Expense> expenses)
@@ -1726,7 +1773,7 @@
 
             if (expense.UseInflationValue)
             {
-                expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+                expense.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
             }
         }
     }
@@ -1749,7 +1796,7 @@
 
             if (transfer.UseInflationValue)
             {
-                transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+                transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
             }
         }
     }
@@ -1758,12 +1805,12 @@
     {
         foreach (var expense in scenario.Expenses.Where(expense => expense.UseInflationValue))
         {
-            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
 
         foreach (var transfer in scenario.Transfers.Where(transfer => transfer.UseInflationValue))
         {
-            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
     }
 
@@ -1773,7 +1820,7 @@
 
         if (expense.UseInflationValue)
         {
-            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
     }
 
@@ -1783,7 +1830,7 @@
 
         if (transfer.UseInflationValue)
         {
-            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
     }
 
@@ -1793,7 +1840,7 @@
 
         if (newExpenseUseInflationValue)
         {
-            newExpenseAnnualRateOfIncrease = scenario.AnnualInflationRate;
+            newExpenseAnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
     }
 
@@ -1807,7 +1854,7 @@
         newExpenseStartAge = scenario.CurrentAge;
         newExpenseEndAge = scenario.LifeExpectancy;
         newExpenseUseInflationValue = true;
-        newExpenseAnnualRateOfIncrease = scenario.AnnualInflationRate;
+        newExpenseAnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
     }
 
     private bool IsEditingExpenseStartAge(Expense expense) => editingExpenseStartAgeRows.Contains(expense);
@@ -1837,7 +1884,7 @@
         originalExpenseUseInflationValues[expense] = expense.UseInflationValue;
         if (expense.UseInflationValue)
         {
-            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+            expense.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
         editingExpenseAnnualRateRows.Add(expense);
     }
@@ -1870,7 +1917,7 @@
             }
             else if (expense.UseInflationValue)
             {
-                expense.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+                expense.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
             }
         }
 
@@ -1934,7 +1981,7 @@
         originalTransferUseInflationValues[transfer] = transfer.UseInflationValue;
         if (transfer.UseInflationValue)
         {
-            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+            transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
         }
         editingTransferAnnualRateRows.Add(transfer);
     }
@@ -1967,7 +2014,7 @@
             }
             else if (transfer.UseInflationValue)
             {
-                transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate;
+                transfer.AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m;
             }
         }
 

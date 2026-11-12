@@ -124,3 +124,40 @@ code {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
     text-align: start;
 }
+/* Shared planning workspace */
+:root { --bs-primary:#24685b; --bs-primary-rgb:36,104,91; --bs-body-color:#233d3a; --bs-body-bg:#f5f7f5; }
+body { background:#f5f7f5; color:#233d3a; font-family:Inter, "Segoe UI", sans-serif; font-size:.9rem; }
+h1 { font-size:2rem; font-weight:650; letter-spacing:-.04em; margin-bottom:10px; }
+h2 { font-size:1.15rem; font-weight:650; }
+a { color:#24685b; }
+.btn { border-radius:6px; font-size:.82rem; padding:10px 16px; font-weight:600; }
+.btn-primary { background:#24685b; border-color:#24685b; }
+.btn-primary:hover { background:#184c42; border-color:#184c42; }
+.btn-outline-primary { color:#24685b; border-color:#acc4bb; }
+.btn-outline-primary:hover { background:#24685b; border-color:#24685b; }
+.page-heading { display:flex; justify-content:space-between; align-items:center; gap:20px; margin-bottom:28px; }
+.eyebrow { font-size:.65rem; color:#718781; letter-spacing:.16em; font-weight:700; margin-bottom:10px; }
+.page-description { color:#71817c; margin:0; line-height:1.6; }
+.metric-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; margin-bottom:28px; }
+.metric-card { background:#fff; border:1px solid #dfe7e1; border-radius:10px; padding:22px 24px; }
+.metric-card span,.metric-card small { display:block; color:#73837c; font-size:.75rem; }
+.metric-card strong { display:block; font-size:1.8rem; letter-spacing:-.04em; font-weight:600; margin:9px 0; font-variant-numeric:tabular-nums; }
+.section-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:24px 0 14px; }
+.section-heading label { font-size:.8rem; color:#61766c; }
+.plan-toolbar { display:flex; gap:6px; flex-wrap:wrap; padding:8px; border:1px solid #dfe7e1; border-radius:9px; background:white; margin-bottom:28px; }
+.plan-toolbar > button:not(.btn) { border:0; background:transparent; color:#6a7e73; border-radius:5px; padding:10px 16px; font-size:.8rem; }
+.plan-toolbar > button.selected { background:#e5efe9; color:#225a4c; font-weight:650; }
+.empty-state { padding:70px 25px; text-align:center; border:1px dashed #bccdc1; border-radius:12px; background:#fafcf9; }
+.empty-state p { color:#78867d; max-width:440px; margin:16px auto 24px; line-height:1.8; }
+.forecast-scroll { max-height:65vh; overflow:auto; border:1px solid #dce5dd; border-radius:9px; background:#fff; }
+.forecast-table { margin:0; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.forecast-table th,.forecast-table td { padding:15px 24px; border-color:#edf0eb; text-align:right; font-weight:400; background:#fff; }
+.forecast-table thead th { position:sticky; top:0; z-index:2; background:#eef3ed; color:#66806d; font-size:.7rem; font-weight:600; }
+.forecast-table th:first-child { text-align:left; position:sticky; left:0; z-index:1; }
+.forecast-table thead th:first-child { z-index:3; }
+.forecast-table small { display:block; color:#8a998f; font-size:.68rem; }
+.forecast-table .balance-cell { font-weight:600; color:#24685b; }
+.forecast-table tr:hover td,.forecast-table tr:hover th { background:#f5f9f3; }
+:focus-visible { outline:3px solid #9ec8b6; outline-offset:3px; }
+@media(max-width:1000px) { .metric-card { padding:18px; } .metric-card strong { font-size:1.4rem; } }
+@media(max-width:640px) { h1 { font-size:1.7rem; } .page-heading { align-items:flex-start; flex-direction:column; } .metric-grid { grid-template-columns:1fr; gap:10px; } .metric-card { padding:16px 20px; } .metric-card strong { font-size:1.6rem; margin:5px 0; } .plan-toolbar > button { flex:1; } .forecast-table th,.forecast-table td { padding:12px 16px; } .btn { min-height:44px; } }

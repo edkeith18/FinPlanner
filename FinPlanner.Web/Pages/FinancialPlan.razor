@@ -1,54 +1,65 @@
 @page "/financial-plan"
-
 @using FinPlanner.Engine
-
 @inject Scenario scenario
-
-<PageTitle>Financial Plan</PageTitle>
-
-<h1>Financial Plan</h1>
-
-@{
-    var plan = planBuilder.Build(scenario);
-    var expenseNames = plan.PlanYears
-        .SelectMany(row => row.Expenses)
-        .Select(expense => expense.Name)
-        .Distinct(StringComparer.CurrentCultureIgnoreCase)
-        .ToList();
-
-    <table class="table table-bordered table-sm align-middle">
-        <thead class="table-light">
-            <tr>
-                <th scope="col">Age</th>
-                <th scope="col" class="expense-header">Total Expenses</th>
-                @foreach (var expenseName in expenseNames)
-                {
-                    <th scope="col" class="expense-header">@expenseName</th>
-                }
-                <th scope="col">Balance</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var row in plan.PlanYears)
-            {
-                <tr>
-                    <td>@row.Age</td>
-                    <td>@row.TotalExpenses.ToString("C")</td>
-                    @foreach (var expenseName in expenseNames)
-                    {
-                        var expenseAmount = row.Expenses.FirstOrDefault(expense => string.Equals(expense.Name, expenseName, StringComparison.CurrentCultureIgnoreCase))?.Amount ?? 0m;
-                        <td>@expenseAmount.ToString("C")</td>
-                    }
-                    <td>@row.EndingBalance.ToString("C")</td>
-                </tr>
-            }
-        </tbody>
-    </table>
+@inject PlanCalculator Calculator
+<PageTitle>Plan explorer | FinPlanner</PageTitle>
+<div class="page-heading"><div><p class="eyebrow">YOUR FINANCIAL FUTURE</p><h1>Plan explorer</h1><p class="page-description">Explore your trajectory and find a spending level that works for you.</p></div><a class="btn btn-outline-primary" href="financial-scenario">Edit scenario</a></div>
+<div class="plan-toolbar" aria-label="Plan type">
+    <button class="@(mode == 0 ? "selected" : "")" @onclick="() => SelectMode(0)">Financial plan</button>
+    <button class="@(mode == 1 ? "selected" : "")" @onclick="() => SelectMode(1)">Maximum spend</button>
+    <button class="@(mode == 2 ? "selected" : "")" @onclick="() => SelectMode(2)">Perpetual spend</button>
+    <button class="btn btn-primary ms-auto" @onclick="Generate" disabled="@busy">@(busy ? "Calculating..." : "Calculate plan")</button>
+</div>
+@if (error is not null) { <div class="alert alert-danger" role="alert">@error</div> }
+@if (plan is null)
+{
+    <section class="empty-state"><h2>Your next chapter, in numbers.</h2><p>Add your accounts and assumptions, then calculate a plan to explore your annual forecast.</p><a class="btn btn-outline-primary" href="financial-scenario">Review scenario</a></section>
 }
-
-<style>
-    .expense-header {
-        background-color: #fff3cd;
-        color: #b02a37;
+else
+{
+    <div class="metric-grid">
+        <section class="metric-card"><span>First-year expenses</span><strong>@plan.PlanYears.FirstOrDefault()?.TotalExpenses.ToString("C0")</strong><small>@plan.Name</small></section>
+        <section class="metric-card"><span>Final account balance</span><strong>@plan.PlanYears.LastOrDefault()?.EndingBalance.ToString("C0")</strong><small>At end of calculated forecast</small></section>
+        <section class="metric-card"><span>Planning horizon</span><strong>@plan.PlanYears.Count years</strong><small>Starting at age @scenario.CurrentAge</small></section>
+    </div>
+    @if (!plan.IsSuccessful) { <div class="alert alert-warning" role="status">@plan.FailureReason</div> }
+    <div class="section-heading"><h2>Annual forecast</h2><label><input type="checkbox" @bind="showDetails" /> Expense breakdown</label></div>
+    <div class="forecast-scroll" tabindex="0" role="region" aria-label="Annual financial forecast">
+        <table class="table forecast-table"><thead><tr><th scope="col">Year / age</th><th scope="col">Total expenses</th><th scope="col">Taxes</th><th scope="col">Ending balance</th>
+        @if (showDetails) { foreach (var name in expenseNames) { <th scope="col">@name</th> } }
+        </tr></thead><tbody>
+        @foreach (var row in plan.PlanYears)
+        {
+            <tr><th scope="row">@row.StartingYear <small>Age @row.StartingAge</small></th><td>@row.TotalExpenses.ToString("C0")</td><td>@row.TaxExpense.ToString("C0")</td><td class="balance-cell">@row.EndingBalance.ToString("C0")</td>
+            @if (showDetails) { foreach (var name in expenseNames) { <td>@row.Expenses.Where(e => e.Name == name).Sum(e => e.Amount).ToString("C0")</td> } }
+            </tr>
+        }
+        </tbody></table>
+    </div>
+}
+@code {
+    private Plan? plan;
+    private int mode;
+    private bool busy;
+    private bool showDetails;
+    private string? error;
+    private List<string> expenseNames = [];
+    private void SelectMode(int value) { mode = value; plan = null; error = null; }
+    private async Task Generate()
+    {
+        busy = true;
+        error = null;
+        plan = null;
+        await Task.Delay(1);
+        try
+        {
+            if (scenario.Accounts.Count == 0) throw new InvalidOperationException("Add at least one account in your scenario before calculating a plan.");
+            if (scenario.LifeExpectancy <= scenario.CurrentAge) throw new InvalidOperationException("Life expectancy must be greater than your current age.");
+            plan = mode switch { 1 => Calculator.CalculateMaximumSpend(scenario), 2 => Calculator.CalculatePerpetualSpend(scenario), _ => Calculator.CalculateCurrentTrajectory(scenario) };
+            expenseNames = plan.PlanYears.SelectMany(y => y.Expenses).Where(e => e.Type != ExpenseType.Tax).Select(e => e.Name).Distinct().ToList();
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException or NotSupportedException or OverflowException)
+        { error = ex.Message; }
+        finally { busy = false; }
     }
-</style>
+}

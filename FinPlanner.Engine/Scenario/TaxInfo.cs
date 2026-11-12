@@ -31,10 +31,8 @@ public sealed record TaxInfo
     /// <summary>Deserializes tax settings, rejects unknown fields, and validates the resulting values.</summary>
     public static TaxInfo Deserialize(string json)
     {
-        var settings = JsonSerializer.Deserialize<TaxInfo>(json, new JsonSerializerOptions
-        {
-            UnmappedMemberHandling = JsonUnmappedMemberHandling.Disallow
-        }) ?? throw new JsonException("Tax settings cannot be null.");
+        var settings = JsonSerializer.Deserialize(json, TaxInfoJsonContext.Default.TaxInfo)
+            ?? throw new JsonException("Tax settings cannot be null.");
         settings.Validate();
         return settings;
     }
