@@ -7,48 +7,58 @@ internal static class PlanYearCalculator
     private const decimal DivQRate = 0.0005m;
     private const decimal DivUQRate = 0.0094m;
 
-
-    /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
-    internal static void Calculate(PlanYear year, TaxInfo taxInfo)
-    {
-        AppreciateAccounts(year);
-        CalculateEarnings(year);
-        ApplyRmdsAndScheduledTransfers(year);
-        if (year.YearsInFuture == 0)
-        {
-            FundExpenses(year);
-            DepositSurplus(year);
-            // The supplied tax amount is authoritative; no calculated detail is claimed.
-            year.Taxes = null;
-        }
-        else
-            ApplyTaxesAndExpenses(year, taxInfo);
-        year.AnnualExpenses = year.TotalExpenses;
-    }
-
     // Establish the search floor without discretionary spending. Surplus cash is
     // irrelevant to this first-year cost calculation and needs no deposit account.
-    internal static decimal CalculateMinimumFirstYearBudget(Scenario scenario)
+    internal static decimal DetermineInitialExpenseFloor(Scenario scenario)
     {
-        var year = FromScenario(scenario, 0m);
+        // Create a temporary plan year with zero expenses to calculate the first-year tax expense.
+        var year = FromScenario(scenario, CreateExpenses(scenario, 0m));
+
+        // Initialize the tax expense to zero so that the first-year tax calculation is not double-counted.
         year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = 0m;
-        AppreciateAccounts(year);
-        CalculateEarnings(year);
-        ApplyRmdsAndScheduledTransfers(year);
+
+        // Prepare the year by applying appreciation, earnings, and scheduled transfers before funding expenses.
+        PrepareYear(year);
         ApplyTaxesAndExpenses(year, scenario.TaxInfo, reinvestSurplus: false);
         return year.TotalExpenses;
     }
 
+    /// <summary>Calculates appreciation, earnings, transfers, and expense funding in order.</summary>
+    internal static void Calculate(PlanYear year, TaxInfo taxInfo)
+    {
+        // Prepare the year by applying appreciation, earnings, and scheduled transfers before funding expenses.
+        PrepareYear(year);
+
+        if (year.YearsInFuture == 0)
+        {
+            FundExpenses(year);
+            DepositSurplus(year);
+
+            // First-year tax detail is calculated after funding only when the scenario requests it.
+            year.Taxes = null;
+        }
+        else
+            ApplyTaxesAndExpenses(year, taxInfo);
+    }
+
+    /// <summary>Applies appreciation, earnings, and mandatory and scheduled transfers before expense funding.</summary>
+    private static void PrepareYear(PlanYear year)
+    {
+        AppreciateAccounts(year);
+        CalculateEarnings(year);
+        ApplyRmdsAndScheduledTransfers(year);
+    }
+
+    /// <summary>Creates the first forecast period with copied accounts, forecast expenses, and transfer requests.</summary>
     internal static PlanYear FromScenario(
         Scenario scenario,
-        decimal uncategorizedExpenseAmount)
+        IReadOnlyCollection<Expense> baselineExpenses)
     {
         var year = new PlanYear
         {
             StartingAge = scenario.CurrentAge,
             StartingYear = scenario.StartYear,
             YearsInFuture = 0,
-            AnnualExpenses = scenario.FirstYearAnnualExpenses,
             Accounts = scenario.Accounts
                 .Select(account =>
                 {
@@ -62,22 +72,22 @@ internal static class PlanYearCalculator
                     return newAccount;
                 })
                 .ToList(),
-            Expenses = ForecastExpenses(scenario, uncategorizedExpenseAmount, scenario.CurrentAge)
+            Expenses = ForecastExpenses(scenario, baselineExpenses, scenario.CurrentAge)
         };
-        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = scenario.FirstYearTaxExpense;
+        year.Expenses.Single(expense => expense.Type == ExpenseType.Tax).Amount = scenario.FirstYearTaxExpense.GetValueOrDefault();
         BuildTransfers(year, scenario);
         return year;
     }
 
+    /// <summary>Creates the next forecast period from prior ending balances and the original expense baselines.</summary>
     internal static PlanYear ForecastFrom(PlanYear previousYear, Scenario scenario,
-        decimal uncategorizedExpenseAmount)
+        IReadOnlyCollection<Expense> baselineExpenses)
     {
         var year = new PlanYear
         {
             StartingAge = previousYear.EndingAge,
             StartingYear = previousYear.EndingYear,
             YearsInFuture = previousYear.YearsInFuture + 1,
-            AnnualExpenses = previousYear.AnnualExpenses,
             Accounts = previousYear.Accounts
                 .Select(account =>
                 {
@@ -89,15 +99,16 @@ internal static class PlanYearCalculator
                     return newAccount;
                 })
                 .ToList(),
-            Expenses = ForecastExpenses(scenario, uncategorizedExpenseAmount, previousYear.EndingAge)
+            Expenses = ForecastExpenses(scenario, baselineExpenses, previousYear.EndingAge)
         };
         BuildTransfers(year, scenario);
         return year;
     }
 
-    private static List<Expense> ForecastExpenses(Scenario scenario, decimal uncategorizedAmount, int age)
+    /// <summary>Copies scenario expenses into a plan-owned collection and appends the uncategorized baseline.</summary>
+    internal static List<Expense> CreateExpenses(Scenario scenario, decimal uncategorizedAmount)
     {
-        var uncategorized = new Expense
+        var uncategorizedExpense = new Expense
         {
             Name = "Uncategorized Expenses",
             Type = ExpenseType.Uncategorized,
@@ -107,24 +118,37 @@ internal static class PlanYearCalculator
             AnnualRateOfIncrease = scenario.AnnualInflationRate / 100m,
             UseInflationValue = true
         };
-        var expenses = scenario.Expenses.Append(uncategorized)
-            .Select(expense => ForecastExpense(expense, scenario.CurrentAge, age)).ToList();
-        expenses.Add(new Expense { Name = "Taxes", Type = ExpenseType.Tax, AgeStart = scenario.CurrentAge, AgeEnd = scenario.LifeExpectancy });
-        return expenses;
+        return scenario.Expenses.Select(expense => new Expense(expense)).Append(uncategorizedExpense).ToList();
     }
 
-    /// <summary>Forecasts a copy from the original expense, rounding only at the target age.</summary>
-    internal static Expense ForecastExpense(Expense source, int planStartAge, int age)
+    /// <summary>Forecasts each baseline expense at the requested age and adds the period's tax expense.</summary>
+    internal static List<Expense> ForecastExpenses(Scenario scenario, IReadOnlyCollection<Expense> baselineExpenses, int age)
     {
-        ArgumentNullException.ThrowIfNull(source);
+        var planStartAge = scenario.CurrentAge;
         if (age < planStartAge)
             throw new ArgumentOutOfRangeException(nameof(age), "Age cannot precede the plan-start age.");
-        return new Expense(source)
+
+        // Initialize ther return collection
+        var expenses = new List<Expense>();
+
+        // Copy each baseline expense into the plan's collection, forecasting its amount at the requested age.
+        foreach (var source in baselineExpenses)
         {
-            Amount = source.IsActiveAtAge(age)
-                ? ForecastAmount(source.Amount, source.AnnualRateOfIncrease, planStartAge, age)
-                : 0m
-        };
+            ArgumentNullException.ThrowIfNull(source);
+            // Preserve first-year amounts; round future amounts from the original baseline.
+            expenses.Add(new Expense(source)
+            {
+                Amount = source.IsActiveAtAge(age)
+                    ? age == planStartAge ? source.Amount
+                        : ForecastAmount(source.Amount, source.AnnualRateOfIncrease, planStartAge, age)
+                    : 0m
+            });
+        }
+
+        // Add the tax expense to the plan's collection
+        expenses.Add(new Expense { Name = "Taxes", Type = ExpenseType.Tax, AgeStart = scenario.CurrentAge, AgeEnd = scenario.LifeExpectancy });
+        
+        return expenses;
     }
 
     /// <summary>Forecasts the original transfer amount within its inclusive age boundaries.</summary>
@@ -142,18 +166,16 @@ internal static class PlanYearCalculator
         => age < source.AgeStart ? 0m
             : Math.Max(0m, ForecastAmount(source.InitialAmount, source.AnnualRateOfIncrease, planStartAge, age));
 
+    /// <summary>Compounds an amount annually from the plan's starting age and rounds it to whole dollars.</summary>
     private static decimal ForecastAmount(decimal amount, decimal rate, int planStartAge, int age)
-    {
-        var factor = 1m;
-        for (var current = planStartAge; current < age; current++) factor *= 1m + rate;
-        return Round(amount * factor);
-    }
+        => Round(amount * CompoundGrowth.Factor(rate, age - planStartAge));
 
     /// <summary>Creates the RMD request from the account's beginning balance and starting age.</summary>
     internal static AccountTransfer CreateRmdTransfer(Account account, int startingAge)
         => new("RMD", account, null,
             RmdCalculator.Calculate(account.Type, account.BeginningBalance, startingAge), TransferReason.Rmd);
 
+    /// <summary>Creates the period's RMD, external income, and scheduled transfer requests.</summary>
     private static void BuildTransfers(PlanYear year, Scenario scenario)
     {
         year.Transfers = year.Accounts.Select(account => CreateRmdTransfer(account, year.StartingAge))
@@ -164,8 +186,7 @@ internal static class PlanYearCalculator
             if (amount > 0m)
                 year.Transfers.Add(new AccountTransfer(income.Name, null, null, amount, TransferReason.ExternalIncome)
                 {
-                    TaxType = income.Type == IncomeType.Ordinary && income.Name.Equals("Social Security", StringComparison.OrdinalIgnoreCase)
-                        ? IncomeType.SocialSecurity : income.Type
+                    TaxType = income.Type
                 });
         }
         foreach (var instruction in scenario.Transfers)
@@ -177,6 +198,7 @@ internal static class PlanYearCalculator
         }
     }
 
+    /// <summary>Finds the unique account matching a transfer destination name or reports an invalid destination.</summary>
     private static Account FindTransferAccount(PlanYear year, string name)
     {
         var matches = year.Accounts.Where(account => account.Name == name).ToList();
@@ -221,9 +243,11 @@ internal static class PlanYearCalculator
         return new AccountEarnings(account, 0m, 0m, 0m);
     }
 
+    /// <summary>Rounds an amount to whole dollars with midpoint values rounded away from zero.</summary>
     private static decimal Round(decimal amount)
         => decimal.Round(amount, 0, MidpointRounding.AwayFromZero);
 
+    /// <summary>Checks whether an account holds brokerage equities that generate interest and dividends.</summary>
     internal static bool HasBrokerageEquityIncome(Account account)
         => account.Type == AccountType.Brokerage && account.Holdings == AccountHoldings.Equities;
 
@@ -290,6 +314,7 @@ internal static class PlanYearCalculator
         return transfer.Amount;
     }
 
+    /// <summary>Selects the first brokerage account by withdrawal priority when mandatory cash exceeds expenses.</summary>
     private static Account? FindSurplusDestination(PlanYear year, decimal cash)
     {
         return cash > year.TotalExpenses
@@ -348,10 +373,13 @@ internal static class PlanYearCalculator
             FundExpenses(year);
             var taxes = TaxCalculator.Calculate(year, taxInfo);
             var nextTax = Round(taxes.TotalTax);
+
+            // When calculated tax matches the amount funded, withdrawals and taxes have converged.
+            // Reinvest any surplus if requested, then finish the year's expense funding.
             if (taxExpense.Amount == nextTax)
             {
                 if (reinvestSurplus) DepositSurplus(year);
-                year.Taxes = TaxCalculator.Calculate(year, taxInfo);
+                year.Taxes = taxes;
                 return;
             }
             taxExpense.Amount = nextTax;

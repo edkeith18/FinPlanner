@@ -17,9 +17,9 @@ public class AccountEarnings
     /// <summary>Unqualified Brokerage Equities dividends: 0.05% of the beginning balance.</summary>
     public decimal DivUQ { get; }
     /// <summary>New earnings, added on top of account appreciation.</summary>
-    public decimal EarnedAmount => Interest + DivQ + DivUQ;
-    public decimal Amount => EarnedAmount;
+    public decimal Amount => Interest + DivQ + DivUQ;
 
+    /// <summary>Stores an account's interest and dividend components after validating the account reference.</summary>
     internal AccountEarnings(Account account, decimal interest, decimal divQ, decimal divUQ)
     {
         ArgumentNullException.ThrowIfNull(account);

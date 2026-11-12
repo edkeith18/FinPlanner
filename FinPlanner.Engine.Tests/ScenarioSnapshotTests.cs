@@ -20,7 +20,7 @@ public class ScenarioSnapshotTests
             Accounts = [new Account { Name = "Savings", BeginningBalance = 100000m }],
             Expenses = [new Expense
             {
-                Name = "Healthcare", Amount = 100m, AgeStart = 58, AgeEnd = 100,
+                Name = "Healthcare", Type = ExpenseType.Healthcare, Amount = 100m, AgeStart = 58, AgeEnd = 100,
                 AnnualRateOfIncrease = 0.01m
             }]
         };
@@ -64,7 +64,7 @@ public class ScenarioSnapshotTests
             LifeExpectancy = 100,
             Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000.49m, EndingBalance = 2000.51m }],
             Expenses = [new Expense { Name = "Expense", Amount = 100m }],
-            Income = [new Income { Name = "Incomes", Amount = 200m }],
+            Income = [new Income { Name = "Incomes", InitialAmount = 200m }],
             Transfers = [new ScheduledTransfer { Name = "Transfer", Amount = 300m }]
         };
         var notifications = 0;
@@ -80,9 +80,9 @@ public class ScenarioSnapshotTests
         Assert.Equal(scenario.StartYear, snapshot.StartYear);
         Assert.Equal(scenario.CurrentAge, snapshot.CurrentAge);
 
-        scenario.Income[0].Amount = 999m;
+        scenario.Income[0].InitialAmount = 999m;
         scenario.Transfers[0].Amount = 999m;
-        Assert.Equal(200m, snapshot.Income[0].Amount);
+        Assert.Equal(200m, snapshot.Income[0].InitialAmount);
         Assert.Equal(300m, snapshot.Transfers[0].Amount);
         snapshot.NotifyStateChanged();
         Assert.Equal(0, notifications);

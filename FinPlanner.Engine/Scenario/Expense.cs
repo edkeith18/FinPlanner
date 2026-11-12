@@ -17,11 +17,13 @@ public class Expense
 
     public DateTime LastUpdated { get; set; }
 
+    /// <summary>Creates an expense with default values for scenario entry or deserialization.</summary>
     public Expense() { }
 
     /// <summary>Expense age boundaries are inclusive and use the period's starting age.</summary>
     public bool IsActiveAtAge(int age) => age >= AgeStart && age <= AgeEnd;
 
+    /// <summary>Copies the amount, age boundaries, growth settings, and metadata from an existing expense.</summary>
     public Expense(Expense sourceExpense)
     {
         Name = sourceExpense.Name;

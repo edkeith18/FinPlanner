@@ -97,6 +97,7 @@
   "Income": [
     {
       "Name": "Social Security",
+      "Type": "SocialSecurity",
       "InitialAmount": 71208,
       "AgeStart": 67,
       "AnnualRateOfIncrease": 4.8,
@@ -106,6 +107,7 @@
   "Expenses": [
     {
       "Name": "Healthcare",
+      "Type": "Healthcare",
       "Amount": 37704.8,
       "AgeStart": 57,
       "AgeEnd": 64,
@@ -115,6 +117,7 @@
     },
     {
       "Name": "Medicare",
+      "Type": "Healthcare",
       "Amount": 8820,
       "AgeStart": 65,
       "AgeEnd": 100,
@@ -124,6 +127,7 @@
     },
     {
       "Name": "Charitable giving",
+      "Type": "Charity",
       "Amount": 29952,
       "AgeStart": 57,
       "AgeEnd": 100,
@@ -133,6 +137,7 @@
     },
     {
       "Name": "State and local taxes (SALT)",
+      "Type": "Salt",
       "Amount": 14375,
       "AgeStart": 57,
       "AgeEnd": 100,
@@ -157,5 +162,16 @@
   "DateOfBirth": "10/21/1968",
   "LifeExpectancy": 100,
   "FirstYearAnnualExpenses": 371898.52,
-  "FirstYearTaxExpense": 36958
+  "FirstYearTaxExpense": 36958,
+  "RegressionTest": {
+    "FinancialPlan": {
+      "EndingBalance": 171169096
+    },
+    "MaximumSpendPlan": {
+      "FirstYearTotalExpenses": 928000
+    },
+    "PerpetualSpendPlan": {
+      "FirstYearTotalExpenses": 743000
+    }
+  }
 }

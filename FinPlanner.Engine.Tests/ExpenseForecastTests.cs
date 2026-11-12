@@ -87,21 +87,21 @@ public class ExpenseForecastTests
     }
 
     [Fact]
-    public void InitialForecastPreservesFractionalBaselineBeforeFinalRounding()
+    public void InitialForecastPreservesCentsAndFutureForecastsRoundAtTargetAge()
     {
         var expense = new Expense(new Expense
         {
             Amount = 100.49m, AgeStart = 60, AgeEnd = 90, AnnualRateOfIncrease = 0.01m
         });
 
-        Assert.Equal(100m, Forecast(expense, 60).Amount);
+        Assert.Equal(100.49m, Forecast(expense, 60).Amount);
         Assert.Equal(103m, Forecast(expense, 62).Amount);
     }
 
     [Fact]
     public void ForecastRejectsAgesBeforeExplicitPlanStart()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => PlanYearCalculator.ForecastExpense(CreateExpense(60, 90), 60, 59));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Forecast(CreateExpense(60, 90), 59));
     }
 
     [Fact]
@@ -150,15 +150,15 @@ public class ExpenseForecastTests
             Accounts = [new Account { Type = AccountType.Hsa, BeginningBalance = 1000000m }],
             Expenses =
             [
-                new Expense { Name = "Healthcare", Amount = 39492m, AgeStart = 57, AgeEnd = 64 },
-                new Expense { Name = "Medicare", Amount = 8820m, AgeStart = 65, AgeEnd = 100 },
-                new Expense { Name = "Charity", Amount = 29952m, AgeStart = 57, AgeEnd = 100 },
-                new Expense { Name = "SALT", Amount = 14375m, AgeStart = 57, AgeEnd = 100 }
+                new Expense { Name = "Healthcare", Type = ExpenseType.Healthcare, Amount = 39492m, AgeStart = 57, AgeEnd = 64 },
+                new Expense { Name = "Medicare", Type = ExpenseType.Healthcare, Amount = 8820m, AgeStart = 65, AgeEnd = 100 },
+                new Expense { Name = "Charity", Type = ExpenseType.Charity, Amount = 29952m, AgeStart = 57, AgeEnd = 100 },
+                new Expense { Name = "SALT", Type = ExpenseType.Salt, Amount = 14375m, AgeStart = 57, AgeEnd = 100 }
             ]
         };
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
-        Assert.Equal(348943m, year.TotalExpenses);
-        Assert.Equal(265124m, year.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount);
+        Assert.Equal(348942.94m, year.TotalExpenses);
+        Assert.Equal(265123.94m, year.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount);
         Assert.Equal(0m, year.Expenses[1].Amount);
     }
 
@@ -199,7 +199,7 @@ public class ExpenseForecastTests
     }
 
     [Fact]
-    public void AnnualForecastsUseOriginalNamedAmountsAndTheRoundedFirstYearSpendingBaseline()
+    public void AnnualForecastsUseOriginalNamedAmountsAndExactFirstYearSpendingBaseline()
     {
         var scenario = new Scenario
         {
@@ -220,13 +220,17 @@ public class ExpenseForecastTests
         Assert.True(plan.IsSuccessful);
         Assert.Equal(new[] { 0m, 0m, 103m, 104m },
             plan.PlanYears.Select(year => year.Expenses[0].Amount));
-        Assert.Equal(new[] { 100m, 101m, 102m, 103m },
+        Assert.Equal(new[] { 100.49m, 101m, 103m, 104m },
             plan.PlanYears.Select(year => year.Expenses.Single(e => e.Type == ExpenseType.Uncategorized).Amount));
         Assert.Equal(original, scenario.Serialize());
     }
 
     private static Expense Forecast(Expense source, int age)
-        => PlanYearCalculator.ForecastExpense(source, 60, age);
+        => PlanYearCalculator.ForecastExpenses(new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-60),
+            LifeExpectancy = 90
+        }, [source], age)[0];
 
     [Fact]
     public void ForecastReturnsSeparateResultsWithoutChangingTheOriginalExpense()
@@ -249,6 +253,7 @@ public class ExpenseForecastTests
     private static Expense CreateExpense(int ageStart, int ageEnd) => new()
     {
         Name = "Healthcare",
+        Type = ExpenseType.Healthcare,
         Amount = 100m,
         AgeStart = ageStart,
         AgeEnd = ageEnd,

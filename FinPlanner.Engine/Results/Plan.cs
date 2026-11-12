@@ -20,6 +20,7 @@ public class Plan
     /// </summary>
     public IReadOnlyList<PlanYear> PlanYears { get; }
 
+    /// <summary>Captures the scenario's initial budget, forecast periods, income names, and calculation outcome.</summary>
     internal Plan(Scenario scenario, string name, List<PlanYear> years,
         bool isSuccessful, string? failureReason = null)
     {

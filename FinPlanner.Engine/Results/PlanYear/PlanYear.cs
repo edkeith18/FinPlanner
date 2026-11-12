@@ -68,7 +68,7 @@ public class PlanYear
     public List<Expense> Expenses { get; set; } = new List<Expense>();
 
     /// <summary>Total expenses for this modeled year, including its funded tax expense.</summary>
-    public decimal AnnualExpenses { get; set; }
+    public decimal AnnualExpenses => TotalExpenses;
 
     /// <summary>
     /// Total balance across all accounts at the end of the year.

@@ -1,0 +1,57 @@
+{
+  "TaxYear": 2026,
+  "FilingStatus": "MarriedFilingJointly",
+  "SocialSecurity": {
+    "TaxablePercentage": 85
+  },
+  "StandardDeduction": {
+    "Amount": 32200,
+    "AnnualRateOfIncrease": 6.33
+  },
+  "HealthcareDeduction": {
+    "AgiFloorPercentage": 7.5
+  },
+  "CharityDeduction": {
+    "AgiReductionPercentage": 0.5,
+    "AgiLimitPercentage": 30
+  },
+  "SaltDeduction": {
+    "MaximumAmount": 40400,
+    "AgiPhaseoutThreshold": 500000,
+    "PhaseoutPercentage": 30,
+    "LimitChangeYear": 2030,
+    "MaximumAmountAfterChange": 10000
+  },
+  "OrdinaryIncomeTax": {
+    "ThresholdAnnualRateOfIncrease": 2.2,
+    "Brackets": [
+      { "Threshold": 0, "Rate": 10 },
+      { "Threshold": 24800, "Rate": 12 },
+      { "Threshold": 100800, "Rate": 22 },
+      { "Threshold": 211400, "Rate": 24 },
+      { "Threshold": 403550, "Rate": 32 },
+      { "Threshold": 512450, "Rate": 35 },
+      { "Threshold": 768700, "Rate": 37 }
+    ]
+  },
+  "CapitalGainsTax": {
+    "ThresholdAnnualRateOfIncrease": 2.2,
+    "Brackets": [
+      { "Threshold": 0, "Rate": 0 },
+      { "Threshold": 98900, "Rate": 15 },
+      { "Threshold": 613700, "Rate": 20 }
+    ]
+  },
+  "NetInvestmentIncomeTax": {
+    "Rate": 3.8,
+    "AgiThreshold": 250000
+  },
+  "AlternativeMinimumTax": {
+    "ExemptionAmount": 140200,
+    "ExemptionAnnualRateOfIncrease": 3.487,
+    "Threshold": 249500,
+    "ThresholdAnnualRateOfIncrease": 4.173,
+    "LowerRate": 26,
+    "UpperRate": 28
+  }
+}

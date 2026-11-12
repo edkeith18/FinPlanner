@@ -37,85 +37,10 @@ internal static class PlanXlsxExporter
         foreach (var plan in plans)
         {
             WritePlanSheet(workbook, plan);
-            WriteTransfersSheet(workbook, plan);
-            if (plan.PlanYears.Count > 0) WriteTaxesSheet(workbook, plan);
         }
         workbook.SaveAs(outputPath);
 
         return outputPath;
-    }
-
-    private static void WriteTaxesSheet(XLWorkbook workbook, Plan plan)
-    {
-        var sheet = workbook.Worksheets.Add($"{plan.Name} taxes");
-        string[] headers = ["Year", "Age", "Ordinary Income", "Interest", "Qualified Dividends", "Unqualified Dividends",
-            "Long-term Gains", "Short-term Gains", "HSA Contributions", "AGI", "Standard Deduction", "Healthcare Deduction",
-            "Charity Deduction", "SALT Deduction", "Deductions Used", "Taxable Ordinary Income", "Taxable Capital Gains",
-            "Ordinary Tax", "Capital Gains Tax", "Standard Tax", "Additional AMT", "NIIT", "Total Tax",
-            "Tax Expense", "Effective Tax Rate", "Tax Expense Source"];
-        for (var i = 0; i < headers.Length; i++) sheet.Cell(1, i + 1).Value = headers[i];
-        var row = 2;
-        foreach (var year in plan.PlanYears)
-        {
-            var tax = year.Taxes;
-            sheet.Cell(row, 1).Value = year.StartingYear;
-            sheet.Cell(row, 2).Value = year.StartingAge;
-            sheet.Cell(row, 24).Value = year.TaxExpense;
-            sheet.Cell(row, 26).Value = tax is null ? "Supplied first-year amount" : "Calculated";
-            if (tax is null)
-            {
-                row++;
-                continue;
-            }
-            decimal[] values = [tax.OrdinaryIncome, tax.Interest, tax.QualifiedDividends, tax.UnqualifiedDividends,
-                tax.LongTermCapitalGains, tax.ShortTermCapitalGains, tax.HsaContribution, tax.AGI, tax.StandardDeduction,
-                tax.HealthcareDeduction, tax.CharityDeduction, tax.SaltDeduction, tax.Deductions, tax.TaxableOrdinaryIncome,
-                tax.TaxableCapitalGains, tax.OrdinaryTax, tax.LTCGTax, tax.StandardTax, tax.AMT, tax.NIIT, tax.TotalTax,
-                year.TaxExpense, tax.EffectiveTaxRate];
-            for (var i = 0; i < values.Length; i++) sheet.Cell(row, i + 3).Value = values[i];
-            row++;
-        }
-        sheet.Columns(3, 25).Style.NumberFormat.Format = CurrencyFormat;
-        sheet.Column(25).Style.NumberFormat.Format = "0.00%";
-        sheet.Row(1).Style.Font.Bold = true;
-        sheet.Row(1).Style.Alignment.WrapText = true;
-        sheet.Columns(1, headers.Length).AdjustToContents();
-        sheet.SheetView.FreezeRows(1);
-        sheet.SheetView.FreezeColumns(2);
-        sheet.Range(1, 1, row - 1, headers.Length).SetAutoFilter();
-        if (plan.CalculationNote is not null)
-        {
-            sheet.Range(row + 1, 1, row + 2, 8).Merge().Value = plan.CalculationNote;
-            sheet.Range(row + 1, 1, row + 2, 8).Style.Alignment.WrapText = true;
-        }
-    }
-
-    private static void WriteTransfersSheet(XLWorkbook workbook, Plan plan)
-    {
-        var sheet = workbook.Worksheets.Add($"{plan.Name} transfers");
-        string[] headers = ["Period", "Starting age", "Name", "Reason", "From", "To", "Requested", "Transferred"];
-        for (var column = 0; column < headers.Length; column++)
-            sheet.Cell(1, column + 1).Value = headers[column];
-        var row = 2;
-        foreach (var year in plan.PlanYears)
-        foreach (var transfer in year.Transfers)
-        {
-            sheet.Cell(row, 1).Value = $"{year.StartingYear} -> {year.EndingYear}";
-            sheet.Cell(row, 2).Value = year.StartingAge;
-            sheet.Cell(row, 3).Value = transfer.Name;
-            sheet.Cell(row, 4).Value = transfer.Reason.ToString();
-            sheet.Cell(row, 5).Value = transfer.Reason == TransferReason.ExternalIncome
-                ? "External" : transfer.FromAccount?.Name ?? "Expense cash";
-            sheet.Cell(row, 6).Value = transfer.ToAccount?.Name ?? "Expense cash";
-            sheet.Cell(row, 7).Value = transfer.RequestedAmount;
-            sheet.Cell(row, 8).Value = transfer.Amount;
-            row++;
-        }
-        sheet.Row(1).Style.Font.Bold = true;
-        sheet.Columns(7, 8).Style.NumberFormat.Format = CurrencyFormat;
-        sheet.Columns(1, 8).AdjustToContents();
-        sheet.SheetView.FreezeRows(1);
-        sheet.Range(1, 1, Math.Max(1, row - 1), 8).SetAutoFilter();
     }
 
     private static void WritePlanSheet(XLWorkbook workbook, Plan plan)

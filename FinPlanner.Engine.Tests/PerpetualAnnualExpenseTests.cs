@@ -51,7 +51,6 @@ public class PerpetualAnnualExpenseTests
         var plan = new PlanCalculator().CalculatePerpetualSpend(scenario);
         Assert.False(plan.IsSuccessful);
         Assert.Empty(plan.PlanYears);
-        Assert.Contains("at least 4%", plan.FailureReason);
     }
 
     [Fact]

@@ -23,6 +23,7 @@ public class AccountTransfer
     public decimal MandatoryAmount => Reason == TransferReason.Rmd ? Amount : 0m;
     public decimal VoluntaryAmount => Reason == TransferReason.ExpenseWithdrawal ? Amount : 0m;
 
+    /// <summary>Validates transfer endpoints and initializes the requested movement with a nonnegative amount.</summary>
     public AccountTransfer(string name, Account? fromAccount, Account? toAccount,
         decimal amount, TransferReason reason)
     {

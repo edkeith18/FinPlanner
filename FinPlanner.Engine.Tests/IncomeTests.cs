@@ -5,18 +5,15 @@ namespace FinPlanner.Engine.Tests;
 
 public class IncomeTests
 {
-    [Theory]
-    [InlineData("InitialAmount")]
-    [InlineData("Amount")]
-    public void IncomeJsonReadsBothAmountNamesAndWritesPercentageRates(string amountName)
+    [Fact]
+    public void IncomeJsonReadsInitialAmountAndWritesPercentageRates()
     {
-        var scenario = Scenario.Deserialize($$"""
-            { "LifeExpectancy": 100, "Accounts": [{"Basis": 0}], "Income": [{ "Name": "Social Security", "{{amountName}}": 71208,
+        var scenario = Scenario.Deserialize("""
+            { "LifeExpectancy": 100, "Accounts": [{"Basis": 0}], "Income": [{ "Name": "Social Security", "Type": "SocialSecurity", "InitialAmount": 71208,
               "AgeStart": 67, "AnnualRateOfIncrease": 4.8 }] }
             """);
         var income = Assert.Single(scenario.Income);
         Assert.Equal(71208m, income.InitialAmount);
-        Assert.Equal(71208m, income.Amount);
         Assert.Equal(67, income.AgeStart);
         Assert.Equal(0.048m, income.AnnualRateOfIncrease);
         using var json = JsonDocument.Parse(scenario.Serialize());
@@ -202,7 +199,7 @@ public class IncomeTests
         var withoutIncome = calculator.CalculatePerpetualSpend(scenario);
         scenario.Income.Add(new Income
         {
-            Name = "Social Security", InitialAmount = 71208m, AgeStart = 67, AnnualRateOfIncrease = 0.048m
+            Name = "Social Security", Type = IncomeType.SocialSecurity, InitialAmount = 71208m, AgeStart = 67, AnnualRateOfIncrease = 0.048m
         });
         var withIncome = calculator.CalculatePerpetualSpend(scenario);
         Assert.True(withIncome.IsSuccessful);

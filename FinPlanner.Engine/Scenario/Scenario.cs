@@ -70,13 +70,14 @@ public class Scenario
     public int LifeExpectancy { get; set; }
     /// <summary>Total first-year budget, including named expenses and the supplied tax expense.</summary>
     public decimal FirstYearAnnualExpenses { get; set; }
-    /// <summary>Known tax expense funded in the first year; later years calculate taxes.</summary>
-    public decimal FirstYearTaxExpense { get; set; }
+    /// <summary>Known first-year tax expense, or null to calculate it within the first-year budget.</summary>
+    public decimal? FirstYearTaxExpense { get; set; } = 0m;
     [JsonConverter(typeof(PercentageJsonConverter))]
     public decimal BondsAnnualRateOfReturn { get; set; }
 
     public event Action? Changed;
 
+    /// <summary>Creates a scenario with empty input collections and default tax settings.</summary>
     public Scenario() { }
 
     /// <summary>
@@ -87,7 +88,8 @@ public class Scenario
     {
         ArgumentNullException.ThrowIfNull(source);
 
-        TaxInfo = source.TaxInfo;
+        // Reuse the source's already-validated, immutable tax settings instead of re-reading and re-validating from JSON
+        taxInfo = source.taxInfo;
         StartYear = source.StartYear;
         dateOfBirth = source.dateOfBirth;
         CurrentAge = source.CurrentAge;
@@ -116,12 +118,14 @@ public class Scenario
         Transfers = source.Transfers.Select(transfer => new ScheduledTransfer(transfer)).ToList();
     }
 
+    /// <summary>Validates the planning horizon and serializes the scenario to formatted JSON.</summary>
     public string Serialize()
     {
         ValidateLifeExpectancy();
         return JsonSerializer.Serialize(this, SerializerOptions);
     }
 
+    /// <summary>Validates the planning horizon and writes scenario JSON asynchronously to the supplied stream.</summary>
     public async Task SerializeAsync(
         Stream stream,
         CancellationToken cancellationToken = default)
@@ -137,6 +141,7 @@ public class Scenario
             cancellationToken);
     }
 
+    /// <summary>Reads scenario JSON after rejecting negative numbers and validates the resulting inputs.</summary>
     public static Scenario Deserialize(string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
@@ -150,6 +155,7 @@ public class Scenario
         return ValidateDeserializedScenario(scenario);
     }
 
+    /// <summary>Scans JSON numeric tokens and rejects negative values before deserialization.</summary>
     private static void EnsureJsonNumbersAreNonNegative(ReadOnlySpan<byte> json)
     {
         // Stream-based JSON can begin with a UTF-8 byte order mark.
@@ -164,6 +170,7 @@ public class Scenario
         }
     }
 
+    /// <summary>Validates the planning horizon, required accounts, and explicit brokerage cost basis.</summary>
     private static Scenario ValidateDeserializedScenario(Scenario? scenario)
     {
         scenario = scenario
@@ -188,6 +195,7 @@ public class Scenario
         return scenario;
     }
 
+    /// <summary>Refreshes the current age and requires life expectancy to extend beyond it.</summary>
     private void ValidateLifeExpectancy()
     {
         UpdateCurrentAge();
@@ -198,6 +206,7 @@ public class Scenario
         }
     }
 
+    /// <summary>Reads a stream asynchronously, rejects negative JSON numbers, and validates the deserialized scenario.</summary>
     public static async Task<Scenario> DeserializeAsync(
         Stream stream,
         CancellationToken cancellationToken = default)
@@ -223,25 +232,7 @@ public class Scenario
     /// </summary>
     public void UpdateCurrentAge()
     {
-        CurrentAge = CalculateAge(DateOfBirth, DateOnly.FromDateTime(DateTime.Now));
-    }
-
-    internal static int CalculateAge(DateOnly dateOfBirth, DateOnly asOfDate)
-    {
-        if (dateOfBirth > asOfDate)
-        {
-            throw new ArgumentOutOfRangeException(
-                nameof(dateOfBirth),
-                "Date of birth cannot be after the as-of date.");
-        }
-
-        var age = asOfDate.Year - dateOfBirth.Year;
-        if (dateOfBirth.AddYears(age) > asOfDate)
-        {
-            age--;
-        }
-
-        return age;
+        CurrentAge = DateOnly.FromDateTime(DateTime.Now).Year - DateOfBirth.Year;
     }
 
     /// <summary>
@@ -298,6 +289,7 @@ public class Scenario
         return ValidateParsedDate(dateOfBirth, today, out validationMessage);
     }
 
+    /// <summary>Rejects a future birth date and returns the corresponding validation message.</summary>
     private static bool ValidateParsedDate(
         DateOnly dateOfBirth,
         DateOnly today,
@@ -313,6 +305,7 @@ public class Scenario
         return true;
     }
 
+    /// <summary>Attempts to create a calendar date and returns false for invalid year, month, or day values.</summary>
     private static bool TryCreateDate(int year, int month, int day, out DateOnly date)
     {
         try
@@ -327,6 +320,7 @@ public class Scenario
         }
     }
 
+    /// <summary>Notifies subscribers that the scenario has changed.</summary>
     public void NotifyStateChanged()
     {
         Changed?.Invoke();
@@ -344,6 +338,7 @@ public class Scenario
         }
     }
 
+    /// <summary>Adds an account after the current withdrawal priorities and notifies subscribers of the change.</summary>
     public void AddAccount(string name, decimal balance, AccountType type = AccountType.Brokerage, AccountHoldings holdings = AccountHoldings.Equities)
     {
         Accounts.Add(new Account
@@ -359,12 +354,14 @@ public class Scenario
         NotifyStateChanged();
     }
 
+    /// <summary>Adds a named income source with its initial amount and notifies subscribers of the change.</summary>
     public void AddIncome(string name, decimal amount)
     {
-        Income.Add(new Income { Name = name, Amount = amount, LastUpdated = DateTime.Now });
+        Income.Add(new Income { Name = name, InitialAmount = amount, LastUpdated = DateTime.Now });
         NotifyStateChanged();
     }
 
+    /// <summary>Adds an expense with age boundaries and growth settings and notifies subscribers of the change.</summary>
     public void AddExpense(string name, decimal amount, int ageStart, int ageEnd, decimal annualRateOfIncrease, bool useInflationValue = true)
     {
         Expenses.Add(new Expense
@@ -380,6 +377,7 @@ public class Scenario
         NotifyStateChanged();
     }
 
+    /// <summary>Adds a scheduled transfer with age boundaries and growth settings and notifies subscribers of the change.</summary>
     public void AddTransfer(string name, decimal amount, int ageStart, int ageEnd, decimal annualRateOfIncrease, bool useInflationValue = true)
     {
         Transfers.Add(new ScheduledTransfer

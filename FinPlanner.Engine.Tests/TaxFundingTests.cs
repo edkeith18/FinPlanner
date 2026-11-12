@@ -65,17 +65,20 @@ public class TaxFundingTests
         Assert.True(plan.PlanYears[^1].UnfundedExpenses > 0m);
     }
 
-    [Fact]
-    public void ExternalSocialSecurityClassificationSurvivesScenarioCopyAndJson()
+    [Theory]
+    [InlineData("Benefits", IncomeType.SocialSecurity, 85000)]
+    [InlineData("Social Security", IncomeType.Ordinary, 100000)]
+    public void ExternalIncomeTypeControlsTaxTreatmentThroughScenarioCopyAndJson(
+        string name, IncomeType type, int expectedOrdinaryIncome)
     {
         var scenario = CreateScenario();
         scenario.Accounts.Add(new Account { Type = AccountType.Brokerage });
-        scenario.Income.Add(new Income { Name = "Social Security", InitialAmount = 100000m, AgeStart = 58 });
+        scenario.Income.Add(new Income { Name = name, Type = type, InitialAmount = 100000m, AgeStart = 58 });
         var copy = Scenario.Deserialize(scenario.Serialize());
         var plan = new PlanCalculator().CalculateCurrentTrajectory(copy);
         Assert.Equal(7640m, plan.PlanYears[0].TaxExpense);
         Assert.Null(plan.PlanYears[0].Taxes);
-        Assert.Equal(85000m, plan.PlanYears[1].Taxes!.OrdinaryIncome);
+        Assert.Equal((decimal)expectedOrdinaryIncome, plan.PlanYears[1].Taxes!.OrdinaryIncome);
         Assert.Equal(100000m, plan.PlanYears[1].ExternalIncome);
     }
 

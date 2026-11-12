@@ -89,9 +89,9 @@ public class TaxCalculatorTests
         var year = IncomeYear(100000m);
         year.Expenses =
         [
-            new Expense { Name = "Healthcare", Amount = 20000m },
-            new Expense { Name = "Charitable giving", Amount = 10000m },
-            new Expense { Name = "State and local taxes (SALT)", Amount = 50000m }
+            new Expense { Name = "Medical bills", Type = ExpenseType.Healthcare, Amount = 20000m },
+            new Expense { Name = "Donations", Type = ExpenseType.Charity, Amount = 10000m },
+            new Expense { Name = "Local tax", Type = ExpenseType.Salt, Amount = 50000m }
         ];
         var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
         Assert.Equal(12500m, taxes.HealthcareDeduction);
@@ -104,6 +104,29 @@ public class TaxCalculatorTests
         Assert.Equal(-5000m, high.CharityDeduction);
         Assert.Equal(-109600m, high.SaltDeduction);
         Assert.Equal(32200m, high.Deductions);
+    }
+
+    [Fact]
+    public void GeneralExpenseNamesDoNotDetermineTaxDeductions()
+    {
+        var year = IncomeYear(100000m);
+        var baseline = TaxCalculator.Calculate(year, TaxInfo.Default);
+        year.Expenses =
+        [
+            new Expense { Name = "Healthcare", Amount = 20000m },
+            new Expense { Name = "Medicare", Amount = 20000m },
+            new Expense { Name = "Charitable giving", Amount = 10000m },
+            new Expense { Name = "State and local taxes (SALT)", Amount = 50000m },
+            new Expense { Name = "HSA Contribution", Amount = 10000m }
+        ];
+
+        var taxes = TaxCalculator.Calculate(year, TaxInfo.Default);
+
+        Assert.Equal(baseline.HealthcareDeduction, taxes.HealthcareDeduction);
+        Assert.Equal(baseline.CharityDeduction, taxes.CharityDeduction);
+        Assert.Equal(baseline.SaltDeduction, taxes.SaltDeduction);
+        Assert.Equal(baseline.HsaContribution, taxes.HsaContribution);
+        Assert.Equal(baseline.TotalTax, taxes.TotalTax);
     }
 
     [Fact]

@@ -24,7 +24,7 @@ public class BrokerageIncomeTests
         var year = new PlanCalculator().CalculateCurrentTrajectory(scenario).PlanYears[0];
         var retirement = year.AccountEarnings[0];
         Assert.Equal((decimal)expectedRmd, year.MandatoryFrom(0));
-        Assert.Equal(0m, retirement.EarnedAmount);
+        Assert.Equal(0m, retirement.Amount);
         Assert.Equal(balance * 1.1m - expectedRmd, year.Accounts[0].EndingBalance);
         Assert.Equal((decimal)expectedRmd, year.Accounts[1].EndingBalance);
         Assert.Equal(balance * 1.1m, year.EndingBalance);
@@ -70,7 +70,7 @@ public class BrokerageIncomeTests
         Assert.Equal(520m, year.VoluntaryFrom(0));
         Assert.Equal(103960m, year.EndingBalance);
 
-        var next = PlanYearCalculator.ForecastFrom(year, scenario, scenario.FirstYearAnnualExpenses);
+        var next = PlanYearCalculator.ForecastFrom(year, scenario, PlanYearCalculator.CreateExpenses(scenario, scenario.FirstYearAnnualExpenses));
         PlanYearCalculator.CalculateEarnings(next);
         Assert.Equal(0.0448m, next.Accounts[0].AppreciationRate);
         Assert.Equal(4657m, next.AccountEarnings[0].Interest);

@@ -28,8 +28,7 @@ public sealed record TaxInfo
     });
     public static TaxInfo Default => DefaultValue.Value;
 
-    public static TaxInfo Load(string path) => Deserialize(File.ReadAllText(path));
-
+    /// <summary>Deserializes tax settings, rejects unknown fields, and validates the resulting values.</summary>
     public static TaxInfo Deserialize(string json)
     {
         var settings = JsonSerializer.Deserialize<TaxInfo>(json, new JsonSerializerOptions
@@ -40,6 +39,7 @@ public sealed record TaxInfo
         return settings;
     }
 
+    /// <summary>Validates the tax year, filing status, parameter ranges, brackets, and SALT change year.</summary>
     public void Validate()
     {
         if (TaxYear < 1 || TaxYear > 9999 || FilingStatus != "MarriedFilingJointly")
@@ -51,6 +51,7 @@ public sealed record TaxInfo
             throw new JsonException("SALT change year must be at or after the tax base year.");
     }
 
+    /// <summary>Recursively checks required tax settings, numeric ranges, and bracket entries.</summary>
     private static void ValidateObject(object value)
     {
         foreach (var property in value.GetType().GetProperties().Where(p => p.Name != nameof(Default)))
@@ -71,6 +72,7 @@ public sealed record TaxInfo
         }
     }
 
+    /// <summary>Requires brackets to start at zero with strictly increasing thresholds and nondecreasing rates.</summary>
     private static void ValidateBrackets(ImmutableArray<Bracket> brackets)
     {
         if (brackets.IsDefaultOrEmpty || brackets[0].Threshold != 0m)

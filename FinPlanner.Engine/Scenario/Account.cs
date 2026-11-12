@@ -35,9 +35,10 @@ public class Account
     /// </summary>
     public int WithdrawalPriority { get; set; }
 
+    /// <summary>Creates an account with default type, holdings, and a new identifier.</summary>
     public Account() { }
 
-    // Copy constructor to create a new Account instance from an existing one
+    /// <summary>Copies account settings and cost basis, rounds the beginning balance, and leaves the ending balance for calculation.</summary>
     public Account(Account sourceAccount)
     {
         Id = sourceAccount.Id;
@@ -78,6 +79,7 @@ public static class AccountOptionDisplay
 
     public static IReadOnlyList<AccountHoldings> Holdings { get; } = Enum.GetValues<AccountHoldings>();
 
+    /// <summary>Returns the account type label displayed in the user interface.</summary>
     public static string ToDisplayLabel(this AccountType type)
     {
         return type switch
@@ -87,17 +89,18 @@ public static class AccountOptionDisplay
             AccountType.RetirementRoth => "Retirement (Roth)",
             AccountType.Retirement => "Retirement",
             AccountType.Inherited => "Inherited",
-            _ => "Brokerage"
+            _ => "Unknown account type"
         };
     }
 
+    /// <summary>Returns the holdings label displayed in the user interface.</summary>
     public static string ToDisplayLabel(this AccountHoldings holdings)
     {
         return holdings switch
         {
             AccountHoldings.Equities => "Equities",
             AccountHoldings.Bonds => "Bonds",
-            _ => "Equities"
+            _ => "Unknown holdings"
         };
     }
 }

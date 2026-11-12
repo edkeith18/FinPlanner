@@ -16,6 +16,7 @@
   <ItemGroup>
     <Using Include="Xunit" />
     <ProjectReference Include="..\FinPlanner.Engine\FinPlanner.Engine.csproj" />
+    <None Include="..\Input\FinPlanner.json" Link="Input\FinPlanner.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>
