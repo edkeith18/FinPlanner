@@ -101,7 +101,7 @@ public class ExpenseForecastTests
     [Fact]
     public void ForecastRejectsAgesBeforeExplicitPlanStart()
     {
-        Assert.Throws<ArgumentOutOfRangeException>(() => PlanYearCalculator.ForecastExpense(CreateExpense(60, 90), 60, 59));
+        Assert.Throws<ArgumentOutOfRangeException>(() => Forecast(CreateExpense(60, 90), 59));
     }
 
     [Fact]
@@ -226,7 +226,11 @@ public class ExpenseForecastTests
     }
 
     private static Expense Forecast(Expense source, int age)
-        => PlanYearCalculator.ForecastExpense(source, 60, age);
+        => PlanYearCalculator.ForecastExpenses(new Scenario
+        {
+            DateOfBirth = DateOnly.FromDateTime(DateTime.Today).AddYears(-60),
+            LifeExpectancy = 90
+        }, [source], age)[0];
 
     [Fact]
     public void ForecastReturnsSeparateResultsWithoutChangingTheOriginalExpense()

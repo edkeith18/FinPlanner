@@ -162,5 +162,16 @@
   "DateOfBirth": "10/21/1968",
   "LifeExpectancy": 100,
   "FirstYearAnnualExpenses": 371898.52,
-  "FirstYearTaxExpense": 36958
+  "FirstYearTaxExpense": 36958,
+  "RegressionTest": {
+    "FinancialPlan": {
+      "EndingBalance": 171169096
+    },
+    "MaximumSpendPlan": {
+      "FirstYearTotalExpenses": 928000
+    },
+    "PerpetualSpendPlan": {
+      "FirstYearTotalExpenses": 743000
+    }
+  }
 }

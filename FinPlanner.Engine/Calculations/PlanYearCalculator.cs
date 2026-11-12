@@ -122,27 +122,33 @@ internal static class PlanYearCalculator
     }
 
     /// <summary>Forecasts each baseline expense at the requested age and adds the period's tax expense.</summary>
-    private static List<Expense> ForecastExpenses(Scenario scenario, IReadOnlyCollection<Expense> baselineExpenses, int age)
+    internal static List<Expense> ForecastExpenses(Scenario scenario, IReadOnlyCollection<Expense> baselineExpenses, int age)
     {
-        var expenses = baselineExpenses
-            .Select(expense => ForecastExpense(expense, scenario.CurrentAge, age)).ToList();
-        expenses.Add(new Expense { Name = "Taxes", Type = ExpenseType.Tax, AgeStart = scenario.CurrentAge, AgeEnd = scenario.LifeExpectancy });
-        return expenses;
-    }
-
-    /// <summary>Preserves first-year amounts and rounds future forecasts from the original expense.</summary>
-    internal static Expense ForecastExpense(Expense source, int planStartAge, int age)
-    {
-        ArgumentNullException.ThrowIfNull(source);
+        var planStartAge = scenario.CurrentAge;
         if (age < planStartAge)
             throw new ArgumentOutOfRangeException(nameof(age), "Age cannot precede the plan-start age.");
-        return new Expense(source)
+
+        // Initialize ther return collection
+        var expenses = new List<Expense>();
+
+        // Copy each baseline expense into the plan's collection, forecasting its amount at the requested age.
+        foreach (var source in baselineExpenses)
         {
-            Amount = source.IsActiveAtAge(age)
-                ? age == planStartAge ? source.Amount
-                    : ForecastAmount(source.Amount, source.AnnualRateOfIncrease, planStartAge, age)
-                : 0m
-        };
+            ArgumentNullException.ThrowIfNull(source);
+            // Preserve first-year amounts; round future amounts from the original baseline.
+            expenses.Add(new Expense(source)
+            {
+                Amount = source.IsActiveAtAge(age)
+                    ? age == planStartAge ? source.Amount
+                        : ForecastAmount(source.Amount, source.AnnualRateOfIncrease, planStartAge, age)
+                    : 0m
+            });
+        }
+
+        // Add the tax expense to the plan's collection
+        expenses.Add(new Expense { Name = "Taxes", Type = ExpenseType.Tax, AgeStart = scenario.CurrentAge, AgeEnd = scenario.LifeExpectancy });
+        
+        return expenses;
     }
 
     /// <summary>Forecasts the original transfer amount within its inclusive age boundaries.</summary>
