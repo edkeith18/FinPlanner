@@ -9,9 +9,8 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 
-// Register the AccountsForYear service as Scoped.  Scoped will create a new instance for each user session.
-builder.Services.AddScoped<Scenario>();
-builder.Services.AddScoped<PlanBuilder>();
-builder.Services.AddScoped<MaximumExpenseCalculator>();
+// Keep editable inputs and calculations scoped to this browser session.
+builder.Services.AddScoped(_ => new Scenario { LifeExpectancy = 100 });
+builder.Services.AddScoped<PlanCalculator>();
 
 await builder.Build().RunAsync();

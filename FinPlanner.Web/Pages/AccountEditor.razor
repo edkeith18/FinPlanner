@@ -23,7 +23,7 @@ else
 
         <div class="mb-3">
             <label class="form-label">Balance</label>
-            <InputNumber @bind-Value="account.Balance" class="form-control" />
+            <InputNumber @bind-Value="account.BeginningBalance" class="form-control" />
         </div>
 
         <div class="mb-3">
@@ -46,6 +46,10 @@ else
             </InputSelect>
         </div>
 
+        @if (account.Type == AccountType.Brokerage)
+        {
+            <div class="mb-3"><label class="form-label">Cost basis</label><InputNumber @bind-Value="account.Basis" class="form-control" min="0" /></div>
+        }
         <button class="btn btn-primary" @onclick="Save">
             @(IsNew ? "Create" : "Save")
         </button>
@@ -66,11 +70,12 @@ else
     {
         if (IsNew)
         {
-            account = new Account { Name = "", Balance = 0, Type = AccountType.Brokerage, Holdings = AccountHoldings.Equities };
+            account = new Account { Name = "", BeginningBalance = 0, Type = AccountType.Brokerage, Holdings = AccountHoldings.Equities };
         }
         else
         {
-            account = scenario.Accounts.FirstOrDefault(a => a.Name == Name);
+            var source = scenario.Accounts.FirstOrDefault(a => a.Name == Name);
+            account = source is null ? null : new Account(source) { BeginningBalance = source.BeginningBalance };
         }
     }
 
@@ -81,9 +86,16 @@ else
 
         if (IsNew)
         {
-            scenario.AddAccount(account.Name, account.Balance, account.Type, account.Holdings);
+            scenario.AddAccount(account.Name, account.BeginningBalance, account.Type, account.Holdings);
         }
 
+        else
+        {
+            var index = scenario.Accounts.FindIndex(a => a.Id == account.Id);
+            if (index >= 0) scenario.Accounts[index] = account;
+        }
+        if (IsNew) scenario.Accounts[^1].Basis = account.Basis;
+        scenario.NotifyStateChanged();
         Nav.NavigateTo("financial-scenario");
     }
 

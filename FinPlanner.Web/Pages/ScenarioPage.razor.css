@@ -161,3 +161,33 @@
     white-space: nowrap;
     font-size: 0.85rem;
 }
+
+.financial-scenario-panel { width:100%; min-width:0; margin:0; }
+.financial-scenario-layout { display:block; }
+.editor-table-scroll { overflow:auto; max-width:100%; border:1px solid #dfe7e1; border-radius:8px; background:white; margin-bottom:18px; }
+.scenario-table { width:100%; min-width:640px; table-layout:auto; border:0; }
+.scenario-table td,.scenario-table th { padding:12px 16px; border-color:#edf1ed; vertical-align:middle; }
+.scenario-table th { background:#eef3ed; font-size:.7rem; font-weight:600; color:#627b6a; }
+.item-name { width:auto; min-width:180px; white-space:normal; }
+.item-actions { width:80px; }
+.item-type,.item-holdings,.item-value { width:auto; min-width:110px; }
+h5 { font-size:1.15rem; font-weight:650; margin:28px 0 16px; }
+h6 { font-size:.75rem; text-transform:uppercase; letter-spacing:.08em; color:#7a8b7e; margin:18px 0 10px; }
+.clickable-value,.clickable-name { display:inline-block; border-bottom:1px dashed #c0cdc2; padding:3px 0; }
+.clickable-value:hover,.clickable-name:hover { color:#24685b; border-color:#24685b; }
+.item-actions .btn { min-width:32px; min-height:32px; }
+.section-heading { justify-content:flex-start; margin-top:28px; }
+.section-heading h5 { margin:0; }
+
+button.clickable-value,button.clickable-name { background:transparent; color:inherit; border:0; border-bottom:1px dashed #c0cdc2; text-align:inherit; font:inherit; }
+
+.scenario-table { --bs-border-color:#e0e7e0; --bs-table-bg:white; }
+.scenario-table tr { border-color:#e0e7e0; }
+.setup-note { padding:16px 20px; background:#eaf1eb; border-radius:8px; color:#496754; line-height:1.7; margin-bottom:20px; }
+@media(max-width:640px) {
+    .parameter-table .scenario-table { min-width:0; table-layout:fixed; }
+    .parameter-table .item-name { min-width:0; width:45%; }
+    .parameter-table .item-value { min-width:0; width:40%; white-space:normal; }
+    .parameter-table .item-actions { width:15%; }
+    .parameter-table .scenario-table td { padding:12px 8px; }
+}
