@@ -161,3 +161,50 @@ a { color:#24685b; }
 :focus-visible { outline:3px solid #9ec8b6; outline-offset:3px; }
 @media(max-width:1000px) { .metric-card { padding:18px; } .metric-card strong { font-size:1.4rem; } }
 @media(max-width:640px) { h1 { font-size:1.7rem; } .page-heading { align-items:flex-start; flex-direction:column; } .metric-grid { grid-template-columns:1fr; gap:10px; } .metric-card { padding:16px 20px; } .metric-card strong { font-size:1.6rem; margin:5px 0; } .plan-toolbar > button { flex:1; } .forecast-table th,.forecast-table td { padding:12px 16px; } .btn { min-height:44px; } }
+.breakdown-toolbar { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; padding:12px 16px; background:#fff; border:1px solid #dce5dd; border-radius:9px; }
+.breakdown-toolbar fieldset { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin:0; min-width:0; }
+.breakdown-toolbar legend { float:left; width:auto; font-size:.8rem; font-weight:600; margin:0 12px 0 0; }
+.breakdown-toolbar label { display:flex; align-items:center; gap:8px; padding:10px 12px; border:1px solid #dce5dd; border-radius:6px; cursor:pointer; }
+.breakdown-toolbar label:has(input:checked) { background:#e5efe9; border-color:#729f8d; color:#225a4c; }
+.breakdown-toolbar input { accent-color:#24685b; }
+.breakdown-actions { display:flex; gap:8px; align-items:center; }
+.breakdown-actions button { min-height:44px; border:1px solid #acc4bb; border-radius:6px; background:#fff; color:#24685b; padding:8px 12px; }
+.breakdown-actions button:disabled { opacity:.45; }
+.forecast-help { font-size:.78rem; color:#61766c; margin:10px 0; }
+.breakdown-table .forecast-groups th { height:38px; padding:8px 24px; text-align:left; }
+.breakdown-table .forecast-columns th { top:38px; height:52px; }
+.breakdown-table thead .income-detail { background:#e3f0ea; color:#225a4c; }
+.breakdown-table thead .expense-detail { background:#f4ebde; color:#795326; }
+.breakdown-table thead .tax-detail { background:#e8edf7; color:#425c88; }
+.breakdown-table .income-detail + .expense-detail,.breakdown-table .expense-detail + .tax-detail,.breakdown-table .balance-cell + td { border-left:2px solid #dce5dd; }
+@media(max-width:640px) {
+    .breakdown-toolbar { padding:12px; }
+    .breakdown-toolbar fieldset { width:100%; }
+    .breakdown-toolbar legend { float:none; width:100%; margin-bottom:4px; }
+    .breakdown-toolbar label { flex:1; justify-content:center; padding:10px 8px; }
+    .breakdown-actions { width:100%; }
+    .breakdown-actions button { flex:1; }
+    .breakdown-table .forecast-groups th { padding:8px 16px; }
+}
+
+.breakdown-table thead .transfer-detail { background:#efe7f4; color:#714c83; }
+.breakdown-table .transfer-detail { max-width:320px; white-space:normal; min-width:200px; }
+@media(max-width:640px) {
+    .breakdown-toolbar label { flex:1 1 40%; }
+}
+
+/* The frozen overview uses explicit widths so each selected total has a stable offset. */
+.breakdown-table { --year-width:92px; --total-width:128px; width:max-content; border-collapse:separate; border-spacing:0; }
+.breakdown-table .frozen-year { width:var(--year-width); min-width:var(--year-width); max-width:var(--year-width); }
+.breakdown-table .frozen-total { width:var(--total-width); min-width:var(--total-width); max-width:var(--total-width); position:sticky; z-index:3; }
+.breakdown-table .frozen-year,.breakdown-table .frozen-total { box-sizing:border-box; padding-left:12px; padding-right:12px; background:#fff; }
+.breakdown-table tbody .frozen-year { z-index:3; }
+/* Match the first-column selector specificity so body cells cannot cover the header. */
+.breakdown-table thead th.frozen-year,.breakdown-table thead th.frozen-total { z-index:5; background:#eef3ed; }
+.breakdown-table .forecast-groups .frozen-overview { position:sticky; left:0; z-index:6; background:#eef3ed; width:calc(var(--year-width) + var(--overview-count) * var(--total-width)); min-width:calc(var(--year-width) + var(--overview-count) * var(--total-width)); }
+.breakdown-table .frozen-total:has(+ td:not(.frozen-total)),.breakdown-table .frozen-total:has(+ th:not(.frozen-total)),.breakdown-table .frozen-overview { box-shadow:2px 0 #c5d3c9; }
+@media(max-width:640px) {
+    .breakdown-table { --year-width:60px; --total-width:clamp(54px, 16vw, 100px); }
+    .breakdown-table .frozen-year,.breakdown-table .frozen-total { padding-left:4px; padding-right:4px; font-size:.65rem; overflow-wrap:anywhere; white-space:normal; }
+    .breakdown-table .frozen-year small { font-size:.6rem; }
+}

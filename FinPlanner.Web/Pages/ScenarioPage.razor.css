@@ -1,3 +1,48 @@
+.scenario-loading-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1050;
+    display: grid;
+    place-items: center;
+    background: rgba(245, 247, 245, .8);
+    cursor: wait;
+    padding: 24px;
+}
+
+.scenario-loading-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 32px;
+    max-width: 100%;
+    text-align: center;
+    background: #fff;
+    border: 1px solid #dce5dd;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(35, 61, 58, .12);
+}
+
+.scenario-loading-card > span:last-child { color: #61766c; }
+
+.dollar-spinner {
+    display: inline-block;
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    color: #24685b;
+    animation: dollar-spin 1.2s linear infinite;
+    will-change: transform;
+}
+
+@keyframes dollar-spin {
+    to { transform: rotateY(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .dollar-spinner { animation: none; }
+}
+
 .financial-scenario-layout {
     display: flex;
     justify-content: flex-start;
