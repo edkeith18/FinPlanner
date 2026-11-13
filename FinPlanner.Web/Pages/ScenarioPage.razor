@@ -12,6 +12,17 @@
 
 <PageTitle>Financial Scenario</PageTitle>
 
+@if (loadingPlans)
+{
+    <div class="scenario-loading-overlay" role="status" aria-live="polite" aria-atomic="true">
+        <div class="scenario-loading-card">
+            <span class="dollar-spinner" aria-hidden="true">$</span>
+            <strong>Preparing your scenario</strong>
+            <span>Loading your file and calculating your plans…</span>
+        </div>
+    </div>
+}
+<div aria-busy="@loadingPlans.ToString().ToLowerInvariant()" inert="@loadingPlans">
 <div class="page-heading"><div><p class="eyebrow">BUILD YOUR FOUNDATION</p><h1>Financial scenario</h1><p class="page-description">Your accounts, income, and assumptions. One clear picture.</p></div><a class="btn btn-primary" href="financial-plan">Explore plans</a></div>
 <div class="metric-grid"><section class="metric-card"><span>Starting portfolio</span><strong>@scenario.Accounts.Sum(a => a.BeginningBalance).ToString("C0")</strong><small>@scenario.Accounts.Count accounts</small></section><section class="metric-card"><span>First-year budget</span><strong>@scenario.FirstYearAnnualExpenses.ToString("C0")</strong><small>Including named expenses and taxes</small></section><section class="metric-card"><span>Planning horizon</span><strong>@Math.Max(0, scenario.LifeExpectancy - scenario.CurrentAge) years</strong><small>Age @scenario.CurrentAge to @scenario.LifeExpectancy</small></section></div>
 <SpendingGauge Budget="scenario.FirstYearAnnualExpenses" />
@@ -22,11 +33,6 @@
     <InputFile id="scenarioFileInput" class="d-none" OnChange="LoadFile" MaxFileSize="5000000" disabled="@loadingPlans" />
     <button class="@SaveScenarioButtonClass" @onclick="Save" disabled="@(!isDirty)">Download scenario</button>
 </div>
-
-@if (loadingPlans)
-{
-    <div role="status" aria-live="polite">Loading your scenario and calculating your plans...</div>
-}
 
 @if (scenario.Accounts.Count == 0)
 {
@@ -829,6 +835,7 @@
     </div>
 </div>
 
+</div>
 @code {
     private readonly Dictionary<object, decimal> originalValues = new();
     private readonly Dictionary<object, string> originalNames = new();
@@ -906,15 +913,27 @@
 
     private string? fileError;
     private bool loadingPlans;
+    private bool finishLoadingAfterRender;
 
     private async Task LoadFile(InputFileChangeEventArgs e)
     {
+        if (loadingPlans) return;
         fileError = null;
         loadingPlans = true;
-        try { await LoadScenarioFile(e); }
+        StateHasChanged();
+        try
+        {
+            // Let the browser paint the overlay before synchronous WebAssembly work starts.
+            await JS.InvokeVoidAsync("finPlanner.afterPaint");
+            await LoadScenarioFile(e);
+        }
         catch (Exception ex) when (ex is JsonException or ArgumentException or IOException or InvalidOperationException)
         { fileError = $"Could not load scenario: {ex.Message}"; }
-        finally { loadingPlans = false; }
+        finally
+        {
+            finishLoadingAfterRender = true;
+            StateHasChanged();
+        }
     }
 
     private async Task LoadScenarioFile(InputFileChangeEventArgs e)
@@ -2089,6 +2108,21 @@
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
+        if (finishLoadingAfterRender)
+        {
+            finishLoadingAfterRender = false;
+            try
+            {
+                // Keep the overlay until the updated scenario (or error) has been painted.
+                await JS.InvokeVoidAsync("finPlanner.afterPaint");
+            }
+            finally
+            {
+                loadingPlans = false;
+                StateHasChanged();
+            }
+        }
+
         if (!pendingFocusNewRow || activeAddType is null)
         {
             return;

@@ -22,19 +22,8 @@ else
         <section class="metric-card"><span>Planning horizon</span><strong>@plan.PlanYears.Count years</strong><small>Starting at age @scenario.CurrentAge</small></section>
     </div>
     @if (!plan.IsSuccessful) { <div class="alert alert-warning" role="status">@plan.FailureReason</div> }
-    <div class="section-heading"><h2>Annual forecast</h2><label><input type="checkbox" @bind="showDetails" /> Expense breakdown</label></div>
-    <div class="forecast-scroll" tabindex="0" role="region" aria-label="Annual financial forecast">
-        <table class="table forecast-table"><thead><tr><th scope="col">Year / age</th><th scope="col">Total expenses</th><th scope="col">Taxes</th><th scope="col">Ending balance</th>
-        @if (showDetails) { foreach (var name in expenseNames) { <th scope="col">@name</th> } }
-        </tr></thead><tbody>
-        @foreach (var row in plan.PlanYears)
-        {
-            <tr><th scope="row">@row.StartingYear <small>Age @row.StartingAge</small></th><td>@row.TotalExpenses.ToString("C0")</td><td>@row.TaxExpense.ToString("C0")</td><td class="balance-cell">@row.EndingBalance.ToString("C0")</td>
-            @if (showDetails) { foreach (var name in expenseNames) { <td>@row.Expenses.Where(e => e.Name == name).Sum(e => e.Amount).ToString("C0")</td> } }
-            </tr>
-        }
-        </tbody></table>
-    </div>
+    <AnnualForecast Years="plan.PlanYears" />
+
 }
 @code {
     private Plan? plan => mode switch
@@ -50,15 +39,5 @@ else
         _ => SpendingSummary.FinancialError
     };
     private int mode;
-    private bool showDetails;
-    private List<string> expenseNames = [];
-
-    private void SelectMode(int value)
-    {
-        mode = value;
-        expenseNames = plan?.PlanYears.SelectMany(y => y.Expenses)
-            .Where(e => e.Type != ExpenseType.Tax).Select(e => e.Name).Distinct().ToList() ?? [];
-    }
-
-    protected override void OnInitialized() => SelectMode(mode);
+    private void SelectMode(int value) => mode = value;
 }

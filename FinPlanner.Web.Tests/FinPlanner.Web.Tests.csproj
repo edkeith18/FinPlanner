@@ -11,6 +11,7 @@
     <PackageReference Include="xunit.runner.visualstudio" Version="3.1.4" />
     <Using Include="Xunit" />
     <ProjectReference Include="../FinPlanner.Engine/FinPlanner.Engine.csproj" />
+    <Compile Include="../FinPlanner.Web/Services/ForecastBreakdown.cs" Link="ForecastBreakdown.cs" />
     <!-- Test the session service without requiring a WebAssembly test runtime. -->
     <Compile Include="../FinPlanner.Web/Services/SpendingSummary.cs" Link="SpendingSummary.cs" />
   </ItemGroup>

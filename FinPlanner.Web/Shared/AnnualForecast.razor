@@ -1,0 +1,124 @@
+@using FinPlanner.Engine
+@using FinPlanner.Web.Services
+
+<div class="section-heading"><h2>Annual forecast</h2></div>
+<div class="breakdown-toolbar">
+    <fieldset>
+        <legend>Breakdowns</legend>
+        <label><input type="checkbox" @bind="showIncome" /> Income</label>
+        <label><input type="checkbox" @bind="showExpenses" /> Expenses</label>
+        <label><input type="checkbox" @bind="showTaxes" /> Taxes</label>
+        <label><input type="checkbox" @bind="showTransfers" /> Transfers</label>
+    </fieldset>
+    <div class="breakdown-actions">
+        <button type="button" @onclick="() => SetAll(true)" disabled="@(showIncome && showExpenses && showTaxes && showTransfers)">Show all</button>
+        <button type="button" @onclick="() => SetAll(false)" disabled="@(!HasDetails)">Summary only</button>
+    </div>
+</div>
+<p class="forecast-help" id="forecast-help">Expenses include taxes. Income includes external income, interest, and dividends; withdrawals and account appreciation are excluded. Scroll to explore columns.</p>
+@if (showTaxes)
+{
+    <p class="forecast-help">Tax details show the calculated tax model. — means no calculation is available, including years with a supplied tax amount.</p>
+}
+@if (showTransfers)
+{
+    <p class="forecast-help">Transfers show amounts moved, with the reason and source → destination. Cash pool is money available for spending. External income appears in Income.</p>
+    @if (transferColumns.Count == 0)
+    {
+        <p class="forecast-help" role="status">No account transfers in this forecast.</p>
+    }
+}
+@if (showIncome && incomeColumns.Count == 0)
+{
+    <p class="forecast-help" role="status">No income sources in this forecast.</p>
+}
+@if (showExpenses && expenseColumns.Count == 0)
+{
+    <p class="forecast-help" role="status">No non-tax expenses in this forecast.</p>
+}
+<div class="forecast-scroll" tabindex="0" role="region" aria-label="Annual financial forecast" aria-describedby="forecast-help">
+    <table class="table forecast-table breakdown-table" style="--overview-count:@OverviewColumns.Count">
+        <caption class="visually-hidden">Annual forecast with selected income, expense, tax, and transfer breakdowns</caption>
+        <thead>
+            <tr class="forecast-groups">
+                <th scope="colgroup" colspan="@(1 + OverviewColumns.Count)" class="frozen-overview">Overview</th>
+                @foreach (var group in VisibleGroups())
+                {
+                    <th scope="colgroup" colspan="@group.Columns.Count" class="@group.Css">@group.Name</th>
+                }
+            </tr>
+            <tr class="forecast-columns">
+                <th scope="col" class="frozen-year">Year / age</th>
+                @for (var index = 0; index < OverviewColumns.Count; index++)
+                {
+                    <th scope="col" class="frozen-total" style="@FrozenOffset(index)">@OverviewColumns[index].Label</th>
+                }
+                @foreach (var group in VisibleGroups())
+                {
+                    @foreach (var column in group.Columns)
+                    {
+                        <th scope="col" class="@group.Css">@column.Label</th>
+                    }
+                }
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var row in Years)
+            {
+                <tr>
+                    <th scope="row" class="frozen-year">@row.StartingYear <small>Age @row.StartingAge</small></th>
+                    @for (var index = 0; index < OverviewColumns.Count; index++)
+                    {
+                        <td class="frozen-total" style="@FrozenOffset(index)">@OverviewColumns[index].Value(row)?.ToString("C0")</td>
+                    }
+                    @foreach (var group in VisibleGroups())
+                    {
+                        @foreach (var column in group.Columns)
+                        {
+                            <td class="@group.Css">@(column.Value(row)?.ToString(column.IsRate ? "P1" : "C0") ?? "—")</td>
+                        }
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public IReadOnlyList<PlanYear> Years { get; set; } = [];
+    private List<ForecastColumn> OverviewColumns =>
+    [
+        .. (showIncome || !HasDetails ? new[] { new ForecastColumn("Total income", y => ForecastBreakdown.TotalIncome(y)) } : []),
+        .. (showExpenses || !HasDetails ? new[] { new ForecastColumn("Total expenses", y => y.TotalExpenses) } : []),
+        .. (showTaxes || !HasDetails ? new[] { new ForecastColumn("Taxes", y => y.TaxExpense) } : []),
+        .. (showTransfers ? new[] { new ForecastColumn("Transfers", y => y.Transfers.Where(t => t.Reason != TransferReason.ExternalIncome).Sum(t => t.Amount)) } : []),
+        .. (!HasDetails ? new[] { new ForecastColumn("Ending balance", y => y.EndingBalance) } : [])
+    ];
+    private static string FrozenOffset(int index) => $"left:calc(var(--year-width) + {index} * var(--total-width))";
+    private bool showIncome;
+    private bool showExpenses;
+    private bool showTaxes;
+    private bool showTransfers;
+    private bool HasDetails => showIncome || showExpenses || showTaxes || showTransfers;
+    private List<ForecastColumn> incomeColumns = [];
+    private List<ForecastColumn> expenseColumns = [];
+    private List<ForecastColumn> transferColumns = [];
+
+    protected override void OnParametersSet()
+    {
+        incomeColumns = ForecastBreakdown.Income(Years);
+        expenseColumns = ForecastBreakdown.Expenses(Years);
+        transferColumns = ForecastBreakdown.Transfers(Years);
+    }
+
+    private void SetAll(bool value) => showIncome = showExpenses = showTaxes = showTransfers = value;
+
+    private IEnumerable<(string Name, string Css, IReadOnlyList<ForecastColumn> Columns)> VisibleGroups()
+    {
+        if (showIncome && incomeColumns.Count > 0) yield return ("Income breakdown", "income-detail", incomeColumns);
+        if (showExpenses && expenseColumns.Count > 0) yield return ("Expense breakdown", "expense-detail", expenseColumns);
+        if (showTaxes) yield return ("Tax breakdown", "tax-detail", ForecastBreakdown.Taxes);
+        if (showTransfers && transferColumns.Count > 0) yield return ("Transfer breakdown", "transfer-detail", transferColumns);
+    }
+}
+
